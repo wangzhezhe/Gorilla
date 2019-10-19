@@ -18,7 +18,7 @@ struct DataMeta
     size_t m_dimention;
     std::string m_typeName;
     size_t m_elemSize;
-    std::array<size_t, 3> m_lowerBound;
+    std::array<size_t, 3> m_baseoffset;
     std::array<size_t, 3> m_shape;
 
     DataMeta(){};
@@ -28,13 +28,13 @@ struct DataMeta
              size_t dimention,
              std::string typeName,
              size_t elemSize, 
-             std::array<size_t, 3> lowerBound,
+             std::array<size_t, 3> baseoffset,
              std::array<size_t, 3> shape) : m_varName(varName),
                                             m_timeStep(timeStep),
                                             m_elemSize(elemSize),
                                             m_dimention(dimention),
                                             m_typeName(typeName),
-                                            m_lowerBound(lowerBound),
+                                            m_baseoffset(baseoffset),
                                             m_shape(shape){};
     
     
@@ -44,7 +44,7 @@ struct DataMeta
         <<", m_dimention "<< m_dimention
         <<", m_typeName " << m_typeName
         <<", m_elemSize " << m_elemSize
-        <<", lower bound " << m_lowerBound[0] << " " << m_lowerBound[1] << " " << m_lowerBound[2]
+        <<", lower bound " << m_baseoffset[0] << " " << m_baseoffset[1] << " " << m_baseoffset[2]
         << ", shape " <<m_shape[0] << " " << m_shape[1] << " " << m_shape[2] << std::endl;
         return;
     }
@@ -75,7 +75,7 @@ struct DataMeta
         ar & m_dimention;
         ar & m_typeName;
         ar & m_elemSize;
-        ar & m_lowerBound;
+        ar & m_baseoffset;
         ar & m_shape;
     }
 

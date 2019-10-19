@@ -62,15 +62,22 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, std::vector<dataTy
 
     case TSNOTEXIST:
     {
-
-        DataObjectInterface *objInterfrace = new DataObjectByRawMem<dataType>(dataMeta, blockID, dataArray);
+        //DataObjectByRawMem *tempptr = new DataObjectByRawMem(DataMeta());
+        DataObjectByRawMem *tempptr = new DataObjectByRawMem();
+        //set actual value by template function
+        tempptr->setDataObjectByVector<dataType>(dataMeta, blockID, dataArray);
+        DataObjectInterface *objInterfrace = tempptr;
         dataObjectMap[dataMeta.m_varName][dataMeta.m_timeStep] = objInterfrace;
         break;
     }
 
     case VARNOTEXIST:
     {
-        DataObjectInterface *objInterfrace = new DataObjectByRawMem<dataType>(dataMeta, blockID, dataArray);
+        DataObjectByRawMem *tempptr = new DataObjectByRawMem();
+        //set actual value by template function
+        tempptr->setDataObjectByVector<dataType>(dataMeta, blockID, dataArray);
+        DataObjectInterface *objInterfrace = tempptr;
+
         std::map<int, DataObjectInterface *> innerMap;
         innerMap[dataMeta.m_timeStep] = objInterfrace;
         dataObjectMap[dataMeta.m_varName] = innerMap;
@@ -110,14 +117,14 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, void *dataPointer)
     case TSNOTEXIST:
     {
 
-        DataObjectInterface *objInterfrace = new DataObjectByRawMem<void>(dataMeta, blockID, dataPointer);
+        DataObjectInterface *objInterfrace = new DataObjectByRawMem(dataMeta, blockID, dataPointer);
         dataObjectMap[dataMeta.m_varName][dataMeta.m_timeStep] = objInterfrace;
         break;
     }
 
     case VARNOTEXIST:
     {
-        DataObjectInterface *objInterfrace = new DataObjectByRawMem<void>(dataMeta, blockID, dataPointer);
+        DataObjectInterface *objInterfrace = new DataObjectByRawMem(dataMeta, blockID, dataPointer);
         std::map<int, DataObjectInterface *> innerMap;
         innerMap[dataMeta.m_timeStep] = objInterfrace;
         dataObjectMap[dataMeta.m_varName] = innerMap;

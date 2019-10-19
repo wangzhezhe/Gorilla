@@ -89,9 +89,9 @@ void dspaces_client_put(tl::engine &myEngine, std::string serverAddr, int ts, in
 int main(int argc, char **argv)
 {
 
-    if (argc != 2)
+    if (argc != 3)
     {
-        std::cerr << "Usage: " << argv[0] << " <address>" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <address> <networkingType>" << std::endl;
         exit(0);
     }
 
@@ -114,13 +114,16 @@ int main(int argc, char **argv)
     //tl::endpoint server = dspaces_client_init(argv[1]);
 
     std::string serverAddr = argv[1];
+    std::string networkingType = argv[2];
 
     //TODO, put this into separate class
     //for client, just input tcp://...
     //tl::engine myEngine("tcp", THALLIUM_CLIENT_MODE);
     //tl::engine myEngine("na+sm", THALLIUM_CLIENT_MODE);
-    tl::engine myEngine("verbs", THALLIUM_CLIENT_MODE);
+    //tl::engine myEngine("verbs", THALLIUM_CLIENT_MODE);
     
+    tl::engine clientEngine(networkingType, THALLIUM_CLIENT_MODE);
+
     //generate data
 
     int dsize = 10;
@@ -133,21 +136,17 @@ int main(int argc, char **argv)
     //only use one time step for the proof of concepts
     int ts = 0;
 
-    dspaces_client_put(myEngine, serverAddr, ts, rank);
+    dspaces_client_put(clientEngine, serverAddr, ts, rank);
 
     std::cout << "ok to put data for rank " << rank << std::endl;
 
     std::cout << "start to get data: " << std::endl;
 
-    sleep(0.5);
+    //sleep(0.5);
 
-    dspaces_client_get(myEngine, serverAddr, ts, rank);
+    dspaces_client_get(clientEngine, serverAddr, ts, rank);
 
     std::cout << "ok to get data for rank " << rank << std::endl;
-
-    //read from the server
-
-    //call the rpc server to get the data from the server
 
     // Finalize the MPI environment.
     MPI_Finalize();

@@ -10,6 +10,7 @@
 #include <vector>
 #include <thallium.hpp>
 //import this to parse the template
+#include <spdlog/spdlog.h>
 #include "memcache.h"
 
 namespace tl = thallium;
@@ -26,23 +27,23 @@ MemCache *mcache = new MemCache();
 //the rpc for testing
 void hello(const tl::request &req, const std::string &name)
 {
-    std::cout << "Hello " << name << std::endl;
+    spdlog::debug("Hello {}", name);
 }
 
 void putDoubleVector(const tl::request &req, const std::vector<double> &inputVector)
 {
-    std::cout << "check vector at the server:" << std::endl;
+    spdlog::debug("check vector at the server:");
     int size = inputVector.size();
     for (int i = 0; i < size; i++)
     {
-        std::cout << "index " << i << " value " << inputVector[i] << std::endl;
+        spdlog::debug("index {} value {} inputVector[i]");
     }
     return;
 }
 
 void putMetaData(const tl::request &req, DataMeta &datameta)
 {
-    std::cout << "check putMetaData at the server:" << std::endl;
+    spdlog::debug("check putMetaData at the server:");
     datameta.printMeta();
     return;
 }
@@ -52,9 +53,9 @@ void putMetaData(const tl::request &req, DataMeta &datameta)
 //otherwise, there are some template issues
 void dsput(const tl::request &req, DataMeta &datameta, size_t &blockID, tl::bulk &dataBulk)
 {
-    std::cout << "execute dataspace put:" << std::endl;
+    spdlog::debug("execute dataspace put:");
     datameta.printMeta();
-    std::cout << "blockID is " << blockID << std::endl;
+    spdlog::debug("blockID is {} ", blockID);
 
     //get the bulk value
     tl::endpoint ep = req.get_endpoint();
@@ -62,7 +63,7 @@ void dsput(const tl::request &req, DataMeta &datameta, size_t &blockID, tl::bulk
     //assign the memory
     size_t mallocSize = datameta.getDataMallocSize();
 
-    std::cout << "malloc size is " << mallocSize << std::endl;
+    spdlog::debug("malloc size is {}, mallocSize");
 
     try
     {
@@ -82,7 +83,7 @@ void dsput(const tl::request &req, DataMeta &datameta, size_t &blockID, tl::bulk
         tl::bulk local = globalEnginePointer->expose(segments, tl::bulk_mode::write_only);
         dataBulk.on(ep) >> local;
 
-        std::cout << "Server received bulk, check the contents: " << std::endl;
+        spdlog::debug("Server received bulk, check the contents: ");
 
         //check the bulk
         /*
@@ -101,11 +102,11 @@ void dsput(const tl::request &req, DataMeta &datameta, size_t &blockID, tl::bulk
         //TODO update the return value
         req.respond(status);
 
-        std::cout << "ok to put the data" << std::endl;
+        spdlog::debug("ok to put the data");
     }
-    catch(...)
+    catch (...)
     {
-        std::cout << "exception for data put" << std::endl;
+        spdlog::debug("exception for data put");
         req.respond(-1);
     }
 
@@ -161,7 +162,7 @@ void dsget(const tl::request &req, std::string &varName, int &ts, size_t &blockI
     //get variable type from the data
     void *data = nullptr;
 
-    std::cout << "dsget by varName: " << varName << " ts: " << ts << " blockID: " << blockID << std::endl;
+    spdlog::debug("dsget by varName: {} ts {} blockID {}", varName ,ts, blockID);
 
     try
     {
@@ -169,7 +170,7 @@ void dsget(const tl::request &req, std::string &varName, int &ts, size_t &blockI
         //get the data value
         if (datameta == NULL)
         {
-            std::cout << "failed to get the data at the server end" << std::endl;
+           spdlog::debug ("failed to get the data at the server end");
             //return empty bulk info if it is failed to get data
             //how to adjust it is empty at the client end?
             req.respond(-1);
@@ -186,9 +187,9 @@ void dsget(const tl::request &req, std::string &varName, int &ts, size_t &blockI
 
         req.respond(0);
     }
-    catch(...)
+    catch (...)
     {
-        std::cout << "exception for get" << std::endl;
+        spdlog::debug("exception for get");
         req.respond(-1);
     }
 
@@ -204,13 +205,15 @@ void dsget(const tl::request &req, std::string &varName, int &ts, size_t &blockI
     */
 }
 
-void runRerver()
+void runRerver(std::string networkingType)
 {
 
     //tl::engine myEngine("na+sm", THALLIUM_SERVER_MODE);
     //tl::engine myEngine("tcp", THALLIUM_SERVER_MODE);
-    tl::engine myEngine("verbs", THALLIUM_SERVER_MODE);
-    std::cout << "addr " << myEngine.self() << std::endl;
+    //tl::engine myEngine("verbs", THALLIUM_SERVER_MODE);
+    tl::engine myEngine(networkingType, THALLIUM_SERVER_MODE);
+
+    std::string addr = myEngine.self();
     globalEnginePointer = &myEngine;
     //globalEnginePointer->define("hello", hello).disable_response();
     //globalEnginePointer->define("putDoubleVector", putDoubleVector).disable_response();
@@ -218,7 +221,7 @@ void runRerver()
     globalEnginePointer->define("dsput", dsput);
     globalEnginePointer->define("dsget", dsget);
 
-    std::cout << "Start the mini dataspace server..." << std::endl;
+    spdlog::info("Start the unimos server with addr: {}", addr);
 
     return;
 }
@@ -341,15 +344,15 @@ void test()
 {
     testput();
 
-    std::cout << "ok to put..." << std::endl;
+    spdlog::debug("ok to put...");
 
     testget(0);
 
-    std::cout << "ok to get data with block 0..." << std::endl;
+    spdlog::debug("ok to get data with block 0...");
 
     testget(1);
 
-    std::cout << "ok to get data with block 1..." << std::endl;
+    spdlog::debug("ok to get data with block 1...");
 
     while (true)
     {
@@ -360,8 +363,37 @@ void test()
     return;
 }
 
-int main()
+int main(int argc, char **argv)
 {
+
+    //auto file_logger = spdlog::basic_logger_mt("unimos_server_log", "unimos_server_log.txt");
+    //spdlog::set_default_logger(file_logger);
+
+    //default value
+    int logLevel = 0;
+    if (argc < 2)
+    {
+        std::cerr << "Usage: " << argv[0] << " <networkingType>" << std::endl;
+        exit(0);
+    }
+    std::string networkingType = argv[1];
+
+    if (argc == 3)
+    {
+        logLevel = atoi(argv[2]);
+    }
+
+    if (logLevel == 0)
+    {
+        spdlog::set_level(spdlog::level::info);
+    }
+    else
+    {
+        spdlog::set_level(spdlog::level::debug);
+    }
+
+    spdlog::debug("debug mode");
+
     //start the mini dataspace server
-    runRerver();
+    runRerver(networkingType);
 }

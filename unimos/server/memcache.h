@@ -13,7 +13,7 @@
 struct DataObjectInterface
 {
     //the meta data of the object
-
+    DataObjectInterface(){};
     DataMeta m_dataMeta;
     virtual int getData(int blockID, void *&dataContainer) = 0;
     virtual int putData(int blockID, size_t dataMallocSize, void *dataContainer) = 0;

@@ -1,8 +1,10 @@
 cmake_minimum_required (VERSION 3.15)
 project (gorilla C CXX)
-
 set (CMAKE_CXX_STANDARD 14)
-enable_testing ()
+
+
+option(ENABLE_TESTING "Enable Testing" ON)
+enable_testing()
 
 # add our cmake module directory to the path
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
@@ -32,14 +34,28 @@ find_package (thallium REQUIRED)
 xpkg_import_module (abtio REQUIRED abt-io)
 
 
-# build the server library
-add_library(memcache ${gorilla_SOURCE_DIR}/unimos/server/memcache.cpp)
-add_executable (unimos_server ${gorilla_SOURCE_DIR}/unimos/server/minidsserver.cpp)
-target_link_libraries (unimos_server memcache thallium)
+# add the depedency
+include_directories(${gorilla_SOURCE_DIR}/dep)
 
+
+# build the server library
+find_package(MPI REQUIRED) 
+add_library(memcache 
+${gorilla_SOURCE_DIR}/unimos/server/memcache.cpp
+${gorilla_SOURCE_DIR}/unimos/server/objectbyrawmem.cpp
+)
+
+
+add_executable (unimos_server ${gorilla_SOURCE_DIR}/unimos/server/unimosserver.cpp)
+target_link_libraries (unimos_server memcache thallium MPI::MPI_CXX)
 
 
 # execute the module load mpi before this part
-find_package(MPI REQUIRED) 
 add_executable(unimos_client ${gorilla_SOURCE_DIR}/unimos/client/minidsclient.cpp)
 target_link_libraries (unimos_client MPI::MPI_CXX thallium)
+
+
+# add enable_testing
+if (ENABLE_TESTING)
+  add_subdirectory(unimos/test)
+endif()
