@@ -13,12 +13,16 @@
 struct DataObjectInterface
 {
     //the meta data of the object
-    DataObjectInterface(){};
+
     DataMeta m_dataMeta;
+    //todo update the blockid to size_t
     virtual int getData(int blockID, void *&dataContainer) = 0;
     virtual int putData(int blockID, size_t dataMallocSize, void *dataContainer) = 0;
-    
+
+    virtual int getDataRegion(size_t blockID, std::array<size_t, 3> baseOffset, std::array<size_t, 3> dataShape, void *&dataContainer) = 0;
     virtual bool ifBlockIdExist(size_t blockID) = 0;
+    
+    DataObjectInterface(){};
     DataObjectInterface(DataMeta dataMeta) : m_dataMeta(dataMeta){};
     ~DataObjectInterface(){};
 };
@@ -42,11 +46,12 @@ public:
     int putIntoCache(DataMeta dataMeta, size_t blockID, void* dataPointer);
 
     DataMeta* getFromCache(std::string varName, size_t ts, size_t blockID, void *&rawData);
+    DataMeta getRegionFromCache(std::string varName, size_t ts, size_t blockID, std::array<size_t, 3> baseOffset, std::array<size_t, 3> regionShape, void *&rawData);
 
 private:
     //first index is the variable name
     //second index is the time step
-    //TODO add lock
+    //TODO add lock [when modify the element in the map such as delete elements, it will be not thread safety, add lock at that time]
     std::map<std::string, std::map<int, DataObjectInterface *>> dataObjectMap;
     CACHESTATUS checkDataExistance(std::string varName, size_t timeStep, size_t blockID);
 };

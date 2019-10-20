@@ -119,7 +119,7 @@ void dsput(const tl::request &req, DataMeta &datameta, size_t &blockID, tl::bulk
     return;
 }
 
-//is it ok to set the return value as bulk
+//get the whole object 
 void dsget(const tl::request &req, std::string &varName, int &ts, size_t &blockID, tl::bulk &clientBulk)
 {
     //get variable type from the data
@@ -166,6 +166,13 @@ void dsget(const tl::request &req, std::string &varName, int &ts, size_t &blockI
         rawdata++;
     }
     */
+}
+
+//get the object in specific region
+void dsgetregion(const tl::request &req, std::string &varName, int &ts, std::array<size_t, 3> baseoffset,
+             std::array<size_t, 3> shape, tl::bulk &clientBulk){
+
+//todo
 }
 
 void gatherIP(std::string engineName,  std::string endpoint)

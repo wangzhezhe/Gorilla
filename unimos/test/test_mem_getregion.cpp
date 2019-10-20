@@ -1,7 +1,13 @@
 
 #include "../server/memcache.h"
+#include <cmath>
 
 size_t elemInOnedim = 100;
+
+bool AreSame(double a, double b)
+{
+    return std::fabs(a - b) < 0.000001;
+}
 
 void testput_double_1d(MemCache *mcache)
 {
@@ -173,35 +179,115 @@ int testget_double_3d(MemCache *mcache, size_t blockID)
     return 0;
 }
 
-void runputget_double(MemCache *mcache)
+void runputgetregion1d_double(MemCache *mcache)
 {
 
-    //put double
-    testput_double_1d(mcache);
+    //generate the data and put it in memcache
+    std::vector<double> array;
 
-    std::cout << "ok for put 1d double" << std::endl;
-
-    //get double
-    int status = testget_double_1d(mcache, 0);
-    if (status != 0)
+    for (int i = 0; i < elemInOnedim; i++)
     {
-        throw std::runtime_error("failed to get data with blockID " + std::to_string(0));
+        array.push_back(i * 1.1);
     }
 
-    status = testget_double_1d(mcache, 1);
-    if (status != 1)
+    std::string varName = "testName1d_double";
+    int ts = 0;
+    //TODO distinguish local info and the global info
+    //Block id could be calculated by the simulation
+    //the minidataspace only know the data block id but it don't know how user partition the data domain
+    //this two parameters is for the data variable in specific time step
+    //std::array<size_t, 3> baseoffset = {0, 0, 0};
+    std::array<size_t, 3> shape = {elemInOnedim, 0, 0};
+    size_t blockID = 0;
+
+    DataMeta datameta = DataMeta(varName, ts, 1, typeid(double).name(), sizeof(double), shape);
+    mcache->putIntoCache<double>(datameta, blockID, array);
+
+    //get from the cache
+    std::array<size_t, 3> offset = {5, 0, 0};
+    std::array<size_t, 3> queryshape = {3, 0, 0};
+    void *data = nullptr;
+    DataMeta datametaget = mcache->getRegionFromCache(varName, ts, blockID, offset, queryshape, data);
+    datametaget.printMeta();
+    if (AreSame(*((double *)data),5.5) && AreSame(*((double *)data+1),6.6) && AreSame(*((double *)data+2),7.7))
     {
-        throw std::runtime_error("expect status equals to 1");
+        std::cout << "ok for double 3" << std::endl;
+    }
+    else
+    {
+        std::cout << *((double *)data) << ", " << *((double *)data + 1) << ", " << *((double *)data + 2) << std::endl;
+        std::cout << AreSame(*((double *)data+1),6.6) << std::endl;
+        throw std::runtime_error("failed to check the data value");
+    }
+    free(data);
+
+    offset = {98, 0, 0};
+    queryshape = {2, 0, 0};
+
+    datametaget = mcache->getRegionFromCache(varName, ts, blockID, offset, queryshape, data);
+    if (AreSame(*((double *)data),98*1.1) && AreSame(*((double *)data+1),99*1.1))
+    {
+        std::cout << "ok for double 2" << std::endl;
+    }
+    else
+    {
+        throw std::runtime_error("failed to check the data value for offset = {98, 0, 0}");
+    }
+    free(data);
+
+    offset = {98, 0, 0};
+    queryshape = {5, 0, 0};
+
+    try
+    {
+        datametaget = mcache->getRegionFromCache(varName, ts, blockID, offset, queryshape, data);
+    }
+    catch (const std::runtime_error &e)
+    {
+        if (std::string(e.what()).find("smaller than") != std::string::npos)
+        {
+            std::cout << "expect exception: " << e.what() << std::endl;
+        }
+        else
+        {
+            std::cerr << "failed to catch the exception" << std::endl;
+        }
+    }
+}
+
+void runputgetregion1d_int(MemCache *mcache)
+{
+
+    //generate the data and put it in memcache
+    std::vector<int> array;
+
+    for (int i = 0; i < elemInOnedim; i++)
+    {
+        array.push_back(i);
     }
 
-    //put double
-    testput_double_3d(mcache);
+    std::string varName = "testName1d_int";
+    int ts = 0;
+    //TODO distinguish local info and the global info
+    //Block id could be calculated by the simulation
+    //the minidataspace only know the data block id but it don't know how user partition the data domain
+    //this two parameters is for the data variable in specific time step
+    //std::array<size_t, 3> baseoffset = {0, 0, 0};
+    std::array<size_t, 3> shape = {elemInOnedim, 0, 0};
+    size_t blockID = 0;
 
-    //get double
-    status = testget_double_3d(mcache, 0);
-    if (status != 0)
+    DataMeta datameta = DataMeta(varName, ts, 1, typeid(int).name(), sizeof(int), shape);
+    mcache->putIntoCache<int>(datameta, blockID, array);
+
+    //get from the cache
+    std::array<size_t, 3> offset = {5, 0, 0};
+    std::array<size_t, 3> queryshape = {3, 0, 0};
+    void *data = nullptr;
+    DataMeta datametaget = mcache->getRegionFromCache(varName, ts, blockID, offset, queryshape, data);
+    datametaget.printMeta();
+    if (*((int *)data) != 5 || *((int *)data + 1) != 6 || *((int *)data + 2) != 7)
     {
-        throw std::runtime_error("failed to get data with blockID " + std::to_string(0));
+        throw std::runtime_error("failed to check the data value for integer");
     }
 }
 
@@ -211,7 +297,15 @@ int main(int ac, char *av[])
     //init memory cache
     MemCache *mcache = new MemCache();
 
-    runputget_double(mcache);
+    runputgetregion1d_double(mcache);
+
+    runputgetregion1d_int(mcache);
+
+    //todo add 2d and 3d test
+
+    //runputgetregion2d_double(mcache);
+
+    //runputgetregion3d_double(mcache);
 
     free(mcache);
 

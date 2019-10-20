@@ -18,7 +18,11 @@ struct DataMeta
     size_t m_dimention;
     std::string m_typeName;
     size_t m_elemSize;
-    std::array<size_t, 3> m_baseoffset;
+    //this data is in local domain or global domain???
+    //this offset should be calculated by the id and the partition information
+    //the only palce that relates with the application partition is the id
+    //the assumption is that, data storage layer do not hold the information about the data application layer
+    //std::array<size_t, 3> m_baseoffset;
     std::array<size_t, 3> m_shape;
 
     DataMeta(){};
@@ -28,13 +32,11 @@ struct DataMeta
              size_t dimention,
              std::string typeName,
              size_t elemSize, 
-             std::array<size_t, 3> baseoffset,
              std::array<size_t, 3> shape) : m_varName(varName),
                                             m_timeStep(timeStep),
                                             m_elemSize(elemSize),
                                             m_dimention(dimention),
                                             m_typeName(typeName),
-                                            m_baseoffset(baseoffset),
                                             m_shape(shape){};
     
     
@@ -44,7 +46,7 @@ struct DataMeta
         <<", m_dimention "<< m_dimention
         <<", m_typeName " << m_typeName
         <<", m_elemSize " << m_elemSize
-        <<", lower bound " << m_baseoffset[0] << " " << m_baseoffset[1] << " " << m_baseoffset[2]
+        //<<", lower bound " << m_baseoffset[0] << " " << m_baseoffset[1] << " " << m_baseoffset[2]
         << ", shape " <<m_shape[0] << " " << m_shape[1] << " " << m_shape[2] << std::endl;
         return;
     }
@@ -69,13 +71,23 @@ struct DataMeta
 
     }
 
+    size_t getValidDimention(){
+        size_t d = 0;
+        for(int i=0;i<3;i++){
+            if(m_shape[i]!=0){
+                d++;
+            }
+        } 
+        return d;
+    }
+
     template<typename A> void serialize(A& ar){
         ar & m_varName;
         ar & m_timeStep;
         ar & m_dimention;
         ar & m_typeName;
         ar & m_elemSize;
-        ar & m_baseoffset;
+        //ar & m_baseoffset;
         ar & m_shape;
     }
 

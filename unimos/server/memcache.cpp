@@ -187,5 +187,58 @@ DataMeta *MemCache::getFromCache(std::string varName, size_t ts, size_t blockID,
     return &objInterfrace->m_dataMeta;
 }
 
+DataMeta MemCache::getRegionFromCache(
+    std::string varName, size_t ts, size_t blockID, std::array<size_t, 3> baseOffset, std::array<size_t, 3> regionShape, void *&rawData)
+{
+    //use the error code to label the status of get operation
+    //check the map
+    enum CACHESTATUS cacheStatus = MemCache::checkDataExistance(varName, ts, blockID);
+    DataObjectInterface *objInterfrace = nullptr;
+
+    switch (cacheStatus)
+    {
+    case BLOCKNOTEXIST:
+        std::cout << "failed to get data, varname " << varName << " with ts " << ts << " block " << blockID << " not exist " << std::endl;
+        return DataMeta();
+    case TSNOTEXIST:
+        std::cout << "failed to get data, varname " << varName << " with ts " << ts << " not exist " << std::endl;
+        return DataMeta();
+    case VARNOTEXIST:
+        std::cout << "failed to get data, varname " << varName << " not exist" << std::endl;
+        return DataMeta();
+
+    case BLOCKEXIST:
+        objInterfrace = dataObjectMap[varName][ts];
+        break;
+    }
+
+    // if exist get datablock and put it into the dataArray
+    // send the pointer out to the vector
+    // std::array<size_t, 3> baseOffset, std::array<size_t, 3> regionShape
+    int status = objInterfrace->getDataRegion(blockID, baseOffset, regionShape, rawData);
+
+    std::cout << "check at the getFromCache" << std::endl;
+
+    if (status != 0)
+    {
+        std::cerr << "failed to get the getDataRegion for varName " << varName << " ts " << ts << " block " << blockID << std::endl;
+        throw std::runtime_error("getRegionFromCache failed");
+        return DataMeta();
+    }
+
+    if (rawData == NULL)
+    {
+        std::cerr << "failed to get the getDataRegion for varName (null) " << varName << " ts " << ts << " block " << blockID << std::endl;
+        throw std::runtime_error("getRegionFromCache failed");
+        return DataMeta();
+    }
+
+    //generate the new metadata
+    DataMeta queryMetaData = objInterfrace->m_dataMeta;
+    queryMetaData.m_shape = regionShape;
+
+    return queryMetaData;
+}
+
 template int MemCache::putIntoCache<int>(DataMeta dataMeta, size_t blockID, std::vector<int> &dataArray);
 template int MemCache::putIntoCache<double>(DataMeta dataMeta, size_t blockID, std::vector<double> &dataArray);

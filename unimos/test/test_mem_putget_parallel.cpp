@@ -69,11 +69,11 @@ void testput_double_1d(MemCache *mcache, std::string varName, int ts, size_t blo
     //Block id could be calculated by the simulation
     //the minidataspace only know the data block id but it don't know how user partition the data domain
     //this two parameters is for the data variable in specific time step
-    std::array<size_t, 3> baseoffset = {0, 0, 0};
+    //std::array<size_t, 3> baseoffset = {0, 0, 0};
     std::array<size_t, 3> shape = {elemInOnedim, 0, 0};
     size_t dimention = 1;
     //TODO, update the method for type string here
-    DataMeta datameta = DataMeta(varName, ts, dimention, typeid(double).name(), sizeof(double), baseoffset, shape);
+    DataMeta datameta = DataMeta(varName, ts, dimention, typeid(double).name(), sizeof(double), shape);
     mcache->putIntoCache<double>(datameta, blockID, array);
 }
 

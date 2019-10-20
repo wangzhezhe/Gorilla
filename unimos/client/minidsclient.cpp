@@ -61,7 +61,8 @@ void dspaces_client_put(tl::engine &myEngine, std::string serverAddr, int ts, in
     std::array<size_t, 3> shape = {10, 0, 0};
 
     //create the object
-    DataMeta datameta = DataMeta(varName, ts, dimention, typeid(double).name(), sizeof(double), lowbound, shape);
+    //DataMeta datameta = DataMeta(varName, ts, dimention, typeid(double).name(), sizeof(double), lowbound, shape);
+    DataMeta datameta = DataMeta(varName, ts, dimention, typeid(double).name(), sizeof(double), shape);
 
     //send the data block to the server
     //putMetaData.on(globalServerEndpoint)(datameta);
