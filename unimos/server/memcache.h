@@ -13,7 +13,7 @@
 struct DataObjectInterface
 {
     //the meta data of the object
-
+    //the real data is maintaind by the inherited class
     DataMeta m_dataMeta;
     //todo update the blockid to size_t
     virtual int getData(int blockID, void *&dataContainer) = 0;

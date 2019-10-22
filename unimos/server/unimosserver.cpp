@@ -2,6 +2,7 @@
 //the mini data space server that provide the get and put api
 
 #include <iostream>
+#include <fstream>
 #include <thread>
 #include <chrono>
 #include <typeinfo>
@@ -14,8 +15,8 @@
 #include <spdlog/spdlog.h>
 #include "mpi.h"
 #include "memcache.h"
+#include "endpointManagement.h"
 #include "../utils/stringtool.h"
-
 
 namespace tl = thallium;
 
@@ -27,6 +28,16 @@ tl::engine *globalClientEnginePointer = nullptr;
 
 //init memory cache
 MemCache *mcache = new MemCache();
+
+//the manager for all the server endpoints
+endPointsManager *epManager = new endPointsManager();
+
+//name of configure file, the write one line, the line is the rank0 addr
+std::string masterConfig = "./unimos_server.conf";
+
+//rank & proc number for current MPI process
+int globalRank = 0;
+int globalProc = 0;
 
 /*
 the rpc call for testing using
@@ -53,6 +64,21 @@ void putMetaData(const tl::request &req, DataMeta &datameta)
     return;
 }
 */
+
+void getaddr(const tl::request &req, const std::string &varName, const int &ts)
+{
+    if (epManager->ifAllRegister(globalProc))
+    {
+        std::string serverAddr = epManager->getByVarTs(varName, ts);
+        spdlog::debug("varname {} and ts {} getaddr  {}", varName, ts, serverAddr);
+        req.respond(serverAddr);
+    }
+    else
+    {
+        //other wise, return the ip
+        req.respond(std::string("NOREGISTER"));
+    }
+}
 
 //return the error code
 //be careful with the parameters, they should match with the type used at the client end
@@ -119,7 +145,7 @@ void dsput(const tl::request &req, DataMeta &datameta, size_t &blockID, tl::bulk
     return;
 }
 
-//get the whole object 
+//get the whole object
 void dsget(const tl::request &req, std::string &varName, int &ts, size_t &blockID, tl::bulk &clientBulk)
 {
     //get variable type from the data
@@ -170,40 +196,29 @@ void dsget(const tl::request &req, std::string &varName, int &ts, size_t &blockI
 
 //get the object in specific region
 void dsgetregion(const tl::request &req, std::string &varName, int &ts, std::array<size_t, 3> baseoffset,
-             std::array<size_t, 3> shape, tl::bulk &clientBulk){
+                 std::array<size_t, 3> shape, tl::bulk &clientBulk)
+{
 
-//todo
+    //todo
 }
 
-void gatherIP(std::string engineName,  std::string endpoint)
+void gatherIP(std::string engineName, std::string endpoint)
 {
-    MPI_Init(NULL, NULL);
 
-    // Get the rank of the process
-    int rank;
-    int procNum;
-
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &procNum);
-
-    std::string ip = IPTOOL::getClientAdddr(engineName,endpoint);
+    std::string ip = IPTOOL::getClientAdddr(engineName, endpoint);
 
     //maybe it is ok that only write the masternode's ip and provide the interface
     //of getting ipList for other clients
 
-    if (rank == 0)
-    {
-        std::cout << "total process num: " << procNum << std::endl;
-    }
-
-    std::cout << "current rank is " << rank << " current ip is: " << ip << std::endl;
+    std::cout << "current rank is " << globalRank << " current ip is: " << ip << std::endl;
 
     //attention: there number should be changed if the endpoint is not ip
     //padding to 20 only for ip
     //for the ip, the longest is 15 add the start label and the end label
     //this number should longer than the address
     int msgPaddingLen = 50;
-    if(endpoint.size()>msgPaddingLen){
+    if (endpoint.size() > msgPaddingLen)
+    {
         throw std::runtime_error("current addr is longer than msgPaddingLen, reset the addr buffer to make it larger");
         return;
     }
@@ -218,13 +233,13 @@ void gatherIP(std::string engineName,  std::string endpoint)
 
     char *rcvString = NULL;
 
-    if (rank == 0)
+    if (globalRank == 0)
     {
         //it is possible that some ip are 2 digits and some are 3 digits
         //add extra space to avoid message truncated error
         //the logest ip is 15 digit plus one comma
-        int rcvSize = msgPaddingLen * procNum * sizeof(char);
-        std::cout << "sendSize: " << sendSize << ", rcvSize:" << rcvSize << std::endl;
+        int rcvSize = msgPaddingLen * globalProc * sizeof(char);
+        //std::cout << "sendSize: " << sendSize << ", rcvSize:" << rcvSize << std::endl;
         rcvString = (char *)malloc(rcvSize);
         {
             if (rcvString == NULL)
@@ -251,39 +266,37 @@ void gatherIP(std::string engineName,  std::string endpoint)
     int error_code = MPI_Gather(sendipStr, sendLen, MPI_CHAR, rcvString, rcvLen, MPI_CHAR, 0, MPI_COMM_WORLD);
     if (error_code != MPI_SUCCESS)
     {
-        std::cout << "error for rank " << rank << " get MPI_GatherError: " << error_code << std::endl;
+        std::cout << "error for rank " << globalRank << " get MPI_GatherError: " << error_code << std::endl;
     }
     //write to file for ip list json file if it is necessary
     //or expose the list by the rpc
-    if (rank == 0)
+    if (globalRank == 0)
     {
-        printf("check retuen value: ");
-        char *temp = rcvString;
-        for (int i = 0; i < rcvLen * procNum; i++)
-        {
-            printf("%c", *temp);
-            temp++;
-        }
-        std::cout << '\n';
+        //printf("check retuen value: ");
+        //char *temp = rcvString;
+        //for (int i = 0; i < rcvLen * globalProc; i++)
+        //{
+        //    printf("%c", *temp);
+        //    temp++;
+        //}
+        //std::cout << '\n';
         //add termination for the last position
         //rcvString[rcvLen * procNum - 1] = '\0';
         //printf("rcv value: %s\n", rcvString);
         //string list = string(rcvString);
         //only fetch the first procNum ip
-        std::vector<std::string> ipList = IPTOOL::split(rcvString, msgPaddingLen * procNum, 'H', 'E');
+        std::vector<std::string> ipList = IPTOOL::split(rcvString, msgPaddingLen * globalProc, 'H', 'E');
 
         std::cout << "check the ip list:" << std::endl;
         for (int i = 0; i < ipList.size(); i++)
         {
             std::cout << ipList[i] << std::endl;
+            epManager->m_endPointsLists.push_back(ipList[i]);
         }
 
         free(rcvString);
     }
-
-    MPI_Finalize();
 }
-
 
 void runRerver(std::string networkingType)
 {
@@ -304,10 +317,21 @@ void runRerver(std::string networkingType)
     globalClientEnginePointer->define("dsput", dsput);
     globalClientEnginePointer->define("dsget", dsget);
 
-    spdlog::info("Start the unimos server with addr: {}", addr);
+    if (globalRank == 0)
+    {
+        globalClientEnginePointer->define("getaddr", getaddr);
 
-    //write the addr out
-    gatherIP(networkingType,addr);
+        spdlog::info("Start the unimos server with addr for master: {}", addr);
+        std::string masterAddr = IPTOOL::getClientAdddr(networkingType, addr);
+        std::ofstream confFile;
+        confFile.open(masterConfig);
+        confFile << masterAddr << "\n";
+        confFile.close();
+    }
+
+    //write the addr out here
+
+    gatherIP(networkingType, addr);
 
     //the destructor of the engine will be called when the variable is out of the scope
 
@@ -324,6 +348,11 @@ void signalHandler(int signal_num)
 
 int main(int argc, char **argv)
 {
+
+    MPI_Init(NULL, NULL);
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &globalRank);
+    MPI_Comm_size(MPI_COMM_WORLD, &globalProc);
 
     //auto file_logger = spdlog::basic_logger_mt("unimos_server_log", "unimos_server_log.txt");
     //spdlog::set_default_logger(file_logger);
@@ -357,6 +386,13 @@ int main(int argc, char **argv)
     signal(SIGQUIT, signalHandler);
     signal(SIGTSTP, signalHandler);
 
+    if (globalRank == 0)
+    {
+        std::cout << "total process num: " << globalProc << std::endl;
+    }
+
+    epManager->m_serverNum = globalProc;
+
     try
     {
         runRerver(networkingType);
@@ -370,5 +406,6 @@ int main(int argc, char **argv)
 
     std::cout << "server close" << std::endl;
 
+    MPI_Finalize();
     return 0;
 }

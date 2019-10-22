@@ -15,6 +15,12 @@ target_link_libraries(test_mem_getregion memcache)
 
 add_executable(test_tool test_tool.cpp)
 
+add_executable(test_endpointManager test_endpointManager.cpp)
+target_link_libraries(test_endpointManager endpointmng)
+
+
+
+
 find_package(OpenMP)
 add_executable(test_mem_putget_parallel test_mem_putget_parallel.cpp)
 target_link_libraries(test_mem_putget_parallel memcache OpenMP::OpenMP_CXX)
@@ -24,6 +30,7 @@ target_link_libraries(test_mem_putget_parallel memcache OpenMP::OpenMP_CXX)
 add_test( NAME test_mem_putget COMMAND test_mem_putget)
 add_test( NAME test_tool COMMAND test_tool)
 add_test( NAME test_mem_getregion COMMAND test_mem_getregion)
+add_test( NAME test_endpointManager COMMAND test_endpointManager)
 
 # add_test( NAME test_mem_putget_parallel COMMAND test_mem_putget_parallel)
 
