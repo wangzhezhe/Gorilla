@@ -1,6 +1,9 @@
 
 Gorilla project 
 
+Gorilla is a in-memory data shared layer which is inspied by the DataSpaces and the ADIOS projects.
+It build on the Mochi/Mercry RPC services.
+
 ### INX (Indexing service for scientific workflow)
 
 INX is the indexing service for the simulation, it mapps the from the userview to the dataview. Spacifically, it use vtkm to hand the mesh representation and the field data for the dataset of the vtkm is the indexing to the underlying data service instead of the real data.
@@ -36,32 +39,29 @@ run the unimos server and client
 
 ```
 # use srun to start the server
-srun --mem=2000 ./unimos_server verbs 1
+srun --mpi=pmi2 --mem-per-cpu=1000 -n 8 ./unimos_server verbs 1
 
 # use srun to start the client
-srun --mpi=pmi2 --mem-per-cpu=1000 -n 16 ./unimos_client tcp://... 
+srun --mpi=pmi2 --mem-per-cpu=1000 -n 16 ./unimos_client tcp
 (if the server start by verbs, using verbs://...)
+(the master address is written to the shared file system)
 ```
 
 
 ### todo list
 
-add the distributed capability
-
-the master node write the ip, 
-the slave node register ip to the master node, 
-the client node get the slave node by the api
-
-ok for gather the ip
-
-add rpc to expose the get ip function
-
-fix the test with multiple read/writing
-
 when put, there is shape info
-add the get by offset (the offset can be multi dimentional)
+add the get by offset (the offset can be multi dimentional) (ok for the function, expose rpc for next step)
+
+
+update the put and get, use the simplified interface to express that
+for get, it needs to get metadata firstly then get the real data
+
 
 implement the connect/gather for one element
+
+store the summary for specific variable such as the latest timestep
+
 
 ### example
 

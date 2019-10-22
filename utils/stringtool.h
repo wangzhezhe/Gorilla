@@ -56,6 +56,7 @@ std::vector<std::string> split(const char *s, int size, char seperatorH, char se
         {
             char substr[100];
             std::memcpy(substr, s + i, j - i);
+            substr[j-i]='\0';
             result.push_back(std::string(substr));
             i = j;
         }
