@@ -74,12 +74,12 @@ int testget_double_1d(MemCache *mcache, size_t blockID)
     std::string varName = "testName1d";
     int ts = 0;
 
-    DataMeta *datameta = mcache->getFromCache(varName, ts, blockID, data);
+    BlockMeta blockmeta = mcache->getFromCache(varName, ts, blockID, data);
 
     //check the datameta
-    if (datameta != NULL)
+    if (blockmeta.m_dimension != 0)
     {
-        datameta->printMeta();
+        blockmeta.printMeta();
     }
     else
     {
@@ -89,7 +89,7 @@ int testget_double_1d(MemCache *mcache, size_t blockID)
 
     std::string typeString = typeid(double).name();
 
-    if (datameta->m_typeName.compare(typeString) == 0)
+    if (blockmeta.m_typeName.compare(typeString) == 0)
     {
         //There is bug if use static_cast<int*> here, not sure why
         if (data != nullptr)
@@ -98,7 +98,7 @@ int testget_double_1d(MemCache *mcache, size_t blockID)
             std::cout << "check output..." << std::endl;
             //assume there is only one dimention
             //TODO add function to get index from shape
-            for (int i = 0; i < datameta->m_shape[0]; i++)
+            for (int i = 0; i < blockmeta.m_shape[0]; i++)
             {
                 //std::cout << "index " << i << " value " << *dataValue << std::endl;
                 double temp = *dataValue;
@@ -128,12 +128,12 @@ int testget_double_3d(MemCache *mcache, size_t blockID)
     std::string varName = "testName3d";
     int ts = 0;
 
-    DataMeta *datameta = mcache->getFromCache(varName, ts, blockID, data);
+    BlockMeta blockmeta = mcache->getFromCache(varName, ts, blockID, data);
 
     //check the datameta
-    if (datameta != NULL)
+    if (blockmeta.m_dimension != 0)
     {
-        datameta->printMeta();
+        blockmeta.printMeta();
     }
     else
     {
@@ -143,7 +143,7 @@ int testget_double_3d(MemCache *mcache, size_t blockID)
 
     std::string typeString = typeid(double).name();
 
-    if (datameta->m_typeName.compare(typeString) == 0)
+    if (blockmeta.m_typeName.compare(typeString) == 0)
     {
         //There is bug if use static_cast<int*> here, not sure why
         if (data != nullptr)
@@ -152,11 +152,11 @@ int testget_double_3d(MemCache *mcache, size_t blockID)
             std::cout << "check output..." << std::endl;
             //assume there is only one dimention
             //TODO add function to get index from shape
-            for (int i = 0; i < datameta->m_shape[0]; i++)
+            for (int i = 0; i < blockmeta.m_shape[0]; i++)
             {
-                for (int j = 0; j < datameta->m_shape[1]; j++)
+                for (int j = 0; j < blockmeta.m_shape[1]; j++)
                 {
-                    for (int k = 0; k < datameta->m_shape[2]; k++)
+                    for (int k = 0; k < blockmeta.m_shape[2]; k++)
                     {
                         //std::cout << "index " << i << " value " << *dataValue << std::endl;
                         double temp = *dataValue;
@@ -207,8 +207,8 @@ void runputgetregion1d_double(MemCache *mcache)
     std::array<size_t, 3> offset = {5, 0, 0};
     std::array<size_t, 3> queryshape = {3, 0, 0};
     void *data = nullptr;
-    DataMeta datametaget = mcache->getRegionFromCache(varName, ts, blockID, offset, queryshape, data);
-    datametaget.printMeta();
+    BlockMeta blockmeta = mcache->getRegionFromCache(varName, ts, blockID, offset, queryshape, data);
+    blockmeta.printMeta();
     if (AreSame(*((double *)data),5.5) && AreSame(*((double *)data+1),6.6) && AreSame(*((double *)data+2),7.7))
     {
         std::cout << "ok for double 3" << std::endl;
@@ -224,7 +224,7 @@ void runputgetregion1d_double(MemCache *mcache)
     offset = {98, 0, 0};
     queryshape = {2, 0, 0};
 
-    datametaget = mcache->getRegionFromCache(varName, ts, blockID, offset, queryshape, data);
+    blockmeta = mcache->getRegionFromCache(varName, ts, blockID, offset, queryshape, data);
     if (AreSame(*((double *)data),98*1.1) && AreSame(*((double *)data+1),99*1.1))
     {
         std::cout << "ok for double 2" << std::endl;
@@ -240,7 +240,7 @@ void runputgetregion1d_double(MemCache *mcache)
 
     try
     {
-        datametaget = mcache->getRegionFromCache(varName, ts, blockID, offset, queryshape, data);
+        blockmeta = mcache->getRegionFromCache(varName, ts, blockID, offset, queryshape, data);
     }
     catch (const std::runtime_error &e)
     {
@@ -283,8 +283,8 @@ void runputgetregion1d_int(MemCache *mcache)
     std::array<size_t, 3> offset = {5, 0, 0};
     std::array<size_t, 3> queryshape = {3, 0, 0};
     void *data = nullptr;
-    DataMeta datametaget = mcache->getRegionFromCache(varName, ts, blockID, offset, queryshape, data);
-    datametaget.printMeta();
+    BlockMeta blockmetaget = mcache->getRegionFromCache(varName, ts, blockID, offset, queryshape, data);
+    blockmetaget.printMeta();
     if (*((int *)data) != 5 || *((int *)data + 1) != 6 || *((int *)data + 2) != 7)
     {
         throw std::runtime_error("failed to check the data value for integer");

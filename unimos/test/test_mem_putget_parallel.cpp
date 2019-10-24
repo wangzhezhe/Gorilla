@@ -11,12 +11,12 @@ int testget_double_1d(MemCache *mcache, std::string varName, int ts, size_t bloc
     //get variable type from the data
     void *data = nullptr;
 
-    DataMeta *datameta = mcache->getFromCache(varName, ts, blockID, data);
+    BlockMeta blockMeta = mcache->getFromCache(varName, ts, blockID, data);
 
     //check the datameta
-    if (datameta != NULL)
+    if (blockMeta.m_dimension!= 0)
     {
-        datameta->printMeta();
+        blockMeta.printMeta();
     }
     else
     {
@@ -26,7 +26,7 @@ int testget_double_1d(MemCache *mcache, std::string varName, int ts, size_t bloc
 
     std::string typeString = typeid(double).name();
 
-    if (datameta->m_typeName.compare(typeString) == 0)
+    if (blockMeta.m_typeName.compare(typeString) == 0)
     {
         //There is bug if use static_cast<int*> here, not sure why
         if (data != nullptr)
@@ -35,7 +35,7 @@ int testget_double_1d(MemCache *mcache, std::string varName, int ts, size_t bloc
             std::cout << "check output..." << std::endl;
             //assume there is only one dimention
             //TODO add function to get index from shape
-            for (int i = 0; i < datameta->m_shape[0]; i++)
+            for (int i = 0; i < blockMeta.m_shape[0]; i++)
             {
                 //std::cout << "index " << i << " value " << *dataValue << std::endl;
                 double temp = *dataValue;

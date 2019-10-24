@@ -32,7 +32,7 @@ add_test( NAME test_tool COMMAND test_tool)
 add_test( NAME test_mem_getregion COMMAND test_mem_getregion)
 add_test( NAME test_endpointManager COMMAND test_endpointManager)
 
-# add_test( NAME test_mem_putget_parallel COMMAND test_mem_putget_parallel)
+add_test( NAME test_mem_putget_parallel COMMAND test_mem_putget_parallel)
 
 
 
