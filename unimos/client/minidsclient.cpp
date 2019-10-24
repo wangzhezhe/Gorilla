@@ -1,5 +1,11 @@
 #include "unimosclient.hpp"
 #include <mpi.h>
+#include <cmath>
+
+bool AreSame(double a, double b)
+{
+    return std::fabs(a - b) < 0.000001;
+}
 
 int main(int argc, char **argv)
 {
@@ -53,17 +59,17 @@ int main(int argc, char **argv)
     std::array<size_t, 3> shape = {elemNum, 0, 0};
     DataMeta dataMeta = DataMeta(varName, 0, 1, typeid(double).name(), sizeof(double), shape);
     size_t blockID = (size_t)rank;
-    
+
     for (int ts = 0; ts < 10; ts++)
     {
-        
+
         std::string slaveAddr = dspaces_client_getaddr(clientEngine, serverAddr, varName, ts);
         std::cout << "the slave server addr for ds put is " << slaveAddr << std::endl;
         dataMeta.m_iteration = ts;
-        
+
         dspaces_client_put(clientEngine, slaveAddr, dataMeta, blockID, inputData);
     }
-    
+
     sleep(0.5);
 
     //simulate the behavious of the client
@@ -71,16 +77,34 @@ int main(int argc, char **argv)
     for (int ts = 0; ts < 10; ts++)
     {
         std::string slaveAddr = dspaces_client_getaddr(clientEngine, serverAddr, varName, ts);
-        std::cout << "the slave server addr for ds get is " << slaveAddr << std::endl;  
-        
+        std::cout << "the slave server addr for ds get is " << slaveAddr << std::endl;
+
         //get the metadata
         BlockMeta blockmeta = dspaces_client_getblockMeta(clientEngine, slaveAddr, varName, ts, blockID);
         blockmeta.printMeta();
 
-
         //allocate the memroy based on metadata
+
+        //how to solve this case?
+        //void *dataPointer = (void *)malloc(blockmeta.getBlockMallocSize());
         //get meta data
-        //dspaces_client_get(clientEngine, addr, ts, rank, inputData);
+
+        std::vector<double> dataContainer(blockmeta.m_shape[0]);
+        dspaces_client_get(clientEngine, slaveAddr, varName, ts, blockID, dataContainer);
+
+        //check the correctness of the data content
+        //if the type is the double for the return value
+        //double *temp = (double *)dataPointer;
+        for (int i = 0; i < blockmeta.m_shape[0]; i++)
+        {
+            //std::cout << "index " << i << " value " << *dataValue << std::endl;
+            if (!AreSame(dataContainer[i], rank + i * 0.1))
+            {
+                std::cout << "index " << i << " return value " << dataContainer[i] << std::endl;
+                throw std::runtime_error("return value is incorrect for index  " + std::to_string(i));
+            }
+
+        }
     }
 
     /*

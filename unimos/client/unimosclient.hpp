@@ -50,53 +50,34 @@ void dspaces_client_get(tl::engine &myEngine,
                         std::string varName,
                         int ts,
                         size_t blockID,
-                        void *getData)
+                        std::vector<double> &dataContainer)
 {
 
-    std::string serverAddrForBlock = dspaces_client_getaddr(myEngine, serverAddr, varName, ts);
 
-    tl::remote_procedure getBlockSize = myEngine.define("getBlockSize");
+    tl::remote_procedure dsget = myEngine.define("dsget");
     //tl::remote_procedure putMetaData = myEngine.define("putMetaData").disable_response();
-    tl::endpoint globalServerEndpoint = myEngine.lookup(serverAddrForBlock);
-    BlockMeta blockmeta = getBlockSize.on(globalServerEndpoint)(varName, ts, blockID);
-    blockmeta.printMeta();
-    std::cout << "todo, allocate mem and get real data" << std::endl;
-
-    /*
-
-
-
-    //get the size of the data (metadata is stored at the interface)
-
-
-    //malloc the corresponding size
-
-     
-    //TODO add get metaData which contains the size of the data
-    //check the allocated size at the client end
-
-    std::vector<double> dummyData(10);
-    
-
-
+    tl::endpoint globalServerEndpoint = myEngine.lookup(serverAddr);
 
     std::vector<std::pair<void *, std::size_t>> segments(1);
-    segments[0].first = (void *)(dummyData.data());
-    segments[0].second = dummyData.size() * sizeof(double);
+    segments[0].first = (void *)(dataContainer.data());
+    segments[0].second = dataContainer.size() * sizeof(double);
 
     tl::bulk clientBulk = myEngine.expose(segments, tl::bulk_mode::write_only);
 
     int status = dsget.on(globalServerEndpoint)(varName, ts, blockID, clientBulk);
-
-    std::cout << "status of the dsget is " << status << std::endl;
-
-    std::cout << "check data at the client end:" << std::endl;
-
-    for (int i = 0; i < 10; i++)
-    {
-        std::cout << "index " << i << " value " << dummyData[i] << std::endl;
+    
+    if (status!=0){
+        throw std::runtime_error("failed to get the data " + varName + " ts " + std::to_string(ts) + " blockid " + std::to_string(blockID) + " status " + std::to_string(status));
     }
-*/
+    //std::cout << "status of the dsget is " << status << std::endl;
+
+    //std::cout << "check data at the client end:" << std::endl;
+
+    //for (int i = 0; i < 10; i++)
+    //{
+    //    std::cout << "index " << i << " value " << dataContainer[i] << std::endl;
+    //}
+
 
     return;
 }
@@ -120,8 +101,6 @@ void dspaces_client_put(tl::engine &myEngine,
     tl::bulk myBulk = myEngine.expose(segments, tl::bulk_mode::read_only);
 
     int status = dsput.on(globalServerEndpoint)(datameta, blockID, myBulk);
-
-    std::cout << "put status is " << status << std::endl;
 
     return;
 }
