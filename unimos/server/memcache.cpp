@@ -54,7 +54,7 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, std::vector<dataTy
     case TSNOTEXIST:
     {
         //DataObjectByRawMem *tempptr = new DataObjectByRawMem(DataMeta());
-        DataObjectByRawMem *tempptr = new DataObjectByRawMem(dataMeta.m_varName,dataMeta.m_iteration);
+        DataObjectByRawMem *tempptr = new DataObjectByRawMem(dataMeta.m_varName, dataMeta.m_iteration);
         //set actual value by template function
         //put value into the original DataObjectByRawMem
         tempptr->setDataObjectByVector<dataType>(blockID, dataMeta, dataArray);
@@ -65,7 +65,7 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, std::vector<dataTy
 
     case VARNOTEXIST:
     {
-        DataObjectByRawMem *tempptr = new DataObjectByRawMem(dataMeta.m_varName,dataMeta.m_iteration);
+        DataObjectByRawMem *tempptr = new DataObjectByRawMem(dataMeta.m_varName, dataMeta.m_iteration);
         //set actual value by template function
         tempptr->setDataObjectByVector<dataType>(blockID, dataMeta, dataArray);
         DataObjectInterface *objInterfrace = tempptr;
@@ -127,7 +127,6 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, void *dataPointer)
     //TODO use the error code to label the status of put operation
     return 0;
 }
-
 
 BlockMeta MemCache::getFromCache(std::string varName, size_t ts, size_t blockID, void *&rawData)
 {
@@ -220,9 +219,32 @@ BlockMeta MemCache::getRegionFromCache(
     return blockMeta;
 }
 
-BlockMeta MemCache::getBlockMeta(std::string varName, size_t iteration, size_t blockID){
-    //TODO
-    return BlockMeta();
+BlockMeta MemCache::getBlockMeta(std::string varName, size_t iteration, size_t blockID)
+{
+    enum CACHESTATUS cacheStatus = MemCache::checkDataExistance(varName, iteration, blockID);
+    DataObjectInterface *objInterfrace = nullptr;
+
+    switch (cacheStatus)
+    {
+    case BLOCKNOTEXIST:
+        std::cout << "failed to get block meta data, varname " << varName << " with iteration " << iteration << " block " << blockID << " not exist " << std::endl;
+        return BlockMeta();
+    case TSNOTEXIST:
+        std::cout << "failed to get block meta data, varname " << varName << " with iteration " << iteration << " not exist " << std::endl;
+        return BlockMeta();
+    case VARNOTEXIST:
+        std::cout << "failed to get block meta data, varname " << varName << " not exist" << std::endl;
+        return BlockMeta();
+
+    case BLOCKEXIST:
+        objInterfrace = dataObjectMap[varName][iteration];
+        break;
+    }
+
+    //if exist get datablock and put it into the dataArray
+    //send the pointer out to the vector
+    BlockMeta blockMeta = objInterfrace->getBlockMeta(blockID);
+    return blockMeta;
 }
 
 template int MemCache::putIntoCache<int>(DataMeta dataMeta, size_t blockID, std::vector<int> &dataArray);

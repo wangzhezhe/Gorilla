@@ -71,6 +71,9 @@ void putMetaData(const tl::request &req, DataMeta &datameta)
 void dsgetBlockMeta(const tl::request &req, const std::string &varName, const int &ts, size_t &blockID)
 {
     BlockMeta blockmeta = mcache->getBlockMeta(varName, ts, blockID);
+    std::cout << "check get results at server end ts " << ts << std::endl;
+    blockmeta.printMeta();
+
     req.respond(blockmeta);
 }
 

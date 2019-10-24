@@ -24,6 +24,17 @@ std::string masterConfig = "./unimos_server.conf";
     int ret = sum.on(server)(42,63);
 */
 
+
+BlockMeta dspaces_client_getblockMeta(tl::engine &myEngine, std::string serverAddr, std::string varName, int ts, size_t blockID)
+{
+    //TODO put them at separate class
+    tl::remote_procedure dsgetBlockMeta = myEngine.define("dsgetBlockMeta");
+    //tl::remote_procedure putMetaData = myEngine.define("putMetaData").disable_response();
+    tl::endpoint globalServerEndpoint = myEngine.lookup(serverAddr);
+    BlockMeta blockmeta = dsgetBlockMeta.on(globalServerEndpoint)(varName,ts,blockID);
+    return blockmeta;
+}
+
 std::string dspaces_client_getaddr(tl::engine &myEngine, std::string serverAddr, std::string varName, int ts)
 {
     //TODO put them at separate class

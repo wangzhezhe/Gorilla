@@ -15,9 +15,9 @@ struct BlockMeta
 {
     //for empty meta data, the initial value is 0
     size_t m_dimension=0;
-    std::string m_typeName;
-    size_t m_elemSize;
-    std::array<size_t, 3> m_shape;
+    std::string m_typeName="";
+    size_t m_elemSize=0;
+    std::array<size_t, 3> m_shape{{0,0,0}};
 
     BlockMeta(){};
     BlockMeta(size_t dimension,
