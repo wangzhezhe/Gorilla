@@ -50,18 +50,21 @@ srun --mpi=pmi2 --mem-per-cpu=1000 -n 16 ./unimos_client tcp
 
 ### todo list
 
+use the blockMeta instead of the dataMeta
+
+finish the interface for checking the existance of the blockid and return the blockMeta
+
 when put, there is shape info
 add the get by offset (the offset can be multi dimentional) (ok for the function, expose rpc for next step)
 
-
 update the put and get, use the simplified interface to express that
 for get, it needs to get metadata firstly then get the real data
-
 
 implement the connect/gather for one element
 
 store the summary for specific variable such as the latest timestep
 
+update the client code to the async pattern
 
 ### example
 

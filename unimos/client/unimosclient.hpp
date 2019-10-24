@@ -34,17 +34,25 @@ std::string dspaces_client_getaddr(tl::engine &myEngine, std::string serverAddr,
     return returnAddr;
 }
 
-void dspaces_client_get(tl::engine &myEngine, 
-std::string serverAddr, 
-std::string varName, 
-int ts, 
-size_t blockID,
-void* getData)
+void dspaces_client_get(tl::engine &myEngine,
+                        std::string serverAddr,
+                        std::string varName,
+                        int ts,
+                        size_t blockID,
+                        void *getData)
 {
 
-    tl::remote_procedure dsget = myEngine.define("dsget");
+    std::string serverAddrForBlock = dspaces_client_getaddr(myEngine, serverAddr, varName, ts);
+
+    tl::remote_procedure getBlockSize = myEngine.define("getBlockSize");
     //tl::remote_procedure putMetaData = myEngine.define("putMetaData").disable_response();
-    tl::endpoint globalServerEndpoint = myEngine.lookup(serverAddr);
+    tl::endpoint globalServerEndpoint = myEngine.lookup(serverAddrForBlock);
+    BlockMeta blockmeta = getBlockSize.on(globalServerEndpoint)(varName, ts, blockID);
+    blockmeta.printMeta();
+    std::cout << "todo, allocate mem and get real data" << std::endl;
+
+    /*
+
 
 
     //get the size of the data (metadata is stored at the interface)
@@ -52,8 +60,9 @@ void* getData)
 
     //malloc the corresponding size
 
-
-    //get execute the real get
+     
+    //TODO add get metaData which contains the size of the data
+    //check the allocated size at the client end
 
     std::vector<double> dummyData(10);
     
@@ -76,14 +85,17 @@ void* getData)
     {
         std::cout << "index " << i << " value " << dummyData[i] << std::endl;
     }
+*/
 
     return;
 }
 
 //todo add template here
-void dspaces_client_put(tl::engine &myEngine, 
-DataMeta& datameta,
-std::vector<double>& putVector)
+void dspaces_client_put(tl::engine &myEngine,
+                        std::string serverAddr,
+                        DataMeta &datameta,
+                        size_t &blockID,
+                        std::vector<double> &putVector)
 {
     //TODO put them at separate class
     tl::remote_procedure dsput = myEngine.define("dsput");
@@ -92,7 +104,7 @@ std::vector<double>& putVector)
 
     std::vector<std::pair<void *, std::size_t>> segments(1);
     segments[0].first = (void *)(putVector.data());
-    segments[0].second = datameta.getDataMallocSize();
+    segments[0].second = datameta.extractBlockMeta().getBlockMallocSize();
 
     tl::bulk myBulk = myEngine.expose(segments, tl::bulk_mode::read_only);
 

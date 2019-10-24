@@ -1,33 +1,40 @@
 #include "objectbyrawmem.h"
 #include <stdio.h>
-
 //it is hard to set the template constructor in non template class
 //just use explicit dataArray type in this case
 
-DataObjectByRawMem::DataObjectByRawMem(DataMeta dataMeta,
-                                       size_t blockID,
-                                       void *rawDataPtr) : DataObjectInterface(dataMeta)
+DataObjectByRawMem::DataObjectByRawMem(size_t blockID,
+                                            DataMeta dataMeta,
+                                            void *rawDataPtr) : DataObjectInterface(dataMeta)
 {
     //std::cout << "init the data object by raw pointer, blockid is " << blockID << std::endl;
-    size_t dataMallocSize = dataMeta.getDataMallocSize();
-    if (dataMallocSize == 0)
-    {
-        throw std::runtime_error("failed to putData, dataMallocSize is 0");
+    BlockMeta blockMeta = dataMeta.extractBlockMeta();
+
+    int status = putData(blockID, blockMeta, rawDataPtr);
+    if(status!=0){
+        throw std::runtime_error("failed to init DataObjectByRawMem");
     }
-    putData(blockID, dataMallocSize, rawDataPtr);
 }
 
 template <typename T>
-void DataObjectByRawMem::setDataObjectByVector(DataMeta dataMeta,
-                                               size_t blockID,
+void DataObjectByRawMem::setDataObjectByVector(size_t blockID,
+                                               DataMeta dataMeta,
                                                std::vector<T> &dataArray)
 {
     //std::cout << "init the data object by vector, blockid is " << blockID << std::endl;
     //assume the data is sorted by blockid, first is block0 secnd is block1...
     //TODO check here
 
-    this->m_dataMeta = dataMeta;
-    DataBlockByRawMem *dataBlockPtr = new DataBlockByRawMem(sizeof(T) * dataArray.size(), dataArray.data());
+    this->m_varName = dataMeta.m_varName;
+    this->m_iteration = dataMeta.m_iteration;
+
+    BlockMeta blockMeta = dataMeta.extractBlockMeta();
+    size_t mallocSize = sizeof(T) * dataArray.size();
+    if (blockMeta.getBlockMallocSize() != mallocSize)
+    {
+        throw std::runtime_error("failed to setDataObjectByVector, mismatch between real data and metadata");
+    }
+    DataBlockByRawMem *dataBlockPtr = new DataBlockByRawMem(blockMeta, dataArray.data());
     dataBlockMap[blockID] = dataBlockPtr;
     /*
         std::cout << "check the value at the end of DataObject"<<std::endl;
@@ -40,11 +47,12 @@ void DataObjectByRawMem::setDataObjectByVector(DataMeta dataMeta,
     */
 }
 
-int DataObjectByRawMem::getData(int blockID, void *&dataContainer)
+BlockMeta DataObjectByRawMem::getData(size_t blockID, void *&dataContainer)
 {
 
     //dataContainer = (void*)(dataBlockMap[blockID]->DataBlockValue.data());
     dataContainer = (void *)(dataBlockMap[blockID]->m_rawMemPtr);
+    BlockMeta blockMeta = dataBlockMap[blockID]->m_blockData;
     /*
         std::cout << "check value at getData " <<std::endl;
         int * rawData = (int*)dataContainer;
@@ -53,15 +61,20 @@ int DataObjectByRawMem::getData(int blockID, void *&dataContainer)
             rawData++;
         }
         */
-    return 0;
+    return blockMeta;
 };
 
 //this method should be called when there is no block data
-int DataObjectByRawMem::putData(int blockID, size_t dataMallocSize, void *dataContainer)
+int DataObjectByRawMem::putData(size_t blockID, BlockMeta blockMeta, void *dataContainer)
 {
-
-    DataBlockByRawMem *dataBlockPtr = new DataBlockByRawMem(dataMallocSize, dataContainer);
+    size_t dataMallocSize = blockMeta.getBlockMallocSize();
+    if (dataMallocSize == 0)
+    {
+        throw std::runtime_error("failed to putData, dataMallocSize is 0");
+    }
+    DataBlockByRawMem *dataBlockPtr = new DataBlockByRawMem(blockMeta, dataContainer);
     dataBlockMap[blockID] = dataBlockPtr;
+    return 0;
 }
 
 bool DataObjectByRawMem::ifBlockIdExist(size_t blockID)
@@ -73,7 +86,21 @@ bool DataObjectByRawMem::ifBlockIdExist(size_t blockID)
     return false;
 }
 
-int DataObjectByRawMem::getDataRegion(size_t blockID, std::array<size_t, 3> baseOffset, std::array<size_t, 3> regionShape, void *&dataContainer)
+BlockMeta DataObjectByRawMem::getBlockMeta(size_t blockID){
+
+    if (dataBlockMap.find(blockID) != dataBlockMap.end())
+    {
+        return dataBlockMap[blockID]->m_blockData;
+    }
+    return BlockMeta();
+}
+
+//the shape of the return value should be udpated according to the regionShape.
+//TODO what if region shape is larger than existed cases?
+BlockMeta DataObjectByRawMem::getDataRegion(size_t blockID, 
+std::array<size_t, 3> baseOffset, 
+std::array<size_t, 3> regionShape, 
+void *&dataContainer)
 {
     if (regionShape[0] == 0)
     {
@@ -85,9 +112,15 @@ int DataObjectByRawMem::getDataRegion(size_t blockID, std::array<size_t, 3> base
         throw std::runtime_error("the regionShape could not be [0,0,0]");
     }
 
+
+    BlockMeta blockMeta = this->dataBlockMap[blockID]->m_blockData;
+    //the pointer to source memory
+    DataBlockByRawMem *sourceMemPtr = dataBlockMap[blockID];
+    
+    
     //the lower bound is always 0 for this case
-    std::array<size_t, 3> dataShape = this->m_dataMeta.m_shape;
-    size_t dimention = this->m_dataMeta.getValidDimention();
+    std::array<size_t, 3> dataShape = blockMeta.m_shape;
+    size_t dimention = blockMeta.getValidDimention();
     for (int i = 0; i < dimention; i++)
     {
         if (baseOffset[i] >= dataShape[i] || baseOffset[i] + regionShape[i] - 1 >= dataShape[i])
@@ -95,7 +128,6 @@ int DataObjectByRawMem::getDataRegion(size_t blockID, std::array<size_t, 3> base
             std::cout << "base offset " << baseOffset[0] << "," << baseOffset[1] << "," << baseOffset[2]
                       << "data shape " << dataShape[0] << "," << dataShape[1] << "," << dataShape[2] << std::endl;
             throw std::runtime_error("the baseoffset and the (baseOffset[i] + regionShape[i]) should be smaller than the data shape");
-            return -1;
         }
     }
 
@@ -109,13 +141,11 @@ int DataObjectByRawMem::getDataRegion(size_t blockID, std::array<size_t, 3> base
         }
     }
 
-    size_t elemSize = this->m_dataMeta.m_elemSize;
+    size_t elemSize = blockMeta.m_elemSize;
 
     char *dataBlockPtr = (char *)malloc(elemSize * entryNum);
 
-    //the pointer to source memory
 
-    DataBlockByRawMem *sourceMemPtr = dataBlockMap[blockID];
 
     int localIndex = 0;
     //get the data with current blockID, assume the memory layout is the xyz
@@ -171,10 +201,14 @@ int DataObjectByRawMem::getDataRegion(size_t blockID, std::array<size_t, 3> base
 
         //the fee pointer should be called after return the value to the client
         dataContainer = (void *)dataBlockPtr;
+        BlockMeta returnblockMeta = blockMeta;
 
-        return 0;
+        //use the updated shape information
+        returnblockMeta.m_shape=regionShape;
+
+        return returnblockMeta;
     }
 }
 
-template void DataObjectByRawMem::setDataObjectByVector<int>(DataMeta dataMeta, size_t blockID, std::vector<int> &dataArray);
-template void DataObjectByRawMem::setDataObjectByVector<double>(DataMeta dataMeta, size_t blockID, std::vector<double> &dataArray);
+template void DataObjectByRawMem::setDataObjectByVector<int>(size_t blockID, DataMeta dataMeta,std::vector<int> &dataArray);
+template void DataObjectByRawMem::setDataObjectByVector<double>(size_t blockID, DataMeta dataMeta,std::vector<double> &dataArray);

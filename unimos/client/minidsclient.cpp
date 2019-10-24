@@ -1,4 +1,4 @@
-#include "unimosclient.h"
+#include "unimosclient.hpp"
 #include <mpi.h>
 
 int main(int argc, char **argv)

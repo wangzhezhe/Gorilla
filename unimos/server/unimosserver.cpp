@@ -65,6 +65,15 @@ void putMetaData(const tl::request &req, DataMeta &datameta)
 }
 */
 
+//get the shape of the data and the client could allocate the memory
+//the sammary is only need to be called once for each time step
+//when the data is distributed among multiple blocks, it is better to start query arbitrary region until all data block is ready
+void dsgetBlockMeta(const tl::request &req, const std::string &varName, const int &ts, size_t &blockID)
+{
+    BlockMeta blockmeta = mcache->getBlockMeta(varName, ts, blockID);
+    req.respond(blockmeta);
+}
+
 void getaddr(const tl::request &req, const std::string &varName, const int &ts)
 {
     if (epManager->ifAllRegister(globalProc))
@@ -83,6 +92,7 @@ void getaddr(const tl::request &req, const std::string &varName, const int &ts)
 //return the error code
 //be careful with the parameters, they should match with the type used at the client end
 //otherwise, there are some template issues
+
 void dsput(const tl::request &req, DataMeta &datameta, size_t &blockID, tl::bulk &dataBulk)
 {
     spdlog::debug("execute dataspace put:");
@@ -93,7 +103,7 @@ void dsput(const tl::request &req, DataMeta &datameta, size_t &blockID, tl::bulk
     tl::endpoint ep = req.get_endpoint();
 
     //assign the memory
-    size_t mallocSize = datameta.getDataMallocSize();
+    size_t mallocSize = datameta.extractBlockMeta().getBlockMallocSize();
 
     spdlog::debug("malloc size is {}, mallocSize");
 
@@ -155,9 +165,9 @@ void dsget(const tl::request &req, std::string &varName, int &ts, size_t &blockI
 
     try
     {
-        DataMeta *datameta = mcache->getFromCache(varName, ts, blockID, data);
+        BlockMeta blockMeta = mcache->getFromCache(varName, ts, blockID, data);
         //get the data value
-        if (datameta == NULL)
+        if (blockMeta.m_dimension == 0)
         {
             spdlog::debug("failed to get the data at the server end");
             //return empty bulk info if it is failed to get data
@@ -167,7 +177,7 @@ void dsget(const tl::request &req, std::string &varName, int &ts, size_t &blockI
         }
         std::vector<std::pair<void *, std::size_t>> segments(1);
         segments[0].first = (void *)(data);
-        segments[0].second = datameta->getDataMallocSize();
+        segments[0].second = blockMeta.getBlockMallocSize();
 
         tl::bulk returnBulk = globalClientEnginePointer->expose(segments, tl::bulk_mode::read_only);
 
@@ -316,6 +326,7 @@ void runRerver(std::string networkingType)
     //globalClientEnginePointer->define("putMetaData", putMetaData).disable_response();
     globalClientEnginePointer->define("dsput", dsput);
     globalClientEnginePointer->define("dsget", dsget);
+    globalClientEnginePointer->define("dsgetBlockMeta", dsgetBlockMeta);
 
     if (globalRank == 0)
     {

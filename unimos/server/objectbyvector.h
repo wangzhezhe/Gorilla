@@ -1,3 +1,4 @@
+//different underlying management abstraction
 template <typename T>
 struct DataBlockByVec
 {

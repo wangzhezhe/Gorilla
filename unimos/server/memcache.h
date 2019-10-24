@@ -9,21 +9,28 @@
 #include <cstring>
 #include "../common/datameta.h"
 
-
+//the abstraction that mamage the multiple block object for one iteration
+//todo, update the name here
 struct DataObjectInterface
 {
     //the meta data of the object
     //the real data is maintaind by the inherited class
-    DataMeta m_dataMeta;
-    //todo update the blockid to size_t
-    virtual int getData(int blockID, void *&dataContainer) = 0;
-    virtual int putData(int blockID, size_t dataMallocSize, void *dataContainer) = 0;
+    std::string m_varName;
+    size_t m_iteration;
+    //data summary
+    //this summary is for the all the block for specific timestep
 
-    virtual int getDataRegion(size_t blockID, std::array<size_t, 3> baseOffset, std::array<size_t, 3> dataShape, void *&dataContainer) = 0;
-    virtual bool ifBlockIdExist(size_t blockID) = 0;
+    //todo update the blockid to size_t
     
-    DataObjectInterface(){};
-    DataObjectInterface(DataMeta dataMeta) : m_dataMeta(dataMeta){};
+    virtual BlockMeta getData(size_t blockID, void *&dataContainer) = 0;
+    virtual int putData(size_t blockID, BlockMeta blockMeta, void *dataContainer) = 0;
+
+    virtual BlockMeta getDataRegion(size_t blockID, std::array<size_t, 3> baseOffset, std::array<size_t, 3> regionShape, void *&rawData)= 0;
+    virtual bool ifBlockIdExist(size_t blockID) = 0;
+    virtual BlockMeta getBlockMeta(size_t blockID) = 0;
+
+    DataObjectInterface(std::string varName, size_t iteration):m_varName(varName),m_iteration(iteration){};
+    DataObjectInterface(DataMeta dataMeta) : m_varName(dataMeta.m_varName),m_iteration(dataMeta.m_iteration){};
     ~DataObjectInterface(){};
 };
 
@@ -45,9 +52,11 @@ public:
     int putIntoCache(DataMeta dataMeta, size_t blockID, std::vector<dataType> &dataArray);
     int putIntoCache(DataMeta dataMeta, size_t blockID, void* dataPointer);
 
-    DataMeta* getFromCache(std::string varName, size_t ts, size_t blockID, void *&rawData);
-    DataMeta getRegionFromCache(std::string varName, size_t ts, size_t blockID, std::array<size_t, 3> baseOffset, std::array<size_t, 3> regionShape, void *&rawData);
-
+    BlockMeta getBlockMeta(std::string varName, size_t iteration, size_t blockID);
+    
+    BlockMeta getFromCache(std::string varName, size_t ts, size_t blockID, void *&rawData);
+    BlockMeta getRegionFromCache(std::string varName, size_t ts, size_t blockID, std::array<size_t, 3> baseOffset, std::array<size_t, 3> regionShape, void *&rawData);
+    
 private:
     //first index is the variable name
     //second index is the time step
