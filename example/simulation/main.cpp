@@ -10,11 +10,9 @@
 #include "gray-scott.h"
 #include "writer.h"
 
-void print_io_settings(const adios2::IO &io)
-{
-    std::cout << "Simulation writes data using engine type:              "
-              << io.EngineType() << std::endl;
-}
+#include "../../unimos/client/unimosclient.h"
+
+
 
 void print_settings(const Settings &s)
 {
@@ -71,16 +69,14 @@ int main(int argc, char **argv)
     GrayScott sim(settings, comm);
     sim.init();
 
-
-    //Writer writer_main(settings, sim, io_main);
-    //Writer writer_ckpt(settings, sim, io_ckpt);
+    //Init the writer
+    tl::engine globalclientEngine("verbs", THALLIUM_CLIENT_MODE);
+    Writer stagingWriter(settings);
 
     //writer_main.open(settings.output);
 
     if (rank == 0)
     {
-        print_io_settings(io_main);
-        std::cout << "========================================" << std::endl;
         print_settings(settings);
         print_simulator_settings(sim);
         std::cout << "========================================" << std::endl;
@@ -127,7 +123,10 @@ int main(int argc, char **argv)
                       << std::endl;
         }
 
-        //writer_main.write(i, sim);
+        size_t blockID = rank;
+        size_t step = i;
+
+        stagingWriter.write(sim, globalclientEngine, step, blockID);
 
 
 #ifdef ENABLE_TIMERS

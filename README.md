@@ -1,22 +1,13 @@
-
-Gorilla project 
-
-Gorilla is a in-memory data shared layer which is inspied by the DataSpaces and the ADIOS projects.
+Gorilla project is a in-memory data shared layer which is inspied by the DataSpaces and the ADIOS projects.
 It build on the Mochi/Mercry RPC services.
 
-### INX (Indexing service for scientific workflow)
-
-INX is the indexing service for the simulation, it mapps the from the userview to the dataview. Spacifically, it use vtkm to hand the mesh representation and the field data for the dataset of the vtkm is the indexing to the underlying data service instead of the real data.
-
+It contains following services:
 
 ### UniMOS (Universal In-memroy object service)
 
-the data is destributed in-memory object store for partitioned data in time series. The typical use case is for the scientific simulation using numeric methods. The data is indexed by the variableName:timestep:blockid(partition id).
+The data is destributed in-memory object store for partitioned data in time series. The typical use case is for the scientific simulation using numeric methods. The data is indexed by the variableName:timestep:blockid(partition id). The UniMOS service could also be adapted to store the observing data.
 
-the object store is desgined to store the filed data for the simulation, for the mesh data, it is better to integrate IMOS with INX.
-
-
-### installing
+### Installing
 
 use the ./spack/package.yaml to set up the thallium env, copy this yaml file into the ~/.spack/linux/
 
@@ -35,39 +26,40 @@ cmake  ~/cworkspace/src/Gorilla -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc
 for testing use --cpus-per-task
 ```
 
-run the unimos server and client
+run the unimos server and client on same dir, the address of the master service is stored at the unimos_server.conf
 
 ```
 # use srun to start the server
 srun --mpi=pmi2 --mem-per-cpu=1000 -n 8 ./unimos_server verbs 1
+pmix_v2 for mpi 3.x
 
 # use srun to start the client
-srun --mpi=pmi2 --mem-per-cpu=1000 -n 16 ./unimos_client tcp
+srun --mpi=pmi2 --mem-per-cpu=1000 -n 16 ./unimos_client verbs
 (if the server start by verbs, using verbs://...)
 (the master address is written to the shared file system)
+pmix_v2 for mpi 3.x
 ```
 
 
-### todo list
+### performance summary
 
-use the blockMeta instead of the dataMeta
+3 dimension 500 grid data, 10 steps, ~9s
 
-finish the interface for checking the existance of the blockid and return the blockMeta
+
+### example
+
+**Run UniMOS wih Gray-Scott Simulation**
+
+
+### TODO list
+
+add the monitoring interface
 
 when put, there is shape info
 add the get by offset (the offset can be multi dimentional) (ok for the function, expose rpc for next step)
-
-update the put and get, use the simplified interface to express that
-for get, it needs to get metadata firstly then get the real data
 
 implement the connect/gather for one element
 
 store the summary for specific variable such as the latest timestep
 
 update the client code to the async pattern
-
-### example
-
-**use the UniMOS**
-
-**use the ADIOS engine**

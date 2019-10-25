@@ -1,4 +1,4 @@
-#include "unimosclient.hpp"
+#include "unimosclient.h"
 #include <mpi.h>
 #include <cmath>
 
@@ -122,5 +122,6 @@ int main(int argc, char **argv)
 */
 
     // Finalize the MPI environment.
+
     MPI_Finalize();
 }

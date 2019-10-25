@@ -1,20 +1,6 @@
-#include <mpi.h>
-#include <unistd.h>
-#include <stdio.h>
-#include "../common/datameta.h"
 
-#include <vector>
-#include <iostream>
-#include <map>
-#include <string>
-#include <array>
-#include <fstream>
-#include <cstring>
-#include <thallium.hpp>
+#include "unimosclient.h"
 
-namespace tl = thallium;
-
-std::string masterConfig = "./unimos_server.conf";
 
 /*
 
@@ -24,6 +10,8 @@ std::string masterConfig = "./unimos_server.conf";
     int ret = sum.on(server)(42,63);
 */
 
+
+std::string masterConfig = "./unimos_server.conf";
 
 BlockMeta dspaces_client_getblockMeta(tl::engine &myEngine, std::string serverAddr, std::string varName, int ts, size_t blockID)
 {

@@ -108,7 +108,7 @@ void dsput(const tl::request &req, DataMeta &datameta, size_t &blockID, tl::bulk
     //assign the memory
     size_t mallocSize = datameta.extractBlockMeta().getBlockMallocSize();
 
-    spdlog::debug("malloc size is {}, mallocSize");
+    spdlog::debug("malloc size is {}", mallocSize);
 
     try
     {

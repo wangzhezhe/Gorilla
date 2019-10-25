@@ -2,9 +2,10 @@ cmake_minimum_required (VERSION 3.15)
 project (gorilla C CXX)
 set (CMAKE_CXX_STANDARD 14)
 
-
 option(ENABLE_TESTING "Enable Testing" ON)
 enable_testing()
+
+option(ENABLE_EXAMPLE "Enable Example" ON)
 
 # add our cmake module directory to the path
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
@@ -49,6 +50,10 @@ add_library(endpointmng
 ${gorilla_SOURCE_DIR}/unimos/server/endpointManagement.cpp
 )
 
+add_library(unimosclientlib
+${gorilla_SOURCE_DIR}/unimos/client/unimosclient.cpp
+)
+
 
 add_executable (unimos_server ${gorilla_SOURCE_DIR}/unimos/server/unimosserver.cpp)
 target_link_libraries (unimos_server memcache endpointmng thallium MPI::MPI_CXX)
@@ -56,10 +61,19 @@ target_link_libraries (unimos_server memcache endpointmng thallium MPI::MPI_CXX)
 
 # execute the module load mpi before this part
 add_executable(unimos_client ${gorilla_SOURCE_DIR}/unimos/client/minidsclient.cpp)
-target_link_libraries (unimos_client MPI::MPI_CXX thallium)
+target_link_libraries (unimos_client MPI::MPI_CXX unimosclientlib thallium)
+
+add_executable(largedatatest ${gorilla_SOURCE_DIR}/unimos/client/largedatatest.cpp)
+target_link_libraries (largedatatest MPI::MPI_CXX thallium)
+
 
 
 # add enable_testing
 if (ENABLE_TESTING)
   add_subdirectory(unimos/test)
+endif()
+
+
+if (ENABLE_EXAMPLE)
+  add_subdirectory(example)
 endif()
