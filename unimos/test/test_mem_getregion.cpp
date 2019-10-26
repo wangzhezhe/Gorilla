@@ -30,7 +30,7 @@ void testput_double_1d(MemCache *mcache)
     size_t blockID = 0;
 
     //TODO, update the method for type string here
-    DataMeta datameta = DataMeta(varName, ts, 1, typeid(double).name(), sizeof(double), shape);
+    DataMeta datameta = DataMeta(varName, ts, typeid(double).name(), sizeof(double), shape);
     mcache->putIntoCache<double>(datameta, blockID, array);
 }
 
@@ -61,7 +61,7 @@ void testput_double_3d(MemCache *mcache)
     size_t blockID = 0;
 
     //TODO, update the method for type string here
-    DataMeta datameta = DataMeta(varName, ts, 1, typeid(double).name(), sizeof(double), shape);
+    DataMeta datameta = DataMeta(varName, ts, typeid(double).name(), sizeof(double), shape);
     mcache->putIntoCache<double>(datameta, blockID, array);
 }
 
@@ -77,7 +77,7 @@ int testget_double_1d(MemCache *mcache, size_t blockID)
     BlockMeta blockmeta = mcache->getFromCache(varName, ts, blockID, data);
 
     //check the datameta
-    if (blockmeta.m_dimension != 0)
+    if (blockmeta.getValidDimention()!= 0)
     {
         blockmeta.printMeta();
     }
@@ -131,7 +131,7 @@ int testget_double_3d(MemCache *mcache, size_t blockID)
     BlockMeta blockmeta = mcache->getFromCache(varName, ts, blockID, data);
 
     //check the datameta
-    if (blockmeta.m_dimension != 0)
+    if (blockmeta.getValidDimention()!= 0)
     {
         blockmeta.printMeta();
     }
@@ -200,7 +200,7 @@ void runputgetregion1d_double(MemCache *mcache)
     std::array<size_t, 3> shape = {elemInOnedim, 0, 0};
     size_t blockID = 0;
 
-    DataMeta datameta = DataMeta(varName, ts, 1, typeid(double).name(), sizeof(double), shape);
+    DataMeta datameta = DataMeta(varName, ts, typeid(double).name(), sizeof(double), shape);
     mcache->putIntoCache<double>(datameta, blockID, array);
 
     //get from the cache
@@ -276,7 +276,7 @@ void runputgetregion1d_int(MemCache *mcache)
     std::array<size_t, 3> shape = {elemInOnedim, 0, 0};
     size_t blockID = 0;
 
-    DataMeta datameta = DataMeta(varName, ts, 1, typeid(int).name(), sizeof(int), shape);
+    DataMeta datameta = DataMeta(varName, ts, typeid(int).name(), sizeof(int), shape);
     mcache->putIntoCache<int>(datameta, blockID, array);
 
     //get from the cache

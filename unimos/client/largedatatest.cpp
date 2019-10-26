@@ -68,7 +68,7 @@ int main(int argc, char **argv)
     }
     std::string varName = "testVar";
     std::array<size_t, 3> shape = {elemNum, elemNum, elemNum};
-    DataMeta dataMeta = DataMeta(varName, 0, 3, typeid(double).name(), sizeof(double), shape);
+    DataMeta dataMeta = DataMeta(varName, 3, typeid(double).name(), sizeof(double), shape);
     size_t blockID = (size_t)rank;
 
     struct timespec start, end;
@@ -78,7 +78,7 @@ int main(int argc, char **argv)
     {
         std::string slaveAddr = dspaces_client_getaddr(clientEngine, serverAddr, varName, ts);
         std::cout << "the slave server addr for ds put is " << slaveAddr << std::endl;
-        dataMeta.m_iteration = ts;
+        dataMeta.m_steps = ts;
         dspaces_client_put(clientEngine, slaveAddr, dataMeta, blockID, inputData);
     }
     clock_gettime(CLOCK_REALTIME, &end); /* mark end time */

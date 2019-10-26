@@ -24,7 +24,7 @@ void testput_double_1d(MemCache *mcache)
     size_t blockID = 0;
 
     //TODO, update the method for type string here
-    DataMeta datameta = DataMeta(varName, ts, 1, typeid(double).name(), sizeof(double), shape);
+    DataMeta datameta = DataMeta(varName, ts, typeid(double).name(), sizeof(double), shape);
     mcache->putIntoCache<double>(datameta, blockID, array);
 }
 
@@ -55,7 +55,7 @@ void testput_double_3d(MemCache *mcache)
     size_t blockID = 0;
 
     //TODO, update the method for type string here
-    DataMeta datameta = DataMeta(varName, ts, 1, typeid(double).name(), sizeof(double), shape);
+    DataMeta datameta = DataMeta(varName, ts, typeid(double).name(), sizeof(double), shape);
     mcache->putIntoCache<double>(datameta, blockID, array);
 }
 
@@ -71,7 +71,7 @@ int testget_double_1d(MemCache *mcache, size_t blockID)
     BlockMeta blockMeta = mcache->getFromCache(varName, ts, blockID, data);
 
     //check the datameta
-    if (blockMeta.m_dimension != 0)
+    if (blockMeta.getValidDimention()!= 0)
     {
         blockMeta.printMeta();
     }
@@ -125,7 +125,7 @@ int testget_double_3d(MemCache *mcache, size_t blockID)
     BlockMeta blockMeta = mcache->getFromCache(varName, ts, blockID, data);
 
     //check the datameta
-    if (blockMeta.m_dimension != 0)
+    if (blockMeta.getValidDimention()!= 0)
     {
         blockMeta.printMeta();
     }

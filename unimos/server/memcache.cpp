@@ -4,15 +4,15 @@
 #include "memcache.h"
 #include "objectbyrawmem.h"
 
-enum CACHESTATUS MemCache::checkDataExistance(std::string varName, size_t iteration, size_t blockID)
+enum CACHESTATUS MemCache::checkDataExistance(std::string varName, size_t steps, size_t blockID)
 {
     if (this->dataObjectMap.find(varName) != dataObjectMap.end())
     {
 
-        if (this->dataObjectMap[varName].find(iteration) != dataObjectMap[varName].end())
+        if (this->dataObjectMap[varName].find(steps) != dataObjectMap[varName].end())
         {
             //check block
-            if (this->dataObjectMap[varName][iteration]->ifBlockIdExist(blockID))
+            if (this->dataObjectMap[varName][steps]->ifBlockIdExist(blockID))
             {
                 return CACHESTATUS::BLOCKEXIST;
             }
@@ -35,43 +35,43 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, std::vector<dataTy
 {
 
     //check existance
-    enum CACHESTATUS cacheStatus = checkDataExistance(dataMeta.m_varName, dataMeta.m_iteration, blockID);
+    enum CACHESTATUS cacheStatus = checkDataExistance(dataMeta.m_varName, dataMeta.m_steps, blockID);
 
     switch (cacheStatus)
     {
     case BLOCKEXIST:
-        std::cout << "failed to insert data, varname " << dataMeta.m_varName << " with ts " << dataMeta.m_iteration << " and block " << blockID << "exists " << std::endl;
+        std::cout << "failed to insert data, varname " << dataMeta.m_varName << " with ts " << dataMeta.m_steps << " and block " << blockID << "exists " << std::endl;
         throw std::runtime_error("putIntoCache failed");
         break;
     case BLOCKNOTEXIST:
     {
         //put value into the original DataObjectByRawMem
         BlockMeta bmeta = dataMeta.extractBlockMeta();
-        dataObjectMap[dataMeta.m_varName][dataMeta.m_iteration]->putData(blockID, bmeta, (void *)dataArray.data());
+        dataObjectMap[dataMeta.m_varName][dataMeta.m_steps]->putData(blockID, bmeta, (void *)dataArray.data());
         break;
     }
 
     case TSNOTEXIST:
     {
         //DataObjectByRawMem *tempptr = new DataObjectByRawMem(DataMeta());
-        DataObjectByRawMem *tempptr = new DataObjectByRawMem(dataMeta.m_varName, dataMeta.m_iteration);
+        DataObjectByRawMem *tempptr = new DataObjectByRawMem(dataMeta.m_varName, dataMeta.m_steps);
         //set actual value by template function
         //put value into the original DataObjectByRawMem
         tempptr->setDataObjectByVector<dataType>(blockID, dataMeta, dataArray);
         DataObjectInterface *objInterfrace = tempptr;
-        dataObjectMap[dataMeta.m_varName][dataMeta.m_iteration] = objInterfrace;
+        dataObjectMap[dataMeta.m_varName][dataMeta.m_steps] = objInterfrace;
         break;
     }
 
     case VARNOTEXIST:
     {
-        DataObjectByRawMem *tempptr = new DataObjectByRawMem(dataMeta.m_varName, dataMeta.m_iteration);
+        DataObjectByRawMem *tempptr = new DataObjectByRawMem(dataMeta.m_varName, dataMeta.m_steps);
         //set actual value by template function
         tempptr->setDataObjectByVector<dataType>(blockID, dataMeta, dataArray);
         DataObjectInterface *objInterfrace = tempptr;
 
         std::map<int, DataObjectInterface *> innerMap;
-        innerMap[dataMeta.m_iteration] = objInterfrace;
+        innerMap[dataMeta.m_steps] = objInterfrace;
         dataObjectMap[dataMeta.m_varName] = innerMap;
         break;
     }
@@ -85,13 +85,13 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, void *dataPointer)
 {
 
     //check existance
-    enum CACHESTATUS cacheStatus = checkDataExistance(dataMeta.m_varName, dataMeta.m_iteration, blockID);
+    enum CACHESTATUS cacheStatus = checkDataExistance(dataMeta.m_varName, dataMeta.m_steps, blockID);
     //put value into the original DataObjectByRawMem
 
     switch (cacheStatus)
     {
     case BLOCKEXIST:
-        std::cout << "failed to insert data, varname " << dataMeta.m_varName << " with ts " << dataMeta.m_iteration << " and block " << blockID << "exists " << std::endl;
+        std::cout << "failed to insert data, varname " << dataMeta.m_varName << " with ts " << dataMeta.m_steps << " and block " << blockID << "exists " << std::endl;
         throw std::runtime_error("putIntoCache failed");
         break;
     case BLOCKNOTEXIST:
@@ -102,7 +102,7 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, void *dataPointer)
         {
             throw std::runtime_error("failed to putData, dataMallocSize is 0");
         }
-        dataObjectMap[dataMeta.m_varName][dataMeta.m_iteration]->putData(blockID, bmeta, dataPointer);
+        dataObjectMap[dataMeta.m_varName][dataMeta.m_steps]->putData(blockID, bmeta, dataPointer);
         break;
     }
 
@@ -110,7 +110,7 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, void *dataPointer)
     {
         DataObjectInterface *objInterfrace = new DataObjectByRawMem(blockID, dataMeta, dataPointer);
         //update the data summary and put it into the object interface
-        dataObjectMap[dataMeta.m_varName][dataMeta.m_iteration] = objInterfrace;
+        dataObjectMap[dataMeta.m_varName][dataMeta.m_steps] = objInterfrace;
         break;
     }
 
@@ -118,7 +118,7 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, void *dataPointer)
     {
         DataObjectInterface *objInterfrace = new DataObjectByRawMem(blockID, dataMeta, dataPointer);
         std::map<int, DataObjectInterface *> innerMap;
-        innerMap[dataMeta.m_iteration] = objInterfrace;
+        innerMap[dataMeta.m_steps] = objInterfrace;
         dataObjectMap[dataMeta.m_varName] = innerMap;
         break;
     }
@@ -219,25 +219,25 @@ BlockMeta MemCache::getRegionFromCache(
     return blockMeta;
 }
 
-BlockMeta MemCache::getBlockMeta(std::string varName, size_t iteration, size_t blockID)
+BlockMeta MemCache::getBlockMeta(std::string varName, size_t steps, size_t blockID)
 {
-    enum CACHESTATUS cacheStatus = MemCache::checkDataExistance(varName, iteration, blockID);
+    enum CACHESTATUS cacheStatus = MemCache::checkDataExistance(varName, steps, blockID);
     DataObjectInterface *objInterfrace = nullptr;
 
     switch (cacheStatus)
     {
     case BLOCKNOTEXIST:
-        std::cout << "failed to get block meta data, varname " << varName << " with iteration " << iteration << " block " << blockID << " not exist " << std::endl;
+        std::cout << "failed to get block meta data, varname " << varName << " with steps " << steps << " block " << blockID << " not exist " << std::endl;
         return BlockMeta();
     case TSNOTEXIST:
-        std::cout << "failed to get block meta data, varname " << varName << " with iteration " << iteration << " not exist " << std::endl;
+        std::cout << "failed to get block meta data, varname " << varName << " with steps " << steps << " not exist " << std::endl;
         return BlockMeta();
     case VARNOTEXIST:
         std::cout << "failed to get block meta data, varname " << varName << " not exist" << std::endl;
         return BlockMeta();
 
     case BLOCKEXIST:
-        objInterfrace = dataObjectMap[varName][iteration];
+        objInterfrace = dataObjectMap[varName][steps];
         break;
     }
 

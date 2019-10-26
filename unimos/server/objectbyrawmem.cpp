@@ -26,7 +26,7 @@ void DataObjectByRawMem::setDataObjectByVector(size_t blockID,
     //TODO check here
 
     this->m_varName = dataMeta.m_varName;
-    this->m_iteration = dataMeta.m_iteration;
+    this->m_steps = dataMeta.m_steps;
 
     BlockMeta blockMeta = dataMeta.extractBlockMeta();
     size_t mallocSize = sizeof(T) * dataArray.size();

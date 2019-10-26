@@ -9,14 +9,14 @@
 #include <cstring>
 #include "../common/datameta.h"
 
-//the abstraction that mamage the multiple block object for one iteration
+//the abstraction that mamage the multiple block object for one step
 //todo, update the name here
 struct DataObjectInterface
 {
     //the meta data of the object
     //the real data is maintaind by the inherited class
     std::string m_varName;
-    size_t m_iteration;
+    size_t m_steps;
     //data summary
     //this summary is for the all the block for specific timestep
 
@@ -29,8 +29,8 @@ struct DataObjectInterface
     virtual bool ifBlockIdExist(size_t blockID) = 0;
     virtual BlockMeta getBlockMeta(size_t blockID) = 0;
 
-    DataObjectInterface(std::string varName, size_t iteration):m_varName(varName),m_iteration(iteration){};
-    DataObjectInterface(DataMeta dataMeta) : m_varName(dataMeta.m_varName),m_iteration(dataMeta.m_iteration){};
+    DataObjectInterface(std::string varName, size_t steps):m_varName(varName),m_steps(steps){};
+    DataObjectInterface(DataMeta dataMeta) : m_varName(dataMeta.m_varName),m_steps(dataMeta.m_steps){};
     ~DataObjectInterface(){};
 };
 

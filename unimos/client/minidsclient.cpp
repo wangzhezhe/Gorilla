@@ -46,7 +46,7 @@ int main(int argc, char **argv)
     //tl::engine myEngine("verbs", THALLIUM_CLIENT_MODE);
 
     tl::engine clientEngine(networkingType, THALLIUM_CLIENT_MODE);
-
+    
     //generate data
 
     size_t elemNum = 10;
@@ -57,7 +57,8 @@ int main(int argc, char **argv)
     }
     std::string varName = "testVar";
     std::array<size_t, 3> shape = {elemNum, 0, 0};
-    DataMeta dataMeta = DataMeta(varName, 0, 1, typeid(double).name(), sizeof(double), shape);
+    size_t step = 0;
+    DataMeta dataMeta = DataMeta(varName, step, typeid(double).name(), sizeof(double), shape);
     size_t blockID = (size_t)rank;
 
     for (int ts = 0; ts < 10; ts++)
@@ -65,7 +66,7 @@ int main(int argc, char **argv)
 
         std::string slaveAddr = dspaces_client_getaddr(clientEngine, serverAddr, varName, ts);
         std::cout << "the slave server addr for ds put is " << slaveAddr << std::endl;
-        dataMeta.m_iteration = ts;
+        dataMeta.m_steps = ts;
 
         dspaces_client_put(clientEngine, slaveAddr, dataMeta, blockID, inputData);
     }

@@ -14,19 +14,21 @@
 struct BlockMeta
 {
     //for empty meta data, the initial value is 0
-    size_t m_dimension=0;
     std::string m_typeName="";
     size_t m_elemSize=0;
     std::array<size_t, 3> m_shape{{0,0,0}};
+    //the origin can be caculated by offset
+    std::array<size_t, 3> m_offset{{0,0,0}};
+
 
     BlockMeta(){};
-    BlockMeta(size_t dimension,
-              std::string typeName,
+    BlockMeta(std::string typeName,
               size_t elemSize,
-              std::array<size_t, 3> shape) : m_dimension(dimension),
-                                             m_typeName(typeName),
+              std::array<size_t, 3> shape,
+              std::array<size_t, 3> offset={{0,0,0}}) :m_typeName(typeName),
                                              m_elemSize(elemSize),
-                                             m_shape(shape){};
+                                             m_shape(shape),
+                                             m_offset(offset){};
 
     size_t getValidDimention()
     {
@@ -66,11 +68,11 @@ struct BlockMeta
 
     void printMeta()
     {
-        std::cout << "m_dimention " << m_dimension
-                  << ", m_typeName " << m_typeName
+        std::cout << ", m_typeName " << m_typeName
                   << ", m_elemSize " << m_elemSize
                   //<<", lower bound " << m_baseoffset[0] << " " << m_baseoffset[1] << " " << m_baseoffset[2]
-                  << ", shape " << m_shape[0] << " " << m_shape[1] << " " << m_shape[2] << std::endl;
+                  << ", shape " << m_shape[0] << " " << m_shape[1] << " " << m_shape[2] 
+                  << ", offset " << m_offset[0] << " " << m_offset[1] << " " << m_offset[2]<< std::endl;
         return;
     }
 
@@ -78,10 +80,10 @@ struct BlockMeta
 
     template<typename A> void serialize(A& ar)
     {
-        ar &m_dimension;
         ar &m_typeName;
         ar &m_elemSize;
         ar &m_shape;
+        ar &m_offset;
     }
 };
 
@@ -94,50 +96,53 @@ struct DataMeta
 {
 
     //varname and ts is suitable for all the block data
-    std::string m_varName;
-    size_t m_iteration;
-    size_t m_elemSize;
-    size_t m_dimension;
-    std::string m_typeName;
-    std::array<size_t, 3> m_shape;
+    std::string m_varName="";
+    size_t m_steps=0;
+    size_t m_elemSize=0;
+    //this can be detected by testing m_shape
+    //size_t m_dimension;
+    std::string m_typeName="";
+    std::array<size_t, 3> m_shape={{0,0,0}};
+    //the offset can be the origin of the new grid
+    std::array<size_t, 3> m_offset={{0,0,0}};
     DataMeta(){};
     DataMeta(std::string varName,
-             size_t iteration,
-             size_t dimension,
+             size_t steps,
              std::string typeName,
              size_t elemSize,
-             std::array<size_t, 3> shape) : m_varName(varName),
-                                            m_iteration(iteration),
-                                            m_elemSize(elemSize),
-                                            m_dimension(dimension),
+             std::array<size_t, 3> shape,
+             std::array<size_t, 3> offset={{0,0,0}}) : m_varName(varName),
+                                            m_steps(steps),
                                             m_typeName(typeName),
-                                            m_shape(shape){};
+                                            m_elemSize(elemSize),
+                                            m_shape(shape),
+                                            m_offset(offset){};
 
     void printMeta()
     {
         std::cout << "varName " << m_varName
-                  << ", m_iteration " << m_iteration
-                  << ", m_dimention " << m_dimension
-                  << ", m_typeName " << m_typeName
-                  << ", m_elemSize " << m_elemSize
-                  //<<", lower bound " << m_baseoffset[0] << " " << m_baseoffset[1] << " " << m_baseoffset[2]
-                  << ", shape " << m_shape[0] << " " << m_shape[1] << " " << m_shape[2] << std::endl;
+                  << ", steps " << m_steps
+                  << ", typeName " << m_typeName
+                  << ", elemSize " << m_elemSize
+                  << ", shape " << m_shape[0] << " " << m_shape[1] << " " << m_shape[2]
+                  << ", offset " << m_offset[0] << " " << m_offset[1] << " " << m_offset[2] << std::endl;
         return;
     }
 
     BlockMeta extractBlockMeta()
     {
-        return BlockMeta(this->m_dimension, this->m_typeName, this->m_elemSize, this->m_shape);
+        return BlockMeta(this->m_typeName, this->m_elemSize, this->m_shape, this->m_offset);
     }
 
     template<typename A> void serialize(A& ar)
     {
         ar &m_varName;
-        ar &m_iteration;
+        ar &m_steps;
         ar &m_elemSize;
-        ar &m_dimension;
         ar &m_typeName;
         ar &m_shape;
+        ar &m_offset;
+
     }
 
     ~DataMeta(){};

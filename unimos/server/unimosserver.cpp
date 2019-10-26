@@ -170,7 +170,7 @@ void dsget(const tl::request &req, std::string &varName, int &ts, size_t &blockI
     {
         BlockMeta blockMeta = mcache->getFromCache(varName, ts, blockID, data);
         //get the data value
-        if (blockMeta.m_dimension == 0)
+        if (blockMeta.getValidDimention() == 0)
         {
             spdlog::debug("failed to get the data at the server end");
             //return empty bulk info if it is failed to get data
