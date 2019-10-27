@@ -1,4 +1,4 @@
-Gorilla project is a in-memory data shared layer which is inspied by the DataSpaces and the ADIOS projects.
+Gorilla project is based on in-memory data shared layer which is inspired by the DataSpaces and the ADIOS projects.
 It build on the Mochi/Mercry RPC services.
 
 It contains following services:
@@ -47,12 +47,33 @@ pmix_v2 for mpi 3.x
 3 dimension 500 grid data, 10 steps, ~9s
 
 
-### example
+### Examples
 
 **Run UniMOS wih Gray-Scott Simulation**
 
+star the unimos server
+
+```
+srun --mpi=pmix_v2 --mem-per-cpu=200000 -n 4 ./unimos_server verbs 1
+```
+
+start the simulation and put the data
+
+```
+srun --mpi=pmix_v2 -n 4 ./example/gray-scott ~/cworkspace/src/Gorilla/example/simulation/settings.json
+```
+
+star the analytics to pull the data
+
+```
+# the first parameter is the number of steps and the second parameter is the threshold value for isosurface
+srun --mpi=pmix_v2 -n 4 ./example/isosurface 20 0.5
+```
+
 
 ### TODO list
+
+modify the get interface to make the writer and reader run concurrently
 
 add the monitoring interface
 

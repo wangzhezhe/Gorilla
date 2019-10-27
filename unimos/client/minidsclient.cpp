@@ -46,7 +46,7 @@ int main(int argc, char **argv)
     //tl::engine myEngine("verbs", THALLIUM_CLIENT_MODE);
 
     tl::engine clientEngine(networkingType, THALLIUM_CLIENT_MODE);
-    
+
     //generate data
 
     size_t elemNum = 10;

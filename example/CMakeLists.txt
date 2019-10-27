@@ -11,6 +11,7 @@ find_package(VTK COMPONENTS
     FiltersCore
     IOImage
     IOXML
+    IOLegacy
 )
 
 add_executable(isosurface analytics/isosurface.cpp)

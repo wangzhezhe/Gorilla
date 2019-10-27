@@ -8,23 +8,57 @@
 #include <vtkPolyData.h>
 #include <vtkSmartPointer.h>
 #include <vtkXMLPolyDataWriter.h>
+#include <vtkXMLImageDataWriter.h>
+#include <vtkXMLDataSetWriter.h>
 
 #include <thread>
 #include "../../unimos/client/unimosclient.h"
 
+void writeImageData(std::string fileName,
+                    std::array<size_t, 3> &shape,
+                    std::array<size_t, 3> &offset,
+                    const std::vector<double> &field)
+{
+    auto importer = vtkSmartPointer<vtkImageImport>::New();
+    importer->SetDataSpacing(1, 1, 1);
+    importer->SetDataOrigin(1.0 * offset[2], 1.0 * offset[1],
+                            1.0 * offset[0]);
+    importer->SetWholeExtent(0, shape[2] - 1, 0,
+                             shape[1] - 1, 0,
+                             shape[0] - 1);
+    importer->SetDataExtentToWholeExtent();
+    importer->SetDataScalarTypeToDouble();
+    importer->SetNumberOfScalarComponents(1);
+    importer->SetImportVoidPointer(const_cast<double *>(field.data()));
+    importer->Update();
+
+    // Write the file by vtkXMLDataSetWriter
+    vtkSmartPointer<vtkXMLImageDataWriter> writer =
+        vtkSmartPointer<vtkXMLImageDataWriter>::New();
+    writer->SetFileName(fileName.data());
+
+    // get the specific polydata and check the results
+    writer->SetInputConnection(importer->GetOutputPort());
+    //writer->SetInputData(importer->GetOutputPort());
+    // Optional - set the mode. The default is binary.
+    writer->SetDataModeToBinary();
+    // writer->SetDataModeToAscii();
+    writer->Write();
+}
+
 vtkSmartPointer<vtkPolyData>
-compute_isosurface(std::array<size_t, 3> &shape,
-                   std::array<size_t, 3> &offset,
-                   const std::vector<double> &field, double isovalue)
+    compute_isosurface(std::array<size_t, 3> &shape,
+                       std::array<size_t, 3> &offset,
+                       const std::vector<double> &field, double isovalue)
 {
     // Convert field values to vtkImageData
     auto importer = vtkSmartPointer<vtkImageImport>::New();
     importer->SetDataSpacing(1, 1, 1);
-    importer->SetDataOrigin(1.0*offset[2], 1.0*offset[1],
-                            1.0*offset[0]);
-    importer->SetWholeExtent(0, shape[2] - 1, 0,
-                             shape[1] - 1, 0,
-                             shape[0] - 1);
+    importer->SetDataOrigin(1.0 * offset[2], 1.0 * offset[1],
+                            1.0 * offset[0]);
+    importer->SetWholeExtent(0, shape[2] , 0,
+                             shape[1] , 0,
+                             shape[0] );
     importer->SetDataExtentToWholeExtent();
     importer->SetDataScalarTypeToDouble();
     importer->SetNumberOfScalarComponents(1);
@@ -41,7 +75,7 @@ compute_isosurface(std::array<size_t, 3> &shape,
     return mcubes->GetOutput();
 }
 
-void write_vtk(const std::string &fname,
+void writePolyvtk(const std::string &fname,
                const vtkSmartPointer<vtkPolyData> polyData)
 {
     auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
@@ -96,7 +130,7 @@ int main(int argc, char *argv[])
     //gray scott simulation start from 1
     for (int step = 1; step <= steps; step++)
     {
-    
+
 #ifdef ENABLE_TIMERS
 
         MPI_Barrier(comm);
@@ -125,11 +159,12 @@ int main(int argc, char *argv[])
 
         //todo add the checking operation for the pdf
         //auto polyData = compute_isosurface(blockmeta.m_shape, blockmeta.m_offset, dataContainer, isovalue);
-        
+
         char countstr[50];
-        sprintf(countstr, "%02d_04%d", blockID, step);
-        std::string fname = "./vtkdata/vtkiso_" + std::string(countstr) + ".vtk";
-        write_vtk(fname,polyData);
+        sprintf(countstr, "%02d_%04d", blockID, step);
+        std::string fname = "./vtkdata/vtkiso_" + std::string(countstr) + ".vti";
+        writeImageData(fname, blockmeta.m_shape, blockmeta.m_offset, dataContainer);
+        //writePolyvtk(fname, polyData);
         std::cout << "ok for ts " << step << std::endl;
     }
 
