@@ -27,7 +27,7 @@ tl::engine *globalClientEnginePointer = nullptr;
 //TBD tl::engine *globalInnerEnginePointer = nullptr;
 
 //init memory cache
-MemCache *mcache = new MemCache();
+MemCache *mcache = new MemCache(4);
 
 //the manager for all the server endpoints
 endPointsManager *epManager = new endPointsManager();

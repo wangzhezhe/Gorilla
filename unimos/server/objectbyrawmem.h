@@ -54,7 +54,7 @@ public:
 
 };
 
-// This abstraction manage multiple data blocks
+// This abstraction manage multiple data blocks in one step
 struct DataObjectByRawMem : public DataObjectInterface
 {
 

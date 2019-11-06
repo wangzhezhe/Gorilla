@@ -1,5 +1,6 @@
 
 #include "../server/memcache.h"
+#include <unistd.h>
 
 size_t elemInOnedim = 100;
 
@@ -209,10 +210,10 @@ int main(int ac, char *av[])
 {
 
     //init memory cache
-    MemCache *mcache = new MemCache();
+    MemCache *mcache = new MemCache(4);
 
     runputget_double(mcache);
-
+    
     free(mcache);
 
     return 0;

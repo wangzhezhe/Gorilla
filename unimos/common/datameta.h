@@ -10,6 +10,29 @@
 #include <thallium/serialization/stl/string.hpp>
 #include <thallium/serialization/stl/array.hpp>
 
+
+
+struct FilterProfile{
+    
+    FilterProfile(std::string profileName, 
+    std::string stepFilterName,
+    std::string blockIDFilterName,
+    std::string contentFilterName,
+    std::string subscriberAddr): m_profileName(profileName),
+    m_stepFilterName(stepFilterName),
+    m_blockIDFilterName(blockIDFilterName),
+    m_contentFilterName(contentFilterName),
+    m_subscriberAddr(subscriberAddr){};
+
+
+    std::string m_profileName;
+    std::string m_stepFilterName;
+    std::string m_blockIDFilterName;
+    std::string m_contentFilterName;
+    std::string m_subscriberAddr;
+};
+
+
 // the metadata for every data block
 struct BlockMeta
 {
@@ -19,7 +42,6 @@ struct BlockMeta
     std::array<size_t, 3> m_shape{{0,0,0}};
     //the origin can be caculated by offset
     std::array<size_t, 3> m_offset{{0,0,0}};
-
 
     BlockMeta(){};
     BlockMeta(std::string typeName,

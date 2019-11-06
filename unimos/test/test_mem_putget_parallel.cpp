@@ -135,7 +135,7 @@ int main(int ac, char *av[])
 {
 
     //init memory cache
-    MemCache *mcache = new MemCache();
+    MemCache *mcache = new MemCache(4);
 
     runput_blockinparallel(mcache);
 

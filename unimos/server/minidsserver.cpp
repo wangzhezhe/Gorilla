@@ -24,6 +24,28 @@ tl::engine *globalEnginePointer = nullptr;
 //init memory cache
 MemCache *mcache = new MemCache();
 
+
+/*
+void checkResults()
+{
+
+    while (true)
+    {
+        if (mcache->threadPool.getTaskSize() > 0)
+        {
+            mcache->threadPool.front().get();
+            mcache->threadPool.pop();
+        }
+        else
+        {
+            break;
+        }
+
+        sleep(0.1);
+    }
+}
+*/
+
 //the rpc for testing
 void hello(const tl::request &req, const std::string &name)
 {
@@ -162,7 +184,7 @@ void dsget(const tl::request &req, std::string &varName, int &ts, size_t &blockI
     //get variable type from the data
     void *data = nullptr;
 
-    spdlog::debug("dsget by varName: {} ts {} blockID {}", varName ,ts, blockID);
+    spdlog::debug("dsget by varName: {} ts {} blockID {}", varName, ts, blockID);
 
     try
     {
@@ -170,7 +192,7 @@ void dsget(const tl::request &req, std::string &varName, int &ts, size_t &blockI
         //get the data value
         if (datameta == NULL)
         {
-           spdlog::debug ("failed to get the data at the server end");
+            spdlog::debug("failed to get the data at the server end");
             //return empty bulk info if it is failed to get data
             //how to adjust it is empty at the client end?
             req.respond(-1);
@@ -394,6 +416,12 @@ int main(int argc, char **argv)
 
     spdlog::debug("debug mode");
 
+    //start a new thread to check the output of the pool
+    //std::thread checkResultsThread(checkResults);
+        
     //start the mini dataspace server
     runRerver(networkingType);
+
+
+    //checkResultsThread.join();
 }

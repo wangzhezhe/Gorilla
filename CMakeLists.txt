@@ -39,8 +39,17 @@ xpkg_import_module (abtio REQUIRED abt-io)
 include_directories(${gorilla_SOURCE_DIR}/dep)
 
 
+add_library(constraintManager 
+${gorilla_SOURCE_DIR}/unimos/server/constraintManager.cpp
+)
+
+add_library(filterManager 
+${gorilla_SOURCE_DIR}/unimos/server/filterManager.cpp
+)
+
 # build the server library
 find_package(MPI REQUIRED) 
+find_package(Threads)
 add_library(memcache 
 ${gorilla_SOURCE_DIR}/unimos/server/memcache.cpp
 ${gorilla_SOURCE_DIR}/unimos/server/objectbyrawmem.cpp
@@ -50,13 +59,14 @@ add_library(endpointmng
 ${gorilla_SOURCE_DIR}/unimos/server/endpointManagement.cpp
 )
 
+
 add_library(unimosclientlib
 ${gorilla_SOURCE_DIR}/unimos/client/unimosclient.cpp
 )
 
 
 add_executable (unimos_server ${gorilla_SOURCE_DIR}/unimos/server/unimosserver.cpp)
-target_link_libraries (unimos_server memcache endpointmng thallium MPI::MPI_CXX)
+target_link_libraries (unimos_server memcache endpointmng constraintManager thallium MPI::MPI_CXX ${CMAKE_THREAD_LIBS_INIT})
 
 
 # execute the module load mpi before this part

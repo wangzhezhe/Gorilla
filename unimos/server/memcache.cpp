@@ -4,6 +4,12 @@
 #include "memcache.h"
 #include "objectbyrawmem.h"
 
+MemCache::MemCache(size_t poolSize)
+{
+    this->m_threadPool = new ThreadPool(poolSize);
+    return;
+}
+
 enum CACHESTATUS MemCache::checkDataExistance(std::string varName, size_t steps, size_t blockID)
 {
     if (this->dataObjectMap.find(varName) != dataObjectMap.end())
@@ -77,6 +83,28 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, std::vector<dataTy
     }
     }
 
+    this->m_threadPool->enqueue([dataMeta, blockID, this] {
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+        char str[200];
+        sprintf(str, "call the filterManager for varName (%s),step (%d),blockID (%d)\n", dataMeta.m_varName.data(), dataMeta.m_steps, blockID);
+        std::cout << str;
+        if (this->m_filterManager != NULL)
+        {
+            //range the map
+            std::map<std::string, constraintManager *> tmpcm = this->m_filterManager->constraintManagerMap[dataMeta.m_varName];
+            for (auto it = tmpcm.begin(); it != tmpcm.end(); ++it)
+            {
+                std::cout << it->first << std::endl;
+                it->second->execute(dataMeta.m_steps,blockID,NULL);
+            }
+        }
+        else
+        {
+            std::cout << "m_filterManager is null" << std::endl;
+        }
+        return;
+    });
+
     //TODO use the error code to label the status of put operation
     return 0;
 }
@@ -123,6 +151,32 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, void *dataPointer)
         break;
     }
     }
+
+    //if the cache is updated, new block comes in
+    //decide if this data need to be checked according to the filterManager
+    //then start a new thread to exectue the function at in constraints
+    //the content need to be check is in map
+    //dataMeta.m_varName,dataMeta.m_steps,blockID
+    this->m_threadPool->enqueue([dataMeta, blockID, this] {
+        //std::this_thread::sleep_for(std::chrono::seconds(5));
+        char str[200];
+        sprintf(str, "call the filterManager for varName (%s),step (%d),blockID (%d)\n", dataMeta.m_varName.data(), dataMeta.m_steps, blockID);
+        std::cout << str << std::endl;
+        if (this->m_filterManager != NULL)
+        {
+            std::map<std::string, constraintManager *> tmpcm = this->m_filterManager->constraintManagerMap[dataMeta.m_varName];
+            for (auto it = tmpcm.begin(); it != tmpcm.end(); ++it)
+            {
+                std::cout << it->first << std::endl;
+                it->second->execute(dataMeta.m_steps,blockID,NULL);
+            }
+        }
+
+        else
+        {
+            std::cout << "m_filterManager is null" << std::endl;
+        }
+    });
 
     //TODO use the error code to label the status of put operation
     return 0;
