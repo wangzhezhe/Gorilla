@@ -8,7 +8,7 @@
 #include <array>
 #include <cstring>
 #include "../common/datameta.h"
-#include "../../utils/ThreadPool.h"
+#include "../../utils/ArgothreadPool.h"
 #include "filterManager.h"
 
 //the abstraction that mamage the multiple block object for one step
@@ -80,8 +80,8 @@ private:
     CACHESTATUS checkDataExistance(std::string varName, size_t timeStep, size_t blockID);
 
     //the thread pool to check the constraints
-    ThreadPool* m_threadPool=NULL;
-
+    //ThreadPool* m_threadPool=NULL;
+    ArgoThreadPool* m_threadPool = NULL;    
     //FilterManager
     FilterManager* m_filterManager=NULL;
 

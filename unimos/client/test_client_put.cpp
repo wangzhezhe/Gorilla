@@ -37,7 +37,7 @@ int main(int argc, char **argv)
 
     int step = 0;
 
-    for (step = 0; step < 10; step++)
+    for (step = 0; step < 20; step++)
     {
        
         std::string slaveAddr = dspaces_client_getaddr(clientEngine, serverAddr, varName, step);
@@ -51,7 +51,7 @@ int main(int argc, char **argv)
         dspaces_client_put(clientEngine, slaveAddr, dataMeta, blockID, inputData);
         //there is problem for margo if the push operation is in high frequency
         //the probelm is occasional
-        std::this_thread::sleep_for(std::chrono::microseconds(1000000));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
     return 0;

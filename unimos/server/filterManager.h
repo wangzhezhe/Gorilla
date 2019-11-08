@@ -30,7 +30,10 @@ enum FMANAGERSTATUS
 class FilterManager{
 
 public:
-    FilterManager(){};
+    FilterManager(){
+        //tl::engine * engine = new tl::engine("tcp", THALLIUM_CLIENT_MODE);
+        //m_Engine = engine;
+    };
 
     ~FilterManager(){};
 

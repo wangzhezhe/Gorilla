@@ -22,6 +22,7 @@
 
 namespace tl = thallium;
 
+//global variables
 //The pointer to the enginge should be set as global element
 //this shoule be initilized after the initilization of the argobot
 
@@ -70,6 +71,38 @@ void putMetaData(const tl::request &req, DataMeta &datameta)
     return;
 }
 */
+
+void test()
+{
+    std::cout << "start new thread for testing" << std::endl;
+    while (true)
+    {
+        size_t blockID = 0;
+        size_t steps = 0;
+        std::string varName = "testName1d";
+        if (fmanager != NULL)
+        {
+            //std::cout << "check map" << std::endl;
+            std::map<std::string, constraintManager *> tmpcm = fmanager->constraintManagerMap[varName];
+            for (auto it = tmpcm.begin(); it != tmpcm.end(); ++it)
+            {
+                std::cout << it->first << std::endl;
+                bool result = it->second->execute(steps, blockID, NULL);
+                if (result)
+                {
+
+                    for (auto elem : it->second->subscriberAddrSet)
+                    {
+                        spdlog::debug("notify subscriber addr {}", elem);
+                        int status = dsnotify_subscriber(*globalClientEnginePointer, elem, steps, blockID);
+                    }
+                }
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+        }
+    }
+}
 
 //get the shape of the data and the client could allocate the memory
 //the sammary is only need to be called once for each time step
@@ -369,6 +402,8 @@ void runRerver(std::string networkingType)
     //globalClientEnginePointer = new tl::engine(networkingType, THALLIUM_SERVER_MODE);
     //std::string addr = globalClientEnginePointer->self();
 
+    fmanager->m_Engine = &dataMemEnginge;
+
     //globalClientEnginePointer->define("hello", hello).disable_response();
     //globalClientEnginePointer->define("putDoubleVector", putDoubleVector).disable_response();
     //globalClientEnginePointer->define("putMetaData", putMetaData).disable_response();
@@ -474,11 +509,6 @@ int main(int argc, char **argv)
             mcache->loadFilterManager(fmanager);
             spdlog::info("load the filter for rank {}", globalRank);
         }
-
-        //this is used for the notification
-        tl::engine myclientEngine(networkingType, THALLIUM_CLIENT_MODE);
-        //fmanager->m_Engine=&dataMemEnginge;
-        fmanager->m_Engine = &myclientEngine;
 
         runRerver(networkingType);
     }

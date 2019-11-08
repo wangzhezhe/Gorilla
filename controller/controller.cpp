@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include "../unimos/client/unimosclient.h"
+#include "../utils/stringtool.h"
 
 namespace tl = thallium;
 
@@ -13,7 +14,7 @@ void notify(const tl::request &req, size_t &step, size_t &blockID)
 {
     //TODO update the innter structure according to the notified info
     std::cout << "call the notify at the controller" << std::endl;
-    //req.respond(0);
+    req.respond(0);
 }
 
 int TaskController::subscribe(std::string varName, FilterProfile &fp)
@@ -74,8 +75,9 @@ int main(int argc, char **argv)
     FilterProfile fp;
 
     std::string tcAddr = globalEnginePointer->self();
-    std::cout << "task controller is started at " << tcAddr << std::endl;
-    fp.m_subscriberAddr = tcAddr;
+    std::string filteredAddr = IPTOOL::getClientAdddr(networkingType, tcAddr);
+    std::cout << "task controller is started at " << filteredAddr << std::endl;
+    fp.m_subscriberAddr = filteredAddr;
 
     tc->subscribe("testName1d", fp);
 

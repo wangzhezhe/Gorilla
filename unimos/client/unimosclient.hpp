@@ -1,5 +1,24 @@
+#ifndef __UNIMOSCLIENT_H__
+#define __UNIMOSCLIENT_H__
 
-#include "unimosclient.h"
+
+#include <mpi.h>
+#include <unistd.h>
+#include <stdio.h>
+#include "../common/datameta.h"
+
+#include <vector>
+#include <iostream>
+#include <map>
+#include <string>
+#include <array>
+#include <fstream>
+#include <cstring>
+#include <thallium.hpp>
+
+namespace tl = thallium;
+
+std::string masterConfig = "./unimos_server.conf";
 
 /*
 
@@ -9,9 +28,6 @@
     int ret = sum.on(server)(42,63);
 */
 
-//TODO add the namespace here
-
-std::string masterConfig = "./unimos_server.conf";
 
 BlockMeta dspaces_client_getblockMeta(tl::engine &myEngine, std::string serverAddr, std::string varName, int ts, size_t blockID)
 {
@@ -19,7 +35,7 @@ BlockMeta dspaces_client_getblockMeta(tl::engine &myEngine, std::string serverAd
     tl::remote_procedure dsgetBlockMeta = myEngine.define("dsgetBlockMeta");
     //tl::remote_procedure putMetaData = myEngine.define("putMetaData").disable_response();
     tl::endpoint globalServerEndpoint = myEngine.lookup(serverAddr);
-    BlockMeta blockmeta = dsgetBlockMeta.on(globalServerEndpoint)(varName, ts, blockID);
+    BlockMeta blockmeta = dsgetBlockMeta.on(globalServerEndpoint)(varName,ts,blockID);
     return blockmeta;
 }
 
@@ -41,6 +57,7 @@ void dspaces_client_get(tl::engine &myEngine,
                         std::vector<double> &dataContainer)
 {
 
+
     tl::remote_procedure dsget = myEngine.define("dsget");
     //tl::remote_procedure putMetaData = myEngine.define("putMetaData").disable_response();
     tl::endpoint globalServerEndpoint = myEngine.lookup(serverAddr);
@@ -52,9 +69,8 @@ void dspaces_client_get(tl::engine &myEngine,
     tl::bulk clientBulk = myEngine.expose(segments, tl::bulk_mode::write_only);
 
     int status = dsget.on(globalServerEndpoint)(varName, ts, blockID, clientBulk);
-
-    if (status != 0)
-    {
+    
+    if (status!=0){
         throw std::runtime_error("failed to get the data " + varName + " ts " + std::to_string(ts) + " blockid " + std::to_string(blockID) + " status " + std::to_string(status));
     }
     //std::cout << "status of the dsget is " << status << std::endl;
@@ -65,6 +81,7 @@ void dspaces_client_get(tl::engine &myEngine,
     //{
     //    std::cout << "index " << i << " value " << dataContainer[i] << std::endl;
     //}
+
 
     return;
 }
@@ -92,38 +109,6 @@ void dspaces_client_put(tl::engine &myEngine,
     return;
 }
 
-int dsnotify_subscriber(tl::engine &myEngine, std::string serverAddr, size_t &step, size_t &blockID)
-{
-    tl::remote_procedure notify = myEngine.define("notify");
-    //tl::remote_procedure putMetaData = myEngine.define("putMetaData").disable_response();
-    tl::endpoint globalServerEndpoint = myEngine.lookup(serverAddr);
-    notify.on(globalServerEndpoint)(step, blockID);
-    return 0;
-}
-
-int dssubscribe(tl::engine &myEngine, std::string serverAddr, std::string varName, FilterProfile &fp)
-{
-    tl::remote_procedure subscribe = myEngine.define("subscribeProfile");
-    //tl::remote_procedure putMetaData = myEngine.define("putMetaData").disable_response();
-    tl::endpoint globalServerEndpoint = myEngine.lookup(serverAddr);
-    int status = subscribe.on(globalServerEndpoint)(varName, fp);
-    return status;
-}
-
-//set request to all the workers
-int dssubscribe_broadcast(tl::engine &myEngine, std::vector<std::string> serverList, std::string varName, FilterProfile &fp)
-{
-    tl::remote_procedure subscribe = myEngine.define("subscribeProfile");
-
-    for (int i = 0; i < serverList.size(); i++)
-    {
-        tl::endpoint globalServerEndpoint = myEngine.lookup(serverList[i]);
-        int status = subscribe.on(globalServerEndpoint)(varName, fp);
-    }
-
-    return 0;
-}
-
 std::string loadMasterAddr()
 {
 
@@ -133,3 +118,5 @@ std::string loadMasterAddr()
 
     return content;
 }
+
+#endif

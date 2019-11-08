@@ -6,7 +6,8 @@
 
 MemCache::MemCache(size_t poolSize)
 {
-    this->m_threadPool = new ThreadPool(poolSize);
+    //this->m_threadPool = new ThreadPool(poolSize);
+    this->m_threadPool = new ArgoThreadPool(poolSize);
     return;
 }
 
@@ -83,31 +84,35 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, std::vector<dataTy
     }
     }
 
-    this->m_threadPool->enqueue([dataMeta, blockID, this] {
-        std::this_thread::sleep_for(std::chrono::seconds(5));
-        char str[200];
-        sprintf(str, "call the filterManager for varName (%s),step (%d),blockID (%d)\n", dataMeta.m_varName.data(), dataMeta.m_steps, blockID);
-        std::cout << str;
-        if (this->m_filterManager != NULL)
-        {
-            //range the map
-            std::map<std::string, constraintManager *> tmpcm = this->m_filterManager->constraintManagerMap[dataMeta.m_varName];
-            for (auto it = tmpcm.begin(); it != tmpcm.end(); ++it)
+    int threadid = this->m_threadPool->getEssId();
+    tl::managed<tl::thread> th = this->m_threadPool->m_ess[threadid]->make_thread(
+        [dataMeta, blockID, this] {
+            char str[200];
+            sprintf(str, "call the filterManager for varName (%s),step (%d),blockID (%d)\n", dataMeta.m_varName.data(), dataMeta.m_steps, blockID);
+            std::cout << str;
+            if (this->m_filterManager != NULL)
             {
-                std::cout << it->first << std::endl;
-                bool result = it->second->execute(dataMeta.m_steps, blockID, NULL);
-                if (result)
+                //range the map
+                std::map<std::string, constraintManager *> tmpcm = this->m_filterManager->constraintManagerMap[dataMeta.m_varName];
+                for (auto it = tmpcm.begin(); it != tmpcm.end(); ++it)
                 {
-                    m_filterManager->notify(dataMeta.m_steps, blockID, it->second->subscriberAddrSet);
+                    std::cout << it->first << std::endl;
+                    bool result = it->second->execute(dataMeta.m_steps, blockID, NULL);
+                    if (result)
+                    {
+                        m_filterManager->notify(dataMeta.m_steps, blockID, it->second->subscriberAddrSet);
+                    }
                 }
             }
+            else
+            {
+                std::cout << "m_filterManager is null" << std::endl;
+            }
+            return;
         }
-        else
-        {
-            std::cout << "m_filterManager is null" << std::endl;
-        }
-        return;
-    });
+
+    );
+    this->m_threadPool->m_userThreadList.push_back(std::move(th));
 
     //TODO use the error code to label the status of put operation
     return 0;
@@ -161,30 +166,35 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, void *dataPointer)
     //then start a new thread to exectue the function at in constraints
     //the content need to be check is in map
     //dataMeta.m_varName,dataMeta.m_steps,blockID
-    this->m_threadPool->enqueue([dataMeta, blockID, this] {
-        //std::this_thread::sleep_for(std::chrono::seconds(5));
-        char str[200];
-        sprintf(str, "call the filterManager for varName (%s),step (%d),blockID (%d)\n", dataMeta.m_varName.data(), dataMeta.m_steps, blockID);
-        std::cout << str << std::endl;
-        if (this->m_filterManager != NULL)
-        {
-            std::map<std::string, constraintManager *> tmpcm = this->m_filterManager->constraintManagerMap[dataMeta.m_varName];
-            for (auto it = tmpcm.begin(); it != tmpcm.end(); ++it)
+    int threadid = this->m_threadPool->getEssId();
+    tl::managed<tl::thread> th = this->m_threadPool->m_ess[threadid]->make_thread(
+        [dataMeta, blockID, this] {
+            char str[200];
+            sprintf(str, "call the filterManager for varName (%s),step (%d),blockID (%d)\n", dataMeta.m_varName.data(), dataMeta.m_steps, blockID);
+            std::cout << str;
+            if (this->m_filterManager != NULL)
             {
-                std::cout << it->first << std::endl;
-                bool result = it->second->execute(dataMeta.m_steps, blockID, NULL);
-                if (result)
+                //range the map
+                std::map<std::string, constraintManager *> tmpcm = this->m_filterManager->constraintManagerMap[dataMeta.m_varName];
+                for (auto it = tmpcm.begin(); it != tmpcm.end(); ++it)
                 {
-                    m_filterManager->notify(dataMeta.m_steps, blockID, it->second->subscriberAddrSet);
+                    std::cout << it->first << std::endl;
+                    bool result = it->second->execute(dataMeta.m_steps, blockID, NULL);
+                    if (result)
+                    {
+                        m_filterManager->notify(dataMeta.m_steps, blockID, it->second->subscriberAddrSet);
+                    }
                 }
             }
+            else
+            {
+                std::cout << "m_filterManager is null" << std::endl;
+            }
+            return;
         }
 
-        else
-        {
-            std::cout << "m_filterManager is null" << std::endl;
-        }
-    });
+    );
+    this->m_threadPool->m_userThreadList.push_back(std::move(th));
 
     //TODO use the error code to label the status of put operation
     return 0;

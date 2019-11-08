@@ -11,7 +11,7 @@ source /home/zw241/.gorilla.sh
 rm *.conf
 rm log_*
 
-PROTOCAL=tcp
+PROTOCAL=verbs
 
 # start the staging service
 srun --mpi=pmix_v2 --time=00:05:00 --mem-per-cpu=2000 --ntasks=4 ./unimos_server $PROTOCAL filter 1 &> log_unimos.log &

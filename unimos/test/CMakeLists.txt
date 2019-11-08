@@ -46,5 +46,8 @@ target_link_libraries(01_hello_server thallium)
 add_executable(01_hello_client client.cpp)
 target_link_libraries(01_hello_client thallium)
 
+add_executable(argobot_test_thread argobot_test_thread.cpp)
+target_link_libraries(argobot_test_thread thallium)
 
-
+add_executable(argobot_test_threadpool argobot_test_threadpool.cpp)
+target_link_libraries(argobot_test_threadpool thallium)
