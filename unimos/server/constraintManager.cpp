@@ -1,12 +1,15 @@
 #include "constraintManager.h"
+#include <spdlog/spdlog.h>
 #include <iostream>
+#include <thread>
+
 
 //put as separate file that includes the functions
 
 bool defaultStepFilter(size_t step)
 {
     std::cout << "default StepFilter" << std::endl;
-    
+
     return true;
 }
 
@@ -46,7 +49,7 @@ constraintManager::constraintManager(std::string stepConstriaintsName,
 
     if (contentConstrains.compare("default") == 0)
     {
-        this->contentConstraintPtr= &defaultContentFilter;
+        this->contentConstraintPtr = &defaultContentFilter;
     }
     else
     {
@@ -56,20 +59,22 @@ constraintManager::constraintManager(std::string stepConstriaintsName,
     return;
 }
 
+bool constraintManager::execute(size_t step, size_t blockID, void *data)
+{
 
-
-bool constraintManager::execute(size_t step,size_t blockID, void*data){
+    //std::this_thread::sleep_for(std::chrono::seconds(2));
 
     bool stepConstraint = this->stepConstraintsPtr(step);
 
-    if(stepConstraint==false){
+    if (stepConstraint == false)
+    {
         return false;
     }
 
     bool blockConstraint = this->blockConstraintsPtr(blockID);
-    
-    
-    if(blockConstraint==false){
+
+    if (blockConstraint == false)
+    {
         return false;
     }
 
@@ -77,3 +82,4 @@ bool constraintManager::execute(size_t step,size_t blockID, void*data){
 
     return contentConstraint;
 }
+

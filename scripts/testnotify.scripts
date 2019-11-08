@@ -1,0 +1,40 @@
+#!/bin/sh
+#SBATCH -p main
+#SBATCH --constraint=hal,broadwell,edr
+#SBATCH -N 4
+#SBATCH --ntasks-per-node=24
+#SBATCH -t 00:03:00
+
+source /home/zw241/.gorilla.sh
+
+# clean the previous config
+rm *.conf
+rm log_*
+
+PROTOCAL=tcp
+
+# start the staging service
+srun --mpi=pmix_v2 --time=00:05:00 --mem-per-cpu=2000 --ntasks=4 ./unimos_server $PROTOCAL filter 1 &> log_unimos.log &
+
+while [ ! -f ./unimos_server.conf ]
+do
+    sleep 0.01
+done
+
+sleep 1
+
+# start the controller
+srun --mem=2000 --ntasks=1 ./controller/taskcontroller $PROTOCAL &> log_taskcontroller.log &
+
+# the put could be started only if the controller finish the task
+
+while [ ! -f ./subok.conf ]
+do
+    sleep 0.01
+done
+
+# start the put
+srun --mem=2000 --ntasks=1 ./test_client_put $PROTOCAL &> log_test_client_put.log &
+
+
+wait

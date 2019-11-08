@@ -95,7 +95,11 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, std::vector<dataTy
             for (auto it = tmpcm.begin(); it != tmpcm.end(); ++it)
             {
                 std::cout << it->first << std::endl;
-                it->second->execute(dataMeta.m_steps,blockID,NULL);
+                bool result = it->second->execute(dataMeta.m_steps, blockID, NULL);
+                if (result)
+                {
+                    m_filterManager->notify(dataMeta.m_steps, blockID, it->second->subscriberAddrSet);
+                }
             }
         }
         else
@@ -168,7 +172,11 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, void *dataPointer)
             for (auto it = tmpcm.begin(); it != tmpcm.end(); ++it)
             {
                 std::cout << it->first << std::endl;
-                it->second->execute(dataMeta.m_steps,blockID,NULL);
+                bool result = it->second->execute(dataMeta.m_steps, blockID, NULL);
+                if (result)
+                {
+                    m_filterManager->notify(dataMeta.m_steps, blockID, it->second->subscriberAddrSet);
+                }
             }
         }
 

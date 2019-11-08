@@ -17,6 +17,8 @@
 #include "memcache.h"
 #include "endpointManagement.h"
 #include "../utils/stringtool.h"
+#include "../client/unimosclient.h"
+#include "filterManager.h"
 
 namespace tl = thallium;
 
@@ -28,13 +30,17 @@ tl::engine *globalClientEnginePointer = nullptr;
 
 //init memory cache
 MemCache *mcache = new MemCache(4);
+//init filter manager
+FilterManager *fmanager = new FilterManager();
+//load the filter manager
 
 //the manager for all the server endpoints
 endPointsManager *epManager = new endPointsManager();
 
 //name of configure file, the write one line, the line is the rank0 addr
-std::string masterConfig = "./unimos_server.conf";
+std::string masterConfigFile = "./unimos_server.conf";
 
+std::string MasterIP = "";
 //rank & proc number for current MPI process
 int globalRank = 0;
 int globalProc = 0;
@@ -82,7 +88,7 @@ void getaddr(const tl::request &req, const std::string &varName, const int &ts)
     if (epManager->ifAllRegister(globalProc))
     {
         std::string serverAddr = epManager->getByVarTs(varName, ts);
-        spdlog::debug("varname {} and ts {} getaddr  {}", varName, ts, serverAddr);
+        //spdlog::debug("varname {} and ts {} getaddr  {}", varName, ts, serverAddr);
         req.respond(serverAddr);
     }
     else
@@ -215,10 +221,45 @@ void dsgetregion(const tl::request &req, std::string &varName, int &ts, std::arr
     //todo
 }
 
+//todo, this api should be divided into two parts
+//the first is for master, all other clients will subscribe to the master
+//the second is between the master and other work node, the master will transfer the profile to all other node
+void subscribeProfile(const tl::request &req, std::string &varName, FilterProfile &fp)
+{
+    //subscribe profile to the server
+    //call the subscribe of the filter manager
+    //tl::endpoint ep = req.get_endpoint();
+    //std::string subscriberAddr = std::string(ep);
+    //spdlog::debug("subscribe the profile from {}", subscriberAddr);
+    //update the subscriber position of the profile
+    if (globalRank == 0)
+    {
+        //subscribe to all the worker
+        //get serverList
+        dssubscribe_broadcast(*globalClientEnginePointer, epManager->m_endPointsLists, varName, fp);
+        spdlog::debug("master send subscribe to worker");
+        req.respond(0);
+    }
+    else
+    {
+
+        int status = fmanager->profileSubscribe(varName, fp);
+        spdlog::debug("worker node {} subscribe", globalRank);
+        req.respond(status);
+    }
+}
+
 void gatherIP(std::string engineName, std::string endpoint)
 {
 
     std::string ip = IPTOOL::getClientAdddr(engineName, endpoint);
+
+    if (globalRank == 0)
+    {
+        epManager->ifMaster = true;
+    }
+
+    epManager->nodeAddr = ip;
 
     //maybe it is ok that only write the masternode's ip and provide the interface
     //of getting ipList for other clients
@@ -304,7 +345,12 @@ void gatherIP(std::string engineName, std::string endpoint)
         for (int i = 0; i < ipList.size(); i++)
         {
             std::cout << ipList[i] << std::endl;
-            epManager->m_endPointsLists.push_back(ipList[i]);
+            //only store the worker addr
+            if (epManager->nodeAddr.compare(ipList[i]) != 0)
+            {
+                spdlog::info("push back addr {}", ipList[i]);
+                epManager->m_endPointsLists.push_back(ipList[i]);
+            }
         }
 
         free(rcvString);
@@ -315,7 +361,6 @@ void runRerver(std::string networkingType)
 {
 
     tl::engine dataMemEnginge(networkingType, THALLIUM_SERVER_MODE);
-    std::string addr = dataMemEnginge.self();
 
     //another option is to use the unique pointer to point to the entity of the engine
     //use the unique pointer to make sure the destructor is called when the variable is out of the scope
@@ -330,15 +375,18 @@ void runRerver(std::string networkingType)
     globalClientEnginePointer->define("dsput", dsput);
     globalClientEnginePointer->define("dsget", dsget);
     globalClientEnginePointer->define("dsgetBlockMeta", dsgetBlockMeta);
+    globalClientEnginePointer->define("subscribeProfile", subscribeProfile);
+
+    std::string addr = dataMemEnginge.self();
 
     if (globalRank == 0)
     {
-        globalClientEnginePointer->define("getaddr", getaddr);
-
         spdlog::info("Start the unimos server with addr for master: {}", addr);
+
+        globalClientEnginePointer->define("getaddr", getaddr);
         std::string masterAddr = IPTOOL::getClientAdddr(networkingType, addr);
         std::ofstream confFile;
-        confFile.open(masterConfig);
+        confFile.open(masterConfigFile);
         confFile << masterAddr << "\n";
         confFile.close();
     }
@@ -373,16 +421,26 @@ int main(int argc, char **argv)
 
     //default value
     int logLevel = 0;
+    bool addFilter = false;
     if (argc < 2)
     {
-        std::cerr << "Usage: " << argv[0] << " <networkingType>" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <networkingType> filter <loglevel>" << std::endl;
         exit(0);
     }
     std::string networkingType = argv[1];
 
-    if (argc == 3)
+    if (argc > 2)
     {
-        logLevel = atoi(argv[2]);
+        std::string filterKey = argv[2];
+        if (filterKey.compare(std::string("filter")) == 0)
+        {
+            addFilter = true;
+        }
+    }
+
+    if (argc == 4)
+    {
+        logLevel = atoi(argv[3]);
     }
 
     if (logLevel == 0)
@@ -409,6 +467,19 @@ int main(int argc, char **argv)
 
     try
     {
+        //load the filter manager
+
+        if (addFilter == true)
+        {
+            mcache->loadFilterManager(fmanager);
+            spdlog::info("load the filter for rank {}", globalRank);
+        }
+
+        //this is used for the notification
+        tl::engine myclientEngine(networkingType, THALLIUM_CLIENT_MODE);
+        //fmanager->m_Engine=&dataMemEnginge;
+        fmanager->m_Engine = &myclientEngine;
+
         runRerver(networkingType);
     }
     catch (const std::exception &e)

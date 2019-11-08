@@ -47,6 +47,13 @@ void dspaces_client_put(tl::engine &myEngine,
                         size_t &blockID,
                         std::vector<double> &putVector);
 
+int dssubscribe(tl::engine &myEngine, std::string serverAddr, std::string varName, FilterProfile& fp);
+
+int dssubscribe_broadcast(tl::engine &myEngine, std::vector<std::string> serverList, std::string varName, FilterProfile &fp);
+
+int dsnotify_subscriber(tl::engine &myEngine, std::string serverAddr, size_t& step, size_t &blockID);
+
+
 std::string loadMasterAddr();
 
 #endif

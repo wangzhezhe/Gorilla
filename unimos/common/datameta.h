@@ -13,6 +13,8 @@
 
 
 struct FilterProfile{
+
+    FilterProfile(){};
     
     FilterProfile(std::string profileName, 
     std::string stepFilterName,
@@ -25,11 +27,24 @@ struct FilterProfile{
     m_subscriberAddr(subscriberAddr){};
 
 
-    std::string m_profileName;
-    std::string m_stepFilterName;
-    std::string m_blockIDFilterName;
-    std::string m_contentFilterName;
+    std::string m_profileName="default";
+    std::string m_stepFilterName="default";
+    std::string m_blockIDFilterName="default";
+    std::string m_contentFilterName="default";
+    //this string will be populated by the server
     std::string m_subscriberAddr;
+
+
+    ~FilterProfile(){};
+
+    template<typename A> void serialize(A& ar)
+    {
+        ar &m_profileName;
+        ar &m_stepFilterName;
+        ar &m_blockIDFilterName;
+        ar &m_contentFilterName;
+        ar &m_subscriberAddr;
+    }
 };
 
 

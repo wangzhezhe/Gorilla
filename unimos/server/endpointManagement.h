@@ -22,8 +22,13 @@ struct endPointsManager
 
         //std::cout << "check server num " << m_serverNum 
         //<< " registered size " << registeredSize << " lists size " << m_endPointsLists.size() << std::endl;
-        return m_serverNum==m_endPointsLists.size();    
+        //the master is not included into the endpoint list
+        return m_serverNum==m_endPointsLists.size()+1;    
     }
+
+    bool ifMaster = false;
+
+    std::string nodeAddr = "";
         
     //hash the varName + ts
     std::string getByVarTs(std::string varName, int ts);

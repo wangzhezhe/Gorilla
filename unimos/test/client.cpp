@@ -8,7 +8,7 @@ int main(int argc, char** argv) {
         std::cerr << "Usage: " << argv[0] << " <address>" << std::endl;
         exit(0);
     }
-    tl::engine myEngine("na+sm", MARGO_CLIENT_MODE);
+    tl::engine myEngine("verbs", MARGO_CLIENT_MODE);
     tl::remote_procedure remote_do_rdma = myEngine.define("do_rdma");
     tl::endpoint server_endpoint = myEngine.lookup(argv[1]);
 

@@ -39,9 +39,7 @@ xpkg_import_module (abtio REQUIRED abt-io)
 include_directories(${gorilla_SOURCE_DIR}/dep)
 
 
-add_library(constraintManager 
-${gorilla_SOURCE_DIR}/unimos/server/constraintManager.cpp
-)
+
 
 add_library(filterManager 
 ${gorilla_SOURCE_DIR}/unimos/server/filterManager.cpp
@@ -64,19 +62,30 @@ add_library(unimosclientlib
 ${gorilla_SOURCE_DIR}/unimos/client/unimosclient.cpp
 )
 
+add_library(constraintManager 
+${gorilla_SOURCE_DIR}/unimos/server/constraintManager.cpp
+)
+target_link_libraries(constraintManager thallium unimosclientlib)
 
 add_executable (unimos_server ${gorilla_SOURCE_DIR}/unimos/server/unimosserver.cpp)
-target_link_libraries (unimos_server memcache endpointmng constraintManager thallium MPI::MPI_CXX ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries (unimos_server memcache endpointmng filterManager constraintManager unimosclientlib thallium MPI::MPI_CXX ${CMAKE_THREAD_LIBS_INIT})
 
 
 # execute the module load mpi before this part
 add_executable(unimos_client ${gorilla_SOURCE_DIR}/unimos/client/minidsclient.cpp)
 target_link_libraries (unimos_client MPI::MPI_CXX unimosclientlib thallium)
 
+
 add_executable(largedatatest ${gorilla_SOURCE_DIR}/unimos/client/largedatatest.cpp)
 target_link_libraries (largedatatest MPI::MPI_CXX thallium)
 
 
+add_executable(test_client_put ${gorilla_SOURCE_DIR}/unimos/client/test_client_put.cpp)
+target_link_libraries (test_client_put unimosclientlib thallium)
+
+
+
+add_subdirectory(controller)
 
 # add enable_testing
 if (ENABLE_TESTING)

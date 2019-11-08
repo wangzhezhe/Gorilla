@@ -25,12 +25,12 @@ struct constraintManager
 
     //execute all the binding filter for current data to see if it return true
     bool execute (size_t step, size_t blockID, void*data);
-
-    void addSubscriber(std::string subscriberAddr){subscriberAddrLists.insert(subscriberAddr);}
+    
+    void addSubscriber(std::string subscriberAddr){subscriberAddrSet.insert(subscriberAddr);}
 
     //list of the subscriber corresponding with this constraint manager
     //this is corresponding to one varaiale
-    std::set<std::string> subscriberAddrLists;
+    std::set<std::string> subscriberAddrSet;
 };
 
 
