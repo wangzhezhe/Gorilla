@@ -72,38 +72,6 @@ void putMetaData(const tl::request &req, DataMeta &datameta)
 }
 */
 
-void test()
-{
-    std::cout << "start new thread for testing" << std::endl;
-    while (true)
-    {
-        size_t blockID = 0;
-        size_t steps = 0;
-        std::string varName = "testName1d";
-        if (fmanager != NULL)
-        {
-            //std::cout << "check map" << std::endl;
-            std::map<std::string, constraintManager *> tmpcm = fmanager->constraintManagerMap[varName];
-            for (auto it = tmpcm.begin(); it != tmpcm.end(); ++it)
-            {
-                std::cout << it->first << std::endl;
-                bool result = it->second->execute(steps, blockID, NULL);
-                if (result)
-                {
-
-                    for (auto elem : it->second->subscriberAddrSet)
-                    {
-                        spdlog::debug("notify subscriber addr {}", elem);
-                        int status = dsnotify_subscriber(*globalClientEnginePointer, elem, steps, blockID);
-                    }
-                }
-            }
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-        }
-    }
-}
-
 //get the shape of the data and the client could allocate the memory
 //the sammary is only need to be called once for each time step
 //when the data is distributed among multiple blocks, it is better to start query arbitrary region until all data block is ready

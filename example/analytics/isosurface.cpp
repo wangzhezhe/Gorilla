@@ -12,6 +12,7 @@
 #include <vtkXMLDataSetWriter.h>
 
 #include <thread>
+#include "../simulation/timer.hpp"
 #include "../../unimos/client/unimosclient.h"
 
 void writeImageData(std::string fileName,
@@ -93,6 +94,8 @@ int main(int argc, char *argv[])
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &procs);
 
+    MPI_Comm comm=MPI_COMM_WORLD;
+
     if (argc < 3)
     {
         if (rank == 0)
@@ -112,14 +115,12 @@ int main(int argc, char *argv[])
 #ifdef ENABLE_TIMERS
     Timer timer_total;
     Timer timer_read;
-    Timer timer_compute;
-    Timer timer_write;
 
     std::ostringstream log_fname;
     log_fname << "isosurface_pe_" << rank << ".log";
 
     std::ofstream log(log_fname.str());
-    //log << "step\ttotal_iso\tread_iso\tcompute_write_iso" << std::endl;
+    log << "step\tread_iso" << std::endl;
 #endif
 
     tl::engine clientEngine("verbs", THALLIUM_CLIENT_MODE);
@@ -140,11 +141,7 @@ int main(int argc, char *argv[])
 
         //read data
 
-#ifdef ENABLE_TIMERS
-        double time_read = timer_read.stop();
-        MPI_Barrier(comm);
-        timer_compute.start();
-#endif
+
 
         //get blockMeta, extract the shape, offset, variableName
 
@@ -152,10 +149,17 @@ int main(int argc, char *argv[])
 
         size_t blockID = (size_t)rank;
         std::string slaveAddr = dspaces_client_getaddr(clientEngine, serverAddr, VarNameU, step);
+        //TODO add checking operation here, if there is no meta info, waiting
         BlockMeta blockmeta = dspaces_client_getblockMeta(clientEngine, slaveAddr, VarNameU, step, blockID);
         blockmeta.printMeta();
         std::vector<double> dataContainer(blockmeta.m_shape[0] * blockmeta.m_shape[1] * blockmeta.m_shape[2]);
         dspaces_client_get(clientEngine, slaveAddr, VarNameU, step, blockID, dataContainer);
+
+#ifdef ENABLE_TIMERS
+        double time_read = timer_read.stop();
+        log << step << "\t" << time_read << "\t" << std::endl;
+#endif
+
 
         //todo add the checking operation for the pdf
         //auto polyData = compute_isosurface(blockmeta.m_shape, blockmeta.m_offset, dataContainer, isovalue);
@@ -163,7 +167,7 @@ int main(int argc, char *argv[])
         char countstr[50];
         sprintf(countstr, "%02d_%04d", blockID, step);
         std::string fname = "./vtkdata/vtkiso_" + std::string(countstr) + ".vti";
-        writeImageData(fname, blockmeta.m_shape, blockmeta.m_offset, dataContainer);
+        //writeImageData(fname, blockmeta.m_shape, blockmeta.m_offset, dataContainer);
         //writePolyvtk(fname, polyData);
         std::cout << "ok for ts " << step << std::endl;
     }

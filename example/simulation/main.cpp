@@ -131,10 +131,10 @@ int main(int argc, char **argv)
 
 #ifdef ENABLE_TIMERS
         double time_write = timer_write.stop();
-        double time_step = timer_total.stop();
+        double time_total = timer_total.stop();
         MPI_Barrier(comm);
 
-        log << i << "\t" << time_step << "\t" << time_compute << "\t"
+        log << i << "\t" << time_total << "\t" << time_compute << "\t"
             << time_write << std::endl;
 #endif
 
@@ -145,8 +145,8 @@ int main(int argc, char **argv)
 
 
 #ifdef ENABLE_TIMERS
-    log << "total\t" << timer_total.elapsed() << "\t" << timer_compute.elapsed()
-        << "\t" << timer_write.elapsed() << std::endl;
+    //log << "total\t" << timer_total.elapsed() << "\t" << timer_compute.elapsed()
+    //    << "\t" << timer_write.elapsed() << std::endl;
 
     log.close();
 #endif

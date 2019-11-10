@@ -38,9 +38,6 @@ void TaskController::run(std::string &networkingType)
     globalEnginePointer->define("notify", notify);
     return;
 }
-void test()
-{
-}
 
 int main(int argc, char **argv)
 {

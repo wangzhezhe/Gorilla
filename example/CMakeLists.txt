@@ -1,3 +1,9 @@
+option(USE_TIMERS "Use profiling timers")
+#if(USE_TIMERS)
+  message(STATUS "Enabling profiling timers")
+  add_definitions(-DENABLE_TIMERS)
+#endif()
+
 add_executable(gray-scott
   ./simulation/main.cpp
   ./simulation/gray-scott.cpp

@@ -83,7 +83,9 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, std::vector<dataTy
         break;
     }
     }
-
+    if(this->m_threadPool==NULL){
+        throw std::runtime_error("m_threadPool should not be null when put array");
+    }
     int threadid = this->m_threadPool->getEssId();
     tl::managed<tl::thread> th = this->m_threadPool->m_ess[threadid]->make_thread(
         [dataMeta, blockID, this] {
@@ -166,6 +168,9 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, void *dataPointer)
     //then start a new thread to exectue the function at in constraints
     //the content need to be check is in map
     //dataMeta.m_varName,dataMeta.m_steps,blockID
+    if(this->m_threadPool==NULL){
+        throw std::runtime_error("m_threadPool should not be null when put data container");
+    }
     int threadid = this->m_threadPool->getEssId();
     tl::managed<tl::thread> th = this->m_threadPool->m_ess[threadid]->make_thread(
         [dataMeta, blockID, this] {

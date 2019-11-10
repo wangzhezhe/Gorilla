@@ -80,7 +80,7 @@ private:
     CACHESTATUS checkDataExistance(std::string varName, size_t timeStep, size_t blockID);
 
     //the thread pool to check the constraints
-    //ThreadPool* m_threadPool=NULL;
+    //ThreadPool* m_threadPool=NULL, initilzied at the constructor
     ArgoThreadPool* m_threadPool = NULL;    
     //FilterManager
     FilterManager* m_filterManager=NULL;
