@@ -64,7 +64,7 @@ int main(int argc, char **argv)
     for (int ts = 0; ts < 10; ts++)
     {
 
-        std::string slaveAddr = dspaces_client_getaddr(clientEngine, serverAddr, varName, ts);
+        std::string slaveAddr = dspaces_client_getaddr(clientEngine, serverAddr, varName, ts, blockID);
         std::cout << "the slave server addr for ds put is " << slaveAddr << std::endl;
         dataMeta.m_steps = ts;
 
@@ -77,7 +77,7 @@ int main(int argc, char **argv)
 
     for (int ts = 0; ts < 10; ts++)
     {
-        std::string slaveAddr = dspaces_client_getaddr(clientEngine, serverAddr, varName, ts);
+        std::string slaveAddr = dspaces_client_getaddr(clientEngine, serverAddr, varName, ts, blockID);
         std::cout << "the slave server addr for ds get is " << slaveAddr << std::endl;
 
         //get the metadata

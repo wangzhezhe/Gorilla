@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
         //get variable
 
         size_t blockID = (size_t)rank;
-        std::string slaveAddr = dspaces_client_getaddr(clientEngine, serverAddr, VarNameU, step);
+        std::string slaveAddr = dspaces_client_getaddr(clientEngine, serverAddr, VarNameU, step, blockID);
         //TODO add checking operation here, if there is no meta info, waiting
         BlockMeta blockmeta = dspaces_client_getblockMeta(clientEngine, slaveAddr, VarNameU, step, blockID);
         blockmeta.printMeta();

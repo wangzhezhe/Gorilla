@@ -11,6 +11,8 @@
 #include "../../utils/ArgothreadPool.h"
 #include "filterManager.h"
 
+namespace tl = thallium;
+
 //the abstraction that mamage the multiple block object for one step
 //todo, update the name here
 struct DataObjectInterface
@@ -64,6 +66,7 @@ public:
     BlockMeta getFromCache(std::string varName, size_t ts, size_t blockID, void *&rawData);
     BlockMeta getRegionFromCache(std::string varName, size_t ts, size_t blockID, std::array<size_t, 3> baseOffset, std::array<size_t, 3> regionShape, void *&rawData);
     
+    void doChecking(DataMeta &dataMeta, size_t blockID);
     void loadFilterManager(FilterManager* fmanager){m_filterManager=fmanager;return;}
 
     //add thread pool here, after the data put, get a thread from the thread pool to check filtered data
@@ -75,7 +78,7 @@ private:
     //first index is the variable name
     //second index is the time step
     //TODO add lock [when modify the element in the map such as delete elements, it will be not thread safety, add lock at that time]
-
+    tl::mutex m_dataMapMutex;
     std::map<std::string, std::map<int, DataObjectInterface *>> dataObjectMap;
     CACHESTATUS checkDataExistance(std::string varName, size_t timeStep, size_t blockID);
 

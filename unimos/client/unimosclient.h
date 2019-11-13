@@ -31,7 +31,7 @@ extern std::string masterConfig;
 
 BlockMeta dspaces_client_getblockMeta(tl::engine &myEngine, std::string serverAddr, std::string varName, int ts, size_t blockID);
 
-std::string dspaces_client_getaddr(tl::engine &myEngine, std::string serverAddr, std::string varName, int ts);
+std::string dspaces_client_getaddr(tl::engine &myEngine, std::string serverAddr, std::string varName, int ts, size_t blockid);
 
 void dspaces_client_get(tl::engine &myEngine,
                         std::string serverAddr,

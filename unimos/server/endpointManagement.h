@@ -32,6 +32,7 @@ struct endPointsManager
         
     //hash the varName + ts
     std::string getByVarTs(std::string varName, int ts);
+    std::string getByVarTsBlockID(std::string varName, int ts, size_t blockID);
 };
 
 

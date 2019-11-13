@@ -27,7 +27,7 @@ target_link_libraries(test_filterManager memcache constraintManager filterManage
 
 find_package(OpenMP)
 add_executable(test_mem_putget_parallel test_mem_putget_parallel.cpp)
-target_link_libraries(test_mem_putget_parallel memcache constraintManager filterManager OpenMP::OpenMP_CXX ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(test_mem_putget_parallel memcache filterManager constraintManager  OpenMP::OpenMP_CXX ${CMAKE_THREAD_LIBS_INIT})
 
 
 # Link test executable against gtest & gtest_main

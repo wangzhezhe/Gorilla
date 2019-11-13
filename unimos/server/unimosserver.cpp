@@ -22,14 +22,17 @@
 
 namespace tl = thallium;
 
+
 //global variables
+
+tl::abt scope;
+
 //The pointer to the enginge should be set as global element
 //this shoule be initilized after the initilization of the argobot
-
 tl::engine *globalClientEnginePointer = nullptr;
-//TBD tl::engine *globalInnerEnginePointer = nullptr;
 
 //init memory cache
+//TODO this shouled be loaded in main
 MemCache *mcache = new MemCache(4);
 //init filter manager
 FilterManager *fmanager = new FilterManager();
@@ -84,14 +87,18 @@ void dsgetBlockMeta(const tl::request &req, const std::string &varName, const in
     req.respond(blockmeta);
 }
 
-void getaddr(const tl::request &req, const std::string &varName, const int &ts)
+//TODO upadte the interface for querying addr
+void getaddr(const tl::request &req, const std::string &varName, const int &ts, const size_t &blockid)
 {
     if (epManager->ifAllRegister(globalProc))
     {
-        std::string serverAddr = epManager->getByVarTs(varName, ts);
-        //spdlog::debug("varname {} and ts {} getaddr  {}", varName, ts, serverAddr);
+
+        std::string serverAddr = epManager->getByVarTsBlockID(varName, ts, blockid);
         req.respond(serverAddr);
     }
+
+    //spdlog::debug("varname {} and ts {} getaddr  {}", varName, ts, serverAddr);
+
     else
     {
         //other wise, return the ip

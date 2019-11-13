@@ -31,7 +31,7 @@ void Writer::write(const GrayScott &sim, tl::engine &myEngine, size_t &step, siz
     //put u to the staging service
     DataMeta dataMeta = DataMeta(VarNameU, step,  typeid(double).name(), sizeof(double), varuShape,offSet);
 
-    std::string slaveAddr = dspaces_client_getaddr(myEngine, this->m_serverMasterAddr, VarNameU, step);
+    std::string slaveAddr = dspaces_client_getaddr(myEngine, this->m_serverMasterAddr, VarNameU, step , blockID);
     std::cout << "the slave server addr for ds put is " << slaveAddr << std::endl;
     dspaces_client_put(myEngine, slaveAddr, dataMeta, blockID, u);
 }

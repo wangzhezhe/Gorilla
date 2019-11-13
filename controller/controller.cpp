@@ -10,6 +10,7 @@ namespace tl = thallium;
 
 tl::engine *globalEnginePointer = nullptr;
 
+//TODO, update into the metadat here
 void notify(const tl::request &req, size_t &step, size_t &blockID)
 {
     //TODO update the innter structure according to the notified info

@@ -208,7 +208,7 @@ void runputget_double(MemCache *mcache)
 
 int main(int ac, char *av[])
 {
-
+    tl::abt scope;
     //init memory cache
     MemCache *mcache = new MemCache(4);
 

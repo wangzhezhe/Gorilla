@@ -41,9 +41,7 @@ include_directories(${gorilla_SOURCE_DIR}/dep)
 
 
 
-add_library(filterManager 
-${gorilla_SOURCE_DIR}/unimos/server/filterManager.cpp
-)
+
 
 # build the server library
 find_package(MPI REQUIRED) 
@@ -67,6 +65,12 @@ ${gorilla_SOURCE_DIR}/unimos/server/constraintManager.cpp
 )
 target_link_libraries(constraintManager thallium unimosclientlib)
 
+add_library(filterManager 
+${gorilla_SOURCE_DIR}/unimos/server/filterManager.cpp
+)
+target_link_libraries(filterManager constraintManager thallium unimosclientlib)
+
+
 add_executable (unimos_server ${gorilla_SOURCE_DIR}/unimos/server/unimosserver.cpp)
 target_link_libraries (unimos_server memcache endpointmng filterManager constraintManager unimosclientlib thallium MPI::MPI_CXX ${CMAKE_THREAD_LIBS_INIT})
 
@@ -77,7 +81,7 @@ target_link_libraries (unimos_client MPI::MPI_CXX unimosclientlib thallium)
 
 
 add_executable(largedatatest ${gorilla_SOURCE_DIR}/unimos/client/largedatatest.cpp)
-target_link_libraries (largedatatest MPI::MPI_CXX thallium)
+target_link_libraries (largedatatest MPI::MPI_CXX unimosclientlib thallium)
 
 
 add_executable(test_client_put ${gorilla_SOURCE_DIR}/unimos/client/test_client_put.cpp)

@@ -1,11 +1,16 @@
 
 # Contents
 1. [Motivation](#introduction)
-2. [In-memory data storage](#storage)
-3. [In situ data checking](#checking)
-4. [Trigger based task controller](#controller)
-5. [Installing](#install)
-6. [Example](#examples)
+2. [Approach](#approach)
+3. [Implementation](#implementation)
+
+    3.1 [In-memory data storage](#storage)
+    
+    3.2 [In situ data analytics](#analytics) [roadmap]
+    
+    3.3 [In-situ Triggers](#trigger) [roadmap]
+4. [Installing](#install)
+5. [Example](#examples)
 
 
 ## Motivation <a name="motivation"></a>
@@ -20,209 +25,60 @@ In general, the goal of the Gorilla project is to achieve the workflow managemen
 
 Specifically, the Gorilla project contains three parts, the in-memory storage service, in-memory data checking service and trigger-based task controller service. 
 
-## In-memory data storage <a name="storage"></a>
+## Approach <a name="approach"></a>
 
-The main goal of the in-memory data storage service is to provide the capability to put and get data between the application and the data staging service. The implementation of this layer is inspired by the [DataSpaces](https://github.com/philip-davis/dataspaces) and the [ADIOS](https://github.com/ornladios/ADIOS2) projects.
+<img src="fig/isdmcontrolflow.png" alt="drawing" width="300"/>
+
+The figure shows the comparison of two typical methods to construct the workflow, in case (a), the I/O service only provides the `put` and `get` interface,  the natural way to organize the workflow based on this interface is by DAG-based configuration. The obvious limitation is the multiple data i/o between tasks at different stages.
+
+The case (b) extends the capability of the I/O service, some data checking operation can be executed at the staging service (in-situ analytics), and the corresponding trigger option will be executed when checking operations returns true. The data management service will provide the `subscribe`,  `put` and the `trigger` interfaces 
+
+There are several advantages for the second case:
+
+(1) the in-situ analytics can be executed at the place near the raw data without extra data transfer between nodes
+
+(2) the task can be started only when it is necessary without data polling, which saves the resources.
+
+Generally speaking, the interfaces adopted by the case (b) could better share the knowledge between the different components in the workflow. Specifically, in the scientific workflow, the knowledge mastered by the producer is the model to generate the data, the method of the data partition, and the content of the data. The knowledge mastered by the consumer is the properties of the targeted data and how to process those targeted data (alert, checkpointing, vis, etc.). The classic `put` and `get` interface only let the consumer share the knowledge from the producer. In comparison, the `subscribe` interface could transfer the knowledge mastered by the consumer to the staging service, and staging service owns the knowledge both from the producer (by `put`) and the consumer (by `subscribe`). 
+
+The staging service could use these knowledge to do the computing and checking (these checking services are done at the consumer end previously). Then the staging could use the `notify` interface to trigger the consumer with the knowledge it has (which data partition satisfies the requirements). The `notify` interface can be implemented by different drivers, such as sending the alert, executing the checkpointing or in-situ visualization, etc. This knowledge could also leverage the data producer, such as updating the parameters used by the simulation during workflow running. 
+
+## Implementation <a name="implementation"></a>
+
+We assume that the data consumer only know the information of the application domain and the properties of the targeted data (bounding box, filter functions and the thresholds of the filtered values).
+
+### In-memory data storage <a name="storage"></a>
+The implementation of in-memory data storage service layer is inspired by the [DataSpaces](https://github.com/philip-davis/dataspaces) and the [ADIOS](https://github.com/ornladios/ADIOS2) projects.
 
 
 #### Networking and RPC service
 
 We adopt the [Mochi](https://mochi.readthedocs.io/en/latest/) software stack for networking and the RPC layer. Specifically, the Thallium project is used as the wrapper to implement the RPC service (Margo and Mercury project) and the Argobot is used to manage the threads. The Mercury project could provide multiple data transfer strategies such as TCP, verbs, and shared memory.
 
-#### Data representation and data index
+#### data put operation
 
-The typical data from the scientific application can be divided into the object data and the metadata. For example, the data generated from the physical simulation includes the field data (object data) and the mesh data (metadata). For simplicity of the explanation, let us take the image data as an example.
+The master-slave pattern is used as the distributed strategy of the staging service. During the stage of the initialization, the slave node will register their address into the master process (process with rank 0). The master service will write the address into the configuration file when the registration step finishes. Every server only need to run on one node, each server process use the Argobot libarary to manamge the threads on this nodes such as processing the rpc requests and start the data checking service. 
 
-For example, the metadata of the image data may include the variable name, step, lower bound and the upper bound, and the field data is the real value at every cell (pixel). If we view the field data from the storage's perspective, it is one dimension array essentially. The application view represents how those data organized from the view of the application, for example, two adjacent data point in storage view can be at a different position at the application view. The simple representation is the bounding box includes the lower bound and the upper bound or offset and the data shape (the coordinates of the data point overlap with the position of the cell in mesh).
+In order to utilize the bandwith of the different nodes, when data consumer put the data, we use round roubin patten to get an address (the master server provides the api to return the registered slave service) and the producer will put the data into this nodes. The producer will put the metadata such as the variable name, step, bounding box and the partition identified into the server.
 
-The simulation usually uses multiple processes to update the data at every step. It needs the strategy to map the id of the process/thread into specific data partition. For example, the Gray-Scott simulation in the example folder use the following strategies to map the data partition to a specific MPI process:
 
-```
-    MPI_Comm_rank(comm, &rank);
-    MPI_Comm_size(comm, &procs);
+### In situ data analytics <a name="analytics"></a>
 
-    MPI_Dims_create(procs, 3, dims);
-    npx = dims[0];
-    npy = dims[1];
-    npz = dims[2];
+The idea of data-driven and in-situ checking service is inspired by the [Meteor project](https://onlinelibrary.wiley.com/doi/full/10.1002/cpe.1278). The in-situ data checking service in the staging service could check the content of the data in-memory and trigger subsequent operation according the checking results. 
 
-    MPI_Cart_create(comm, 3, dims, periods, 0, &cart_comm);
-    MPI_Cart_coords(cart_comm, rank, 3, coords);
-    px = coords[0];
-    py = coords[1];
-    pz = coords[2];
+#### profile subscribe
 
-    size_x = (settings.L + npx - 1) / npx;
-    size_y = (settings.L + npy - 1) / npy;
-    size_z = (settings.L + npz - 1) / npz;
+The `subscribe` interface use the profile to tell the staging service how to check the data and what data should be checked. Since the data from the specific vaiable could locate on any server (we use the round robin for data put), we need to subscribe the profile to all the staging server. The user just need to subscribe the profile to the master service and the master service will propagate this profile to the slave services. Since the subscribe is not a high frequent and the data included by profile is just the meta infomation, the overhead of the subscribe is trivial.
 
-    offset_x = size_x * px;
-    offset_y = size_y * py;
-    offset_z = size_z * pz;
-```
+The profile need to include the following information:
 
-In order to make the storage layer suitable for multiple data resources, we also add a block id into the metadata to represent the specific data partition. The logic that how to relates the partition id with the data partition depends on how simulation partition the data. For example, in Gray-Scott simulation, the block id is the same with the rank id of the process.
+The identifier of the targeted data such as variable name, step and bounding box. Specifically, The name can be wildcard at the profile, the step can be the value range, the bouding box is the application domain that user interested.
 
-There are two benefits to use the block id to represent the block data
+The name of the function to check the data content, the profile just need to contain the name of the function and the parameters it needs. The user could cusztomize the function of data checking. The data checking engine will be described later.
 
-(1) the first is that it makes the storage layer more general and decouple the metadata with the field data data.
-(2) it simplifies the data consumer in some cases, since it does not need to recalculate the bounding box of the data partition, the information of the offset can be stored at the metadata and put into the staging service when simulation put the data.
+The action need to be triggered, the profile just need to contain the name of the trigger operaion and the parameter it needs, and the user could provide specific trigger endinge. The trigger engine will be described later.
 
-The strategy of the data index is inspired by the ADIOS project. Specifically, the data can be indexed by the variable name, step, and the bounding box ar the block id. For example, This is the interface from the `Variable.h` file of ADIOS:
-
-```
-    void SetBlockSelection(const size_t blockID);
-    void SetSelection(const adios2::Box<adios2::Dims> &selection);
-```
-
-There are several cases to show how to index data by those two methods:
-
-> 1 the data consumer process the data that matches with the data partition of the simulation
-
-For example, there are 4 MPI processes at simulation, and every process calculates a specific region of the data then output to the staging service. If there are also 4 processes at the consumer, each process will get the data by object id (rank id in this case) or calculate the corresponding bounding box then get the data by bounding box.
-
-> 2 the data consumer process the data that is the partial area of the specific data partition of the simulation
-
-In this case, the first step is to know that the partial area belongs to which data partition of the simulation, this can be calculated by a function that maps the bounding box into the block id. The user controls this function since the simulation can partition the data with different strategies. The strategy of caculting the id should same with the strategy of the data partition at the simualtion. Then the data can be indexed with the block id and the specific bounding box. Only the data within the specific bounding box will be transferred back from staging service to the client.
-
-TODO: Another strategy is to let specific slave service to provide the capability that map from the bounding box into the block id. Since all the block within specific step is located on the same serivce (details of the deistributed mechanism is explained at the following parts).
-
-> 3 the data consumer process the data that includes several data partition
-
-In this case, the first case is to calculate the list of the block id within this domain and fetch the data from the staging service according to the variable, step, and block id. Since the data may be located at a different node, they will be merged together at the client-side.
-
-
-> 4 hybrid pattern of case 2 and case 3
-
-
-#### Distributed strategy
-
-The master-slave pattern is used as the distributed strategy of the staging service. During the stage of the initialization, the slave node will register their address into the master process (process with rank 0). The master service will write the address into the configuration file when the registration step finishes. 
-
-When the client sends the API to the server, they will first ask the master which server it could use, and then the client will send the RPC to the slave nodes. The strategy of the getting slave nodes can be extended easily, and it only needs to provide a new function that gets the address from the list of the slave address. Currently, we use the `std::hash<std::string>` to map the ` <variablevame>_step` into the id, than use `id%<number of server process>` to get the specific server address. The reason for this setting is that the simulation always runs multiple steps, the number of the step is larger than the number of the staging service. The size of the server usually far more large (hundreds of GB) than the data from one step (several GB). So we put the data from the different steps on different staging services.
-
-The master node will become the bottleneck if there is a large amount of the client sending the request at the same time. The solution to release this simulation is to set multiple master servers, for example, both the process with rank 0 and rank 1 can be the master server and the burden will be reduced by half. Similarly, we could adopt more services according to the specific use cases.
-
-
-#### Interfaces of the data put and get
-
-> put data by bounding box
-
-descriptions: put the data into the staging service 
-
-parameters: variable name, step, lower bound, the shape of the data object
-
-return value: the status of the data put
-
-> get data by bounding box 
-
-descriptions: get the data from the staging service
-
-parameters: variable name, step, lower bound, the shape of the data object
-
-return value: the metadata of the object
-
-> put data by block id
-
-descriptions: put the data into the staging service, the block id is usually 
-set as the rank id of the MPI process
-
-parameters: variable name, step, lower bound, data shape, block id
-
-return value: the status of the data put operation
-
-> get data by block id
-
-descriptions: get the data from the staging service
-
-parameters: variable name, step, block id
-
-return value: the metadata of the object
-
-
-We only support case 1. and 2. (discussed at `Data representation and data index`) when getting the data by bounding box currently. 
-
-#### Performance testing
-
-coming soon
-
-## In situ data checking <a name="checking"></a>
-
-The in-situ data checking service at the staging service could check the content of the data in-memory and make the decision according to specific user-defined requirements. It includes two main components. The first is the data checking engine, which checks the data according to the subscription from the user. The second one is the mechanism to trigger the task according to the checking results. The idea of data-driven and in-situ checking service is inspired by the [Meteor project](https://onlinelibrary.wiley.com/doi/full/10.1002/cpe.1278).
-
-The staging service provides a subscribe interface. The input of this interface is a profile that describes the data checking operation. The data structure of this profile is listed as follows:
-
-```
-struct FilterProfile{
-    ...
-    std::string m_profileName="default";
-    std::string m_stepFilterName="default";
-    std::string m_blockIDFilterName="default";
-    std::string m_contentFilterName="default";
-    std::string m_subscriberAddr;
-```
-
-The data checking engine will generate concrete data constraints manager according to the name of the filter. For example, if the `m_contentFilterName="default"`, constraints manager will bind with the function called default. This function is defined at the constraints manager. If we need a customized function, we need to program the function that returns true or false and put it into the constrains manager, then we could make the constraints manager bind with the customized function by using the corresponding name of the function in the profile. This is the sample of the default data function that we use for the proof of the concepts:
-
-```
-bool defaultStepFilter(size_t step)
-{
-    std::cout << "default StepFilter" << std::endl;
-
-    return true;
-}
-
-bool defaultBlockFilter(size_t blockID)
-{
-    std::cout << "default BlockFilter" << std::endl;
-    return true;
-}
-
-bool defaultContentFilter(void *data)
-{
-    std::cout << "default ContentFilter" << std::endl;
-    return true;
-}
-```
-
-Since the data with the same variable name may at all slave service, we need to send subscription operation to all the slave service. In order to decrease the unnecessary overhear, the client just needs to send one subscription to the master service, and then the master service will broadcast this profile to all the slave service.
-
-When the data checking service is loaded into the staging service, we will start a new thread asynchronously to check the data according to the user-defined profile. This thread is managed by Argoboot library. For example, this is the specific logic to execute the data checking operation:
-
-```
-bool constraintManager::execute(size_t step, size_t blockID, std::array<size_t, 3> shape, std::array<size_t, 3> offset, void *data)
-{
-
-    bool stepConstraint = this->stepConstraintsPtr(step);
-
-    if (stepConstraint == false)
-    {
-        return false;
-    }
-
-    bool blockConstraint = this->blockConstraintsPtr(blockID);
-
-    if (blockConstraint == false)
-    {
-        return false;
-    }
-
-    bool boxConstraint = this->boxConstraintsPtr(shape, offset);
-
-    if (boxConstraint == false)
-    {
-        return false;
-    }
-
-    bool contentConstraint = this->contentConstraintPtr(data);
-
-    return contentConstraint;
-}
-```
-
-The constraints of the step, block, and the data content will be executed step by step. This function is only in the beta version currently.
-
-For the future goal, we plan to integrate the data checking service targeted on more specific using scenarios. There are some examples of the in-situ filter to reduce the data or detect interesting data patterns.
+For the future goal, we plan to integrate the data checking with more specific using scenarios. There are some examples of the in-situ analytics to reduce the data or detect interesting data patterns.
 
 (1) filter based on data sampling
 
@@ -232,21 +88,40 @@ https://arxiv.org/pdf/1506.08258.pdf
 
 https://www.osti.gov/servlets/purl/1338570
 
-(3) filter based on the machine learning/deep learning model
+(3) filter based on the analytics used in visuzliaztion such as the isosurface (VTK pipeline)
+
+(4) filter based on the machine learning/deep learning model
 
 https://www.nature.com/articles/s41586-019-1116-4
 
 https://dl.acm.org/citation.cfm?id=3291724
 
-When specific data finish the execution function listed above, it will send the notification back to the subscriber. This notification contains the metadata of the real data. The subscriber could do the following tasks based on this metadata.
-
-There is a workflow that implements the process mentioned above at the `scripts/testnotify.scripts`.
+When there is data put rpc comes to the staging service, it will check the metdata of the raw data according to the subscribed profiles on this node, such as comparing wether the name, step and bounding box match with the subscribed info. If there is matching, the data will be checked based on the analytics specified at the profile, if the checking operation returns true, the trigger option will be executed. This process is executed asyncrounously after the data put operation. 
 
 
-## Task controller and dynamic trigger <a name="controller"></a> 
+### In-situ Triggers <a name="trigger"></a>
 
-The task controller is still in the beta version. Currently, it could accept the notification from the staging service. For the future goal, it will maintain a table that contains all the execution results of the data block it subscribed for every step. Then the specific task fill be triggered according to this table. For example, if the task controller subscribes to 4 data block and the execution results for step 1 from those 4 blocks are all false, the specific task will not be triggered. If some of them are true, the specific task defined at the task controller will be triggered with the metadata. This part can be modified flexibly based on specific use cases. 
+The in-situ trigger will be implemented by different underlying engines, and there are several typical cases:
 
+(1) visualize engine
+
+When the data checking operation returns true, the trigger will send the metadata of the targeted data to the visualization engine, then the visualization engine could execute the visualization operation. (such as using the Catalyst of Paraview)
+
+(2) checkpointing engine 
+
+When the data checking operation returns true, the checking point engine could write the data onto the disk for post-processing.
+
+(3) alert engine
+
+The alert operation will be triggered based on the metadata provided by the data checking operation.
+
+(4) task controller
+
+If the checking operation is the function to detect the error of the data when the error is larger than a specific value, it is meaningless to let the simulation run continuously or specific parameters of the simulation need to be adjusted. The trigger service could send the notification to the task controller, and the task controller could stop or modify the corresponding configurations of the simulation.
+
+(5) data aggregation engine
+
+Since the qualified data might be located at the different nodes, if the user wants to aggregate the data, the trigger could send the notification to the data aggregation service. The data aggregation service could get the partitioned data from the staging according to the metadata it receives and aggregates the partitioned data in specific step.
 
 ## Installing <a name="install"></a> 
 
@@ -308,6 +183,8 @@ srun --mpi=pmix_v2 -n 4 ./example/isosurface 20 0.5
 
 
 ### TODO list
+
+update the getaddr interfaces
 
 update the put/get interface to the async mode
 

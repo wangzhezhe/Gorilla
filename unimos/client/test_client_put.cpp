@@ -40,7 +40,7 @@ int main(int argc, char **argv)
     for (step = 0; step < 20; step++)
     {
        
-        std::string slaveAddr = dspaces_client_getaddr(clientEngine, serverAddr, varName, step);
+        std::string slaveAddr = dspaces_client_getaddr(clientEngine, serverAddr, varName, step, blockID);
 
         std::cout << "the slave server addr for ds put is " << slaveAddr <<" for step " << step << std::endl;
         if (slaveAddr.compare("NOREGISTER") == 0)

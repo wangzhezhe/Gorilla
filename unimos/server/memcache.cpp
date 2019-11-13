@@ -13,6 +13,7 @@ MemCache::MemCache(size_t poolSize)
 
 enum CACHESTATUS MemCache::checkDataExistance(std::string varName, size_t steps, size_t blockID)
 {
+    m_dataMapMutex.lock();
     if (this->dataObjectMap.find(varName) != dataObjectMap.end())
     {
 
@@ -21,20 +22,55 @@ enum CACHESTATUS MemCache::checkDataExistance(std::string varName, size_t steps,
             //check block
             if (this->dataObjectMap[varName][steps]->ifBlockIdExist(blockID))
             {
+                m_dataMapMutex.unlock();
                 return CACHESTATUS::BLOCKEXIST;
             }
             else
             {
+                m_dataMapMutex.unlock();
                 return CACHESTATUS::BLOCKNOTEXIST;
             }
         }
         else
         {
+            m_dataMapMutex.unlock();
             return CACHESTATUS::TSNOTEXIST;
         }
     }
 
+    m_dataMapMutex.unlock();
     return CACHESTATUS::VARNOTEXIST;
+}
+
+void MemCache::doChecking(DataMeta &dataMeta, size_t blockID)
+{
+    //put the checking service at the thread pool
+    //only when the filter manager is loaded
+    int threadid = this->m_threadPool->getEssId();
+    tl::managed<tl::thread> th = this->m_threadPool->m_ess[threadid]->make_thread(
+        [dataMeta, blockID, this] {
+            char str[200];
+            sprintf(str, "call the filterManager for varName (%s),step (%d),blockID (%d)\n", dataMeta.m_varName.data(), dataMeta.m_steps, blockID);
+            std::cout << str;
+
+            //range the map
+            std::map<std::string, constraintManager *> tmpcm = this->m_filterManager->constraintManagerMap[dataMeta.m_varName];
+            for (auto it = tmpcm.begin(); it != tmpcm.end(); ++it)
+            {
+                std::cout << it->first << std::endl;
+                bool result = it->second->execute(dataMeta.m_steps, blockID, NULL);
+                if (result)
+                {
+                    m_filterManager->notify(dataMeta.m_steps, blockID, it->second->subscriberAddrSet);
+                }
+            }
+
+            return;
+        }
+
+    );
+    this->m_threadPool->m_userThreadList.push_back(std::move(th));
+    return;
 }
 
 template <typename dataType>
@@ -54,7 +90,9 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, std::vector<dataTy
     {
         //put value into the original DataObjectByRawMem
         BlockMeta bmeta = dataMeta.extractBlockMeta();
+        m_dataMapMutex.lock();
         dataObjectMap[dataMeta.m_varName][dataMeta.m_steps]->putData(blockID, bmeta, (void *)dataArray.data());
+        m_dataMapMutex.unlock();
         break;
     }
 
@@ -66,7 +104,10 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, std::vector<dataTy
         //put value into the original DataObjectByRawMem
         tempptr->setDataObjectByVector<dataType>(blockID, dataMeta, dataArray);
         DataObjectInterface *objInterfrace = tempptr;
+        m_dataMapMutex.lock();
         dataObjectMap[dataMeta.m_varName][dataMeta.m_steps] = objInterfrace;
+        m_dataMapMutex.unlock();
+
         break;
     }
 
@@ -79,46 +120,26 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, std::vector<dataTy
 
         std::map<int, DataObjectInterface *> innerMap;
         innerMap[dataMeta.m_steps] = objInterfrace;
+        m_dataMapMutex.lock();
         dataObjectMap[dataMeta.m_varName] = innerMap;
+        m_dataMapMutex.unlock();
         break;
     }
     }
-    if(this->m_threadPool==NULL){
+
+    if (this->m_threadPool == NULL)
+    {
         throw std::runtime_error("m_threadPool should not be null when put array");
     }
-    int threadid = this->m_threadPool->getEssId();
-    tl::managed<tl::thread> th = this->m_threadPool->m_ess[threadid]->make_thread(
-        [dataMeta, blockID, this] {
-            char str[200];
-            sprintf(str, "call the filterManager for varName (%s),step (%d),blockID (%d)\n", dataMeta.m_varName.data(), dataMeta.m_steps, blockID);
-            std::cout << str;
-            if (this->m_filterManager != NULL)
-            {
-                //range the map
-                std::map<std::string, constraintManager *> tmpcm = this->m_filterManager->constraintManagerMap[dataMeta.m_varName];
-                for (auto it = tmpcm.begin(); it != tmpcm.end(); ++it)
-                {
-                    std::cout << it->first << std::endl;
-                    bool result = it->second->execute(dataMeta.m_steps, blockID, NULL);
-                    if (result)
-                    {
-                        m_filterManager->notify(dataMeta.m_steps, blockID, it->second->subscriberAddrSet);
-                    }
-                }
-            }
-            else
-            {
-                std::cout << "m_filterManager is null" << std::endl;
-            }
-            return;
-        }
+    if (this->m_filterManager != NULL)
+    {
+        doChecking(dataMeta,blockID);
+    }
 
-    );
-    this->m_threadPool->m_userThreadList.push_back(std::move(th));
-
-    //TODO use the error code to label the status of put operation
     return 0;
 }
+
+
 
 int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, void *dataPointer)
 {
@@ -141,7 +162,9 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, void *dataPointer)
         {
             throw std::runtime_error("failed to putData, dataMallocSize is 0");
         }
+        m_dataMapMutex.lock();
         dataObjectMap[dataMeta.m_varName][dataMeta.m_steps]->putData(blockID, bmeta, dataPointer);
+        m_dataMapMutex.unlock();
         break;
     }
 
@@ -149,7 +172,9 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, void *dataPointer)
     {
         DataObjectInterface *objInterfrace = new DataObjectByRawMem(blockID, dataMeta, dataPointer);
         //update the data summary and put it into the object interface
+        m_dataMapMutex.lock();
         dataObjectMap[dataMeta.m_varName][dataMeta.m_steps] = objInterfrace;
+        m_dataMapMutex.unlock();
         break;
     }
 
@@ -158,7 +183,9 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, void *dataPointer)
         DataObjectInterface *objInterfrace = new DataObjectByRawMem(blockID, dataMeta, dataPointer);
         std::map<int, DataObjectInterface *> innerMap;
         innerMap[dataMeta.m_steps] = objInterfrace;
+        m_dataMapMutex.lock();
         dataObjectMap[dataMeta.m_varName] = innerMap;
+        m_dataMapMutex.unlock();
         break;
     }
     }
@@ -168,38 +195,14 @@ int MemCache::putIntoCache(DataMeta dataMeta, size_t blockID, void *dataPointer)
     //then start a new thread to exectue the function at in constraints
     //the content need to be check is in map
     //dataMeta.m_varName,dataMeta.m_steps,blockID
-    if(this->m_threadPool==NULL){
+    if (this->m_threadPool == NULL)
+    {
         throw std::runtime_error("m_threadPool should not be null when put data container");
     }
-    int threadid = this->m_threadPool->getEssId();
-    tl::managed<tl::thread> th = this->m_threadPool->m_ess[threadid]->make_thread(
-        [dataMeta, blockID, this] {
-            char str[200];
-            sprintf(str, "call the filterManager for varName (%s),step (%d),blockID (%d)\n", dataMeta.m_varName.data(), dataMeta.m_steps, blockID);
-            std::cout << str;
-            if (this->m_filterManager != NULL)
-            {
-                //range the map
-                std::map<std::string, constraintManager *> tmpcm = this->m_filterManager->constraintManagerMap[dataMeta.m_varName];
-                for (auto it = tmpcm.begin(); it != tmpcm.end(); ++it)
-                {
-                    std::cout << it->first << std::endl;
-                    bool result = it->second->execute(dataMeta.m_steps, blockID, NULL);
-                    if (result)
-                    {
-                        m_filterManager->notify(dataMeta.m_steps, blockID, it->second->subscriberAddrSet);
-                    }
-                }
-            }
-            else
-            {
-                std::cout << "m_filterManager is null" << std::endl;
-            }
-            return;
-        }
-
-    );
-    this->m_threadPool->m_userThreadList.push_back(std::move(th));
+    if (this->m_filterManager != NULL)
+    {
+        doChecking(dataMeta,blockID);
+    }
 
     //TODO use the error code to label the status of put operation
     return 0;
@@ -225,7 +228,9 @@ BlockMeta MemCache::getFromCache(std::string varName, size_t ts, size_t blockID,
         return BlockMeta();
 
     case BLOCKEXIST:
+        m_dataMapMutex.lock();
         objInterfrace = dataObjectMap[varName][ts];
+        m_dataMapMutex.unlock();
         break;
     }
 
@@ -274,7 +279,9 @@ BlockMeta MemCache::getRegionFromCache(
         return BlockMeta();
 
     case BLOCKEXIST:
+        m_dataMapMutex.lock();
         objInterfrace = dataObjectMap[varName][ts];
+        m_dataMapMutex.unlock();
         break;
     }
 
@@ -314,7 +321,9 @@ BlockMeta MemCache::getBlockMeta(std::string varName, size_t steps, size_t block
         return BlockMeta();
 
     case BLOCKEXIST:
+        m_dataMapMutex.lock();
         objInterfrace = dataObjectMap[varName][steps];
+        m_dataMapMutex.unlock();
         break;
     }
 

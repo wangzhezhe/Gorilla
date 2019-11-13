@@ -17,8 +17,8 @@ struct ArgoThreadPool
             m_ess.push_back(std::move(es));
         }
     };
-
-    tl::abt scope;
+    //put this separately, init this when using the pool
+    //tl::abt scope;
     
     //the system thread number
     int m_poolSize=0;

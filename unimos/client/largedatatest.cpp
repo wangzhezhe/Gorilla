@@ -1,4 +1,4 @@
-#include "unimosclient.hpp"
+#include "unimosclient.h"
 #include <mpi.h>
 #include <cmath>
 #include <time.h>
@@ -76,7 +76,7 @@ int main(int argc, char **argv)
     clock_gettime(CLOCK_REALTIME, &start); /* mark start time */
     for (int ts = 0; ts < 10; ts++)
     {
-        std::string slaveAddr = dspaces_client_getaddr(clientEngine, serverAddr, varName, ts);
+        std::string slaveAddr = dspaces_client_getaddr(clientEngine, serverAddr, varName, ts, blockID);
         std::cout << "the slave server addr for ds put is " << slaveAddr << std::endl;
         dataMeta.m_steps = ts;
         dspaces_client_put(clientEngine, slaveAddr, dataMeta, blockID, inputData);

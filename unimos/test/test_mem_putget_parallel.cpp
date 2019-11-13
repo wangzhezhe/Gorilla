@@ -2,6 +2,7 @@
 #include "../server/memcache.h"
 #include <string>
 #include <omp.h>
+#include <exception>
 
 size_t elemInOnedim = 100;
 
@@ -14,7 +15,7 @@ int testget_double_1d(MemCache *mcache, std::string varName, int ts, size_t bloc
     BlockMeta blockMeta = mcache->getFromCache(varName, ts, blockID, data);
 
     //check the datameta
-    if (blockMeta.getValidDimention()!= 0)
+    if (blockMeta.getValidDimention() != 0)
     {
         blockMeta.printMeta();
     }
@@ -81,17 +82,24 @@ void runput_blockinparallel(MemCache *mcache)
 
     std::string varName = "testVar";
     int ts = 0;
-
-    omp_set_num_threads(64);
+    int range = 100;
+    omp_set_num_threads(32);
 #pragma omp parallel for
-    for (int varid = 0; varid < 100; varid++)
+    for (int varid = 0; varid < range; varid++)
     {
         std::string varNameFull = varName + std::to_string(varid);
-        for (int ts = 0; ts < 100; ts++)
+        for (int ts = 0; ts < range; ts++)
         {
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < range; i++)
             {
-                testput_double_1d(mcache, varNameFull, ts, i);
+                //try
+                //{
+                    testput_double_1d(mcache, varNameFull, ts, i);
+                //}
+                //catch (...)
+                //{
+                //    std::cout << "got exception:"  << std::endl; //we never reach here
+                //}
             }
         }
     }
@@ -134,8 +142,9 @@ void runput_multipleVar()
 int main(int ac, char *av[])
 {
 
+    tl::abt scope;
     //init memory cache
-    MemCache *mcache = new MemCache(4);
+    MemCache *mcache = new MemCache(16);
 
     runput_blockinparallel(mcache);
 

@@ -23,13 +23,13 @@ BlockMeta dspaces_client_getblockMeta(tl::engine &myEngine, std::string serverAd
     return blockmeta;
 }
 
-std::string dspaces_client_getaddr(tl::engine &myEngine, std::string serverAddr, std::string varName, int ts)
+std::string dspaces_client_getaddr(tl::engine &myEngine, std::string serverAddr, std::string varName, int ts, size_t blockid)
 {
     //TODO put them at separate class
     tl::remote_procedure dsgetaddr = myEngine.define("getaddr");
     //tl::remote_procedure putMetaData = myEngine.define("putMetaData").disable_response();
     tl::endpoint globalServerEndpoint = myEngine.lookup(serverAddr);
-    std::string returnAddr = dsgetaddr.on(globalServerEndpoint)(varName, ts);
+    std::string returnAddr = dsgetaddr.on(globalServerEndpoint)(varName, ts, blockid);
     return returnAddr;
 }
 
@@ -87,8 +87,10 @@ void dspaces_client_put(tl::engine &myEngine,
 
     tl::bulk myBulk = myEngine.expose(segments, tl::bulk_mode::read_only);
 
-    int status = dsput.on(globalServerEndpoint)(datameta, blockID, myBulk);
-
+    //TODO, use async I/O ? store the request to check if the i/o finish when sim finish
+    //the data only could be updated when the previous i/o finish
+    //auto request = dsput.on(globalServerEndpoint).async(datameta, blockID, myBulk);
+    int status=dsput.on(globalServerEndpoint)(datameta, blockID, myBulk);
     return;
 }
 
