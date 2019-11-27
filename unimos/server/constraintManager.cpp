@@ -62,8 +62,6 @@ constraintManager::constraintManager(std::string stepConstriaintsName,
 bool constraintManager::execute(size_t step, size_t blockID, void *data)
 {
 
-    //std::this_thread::sleep_for(std::chrono::seconds(2));
-
     bool stepConstraint = this->stepConstraintsPtr(step);
 
     if (stepConstraint == false)

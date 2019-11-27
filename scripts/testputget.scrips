@@ -4,7 +4,7 @@
 srun --mpi=pmix_v2 --time=00:05:00 --mem-per-cpu=100000 --ntasks=8 ./unimos_server verbs
 
 
-srun --mpi=pmix_v2 --time=00:05:00 --ntasks=8 --mem-per-cpu=25000 ./example/gray-scott ~/cworkspace/src/Gorilla/example/simulation/settings.json 
+srun --mpi=pmix_v2 --time=00:05:00 --ntasks=1 --mem-per-cpu=25000 ./example/gray-scott ~/cworkspace/src/Gorilla/example/simulation/settings.json 
 
 
-srun --mpi=pmix_v2 --time=00:05:00 --ntasks=8 --mem-per-cpu=25000 ./example/isosurface 10 0.5
+srun --mpi=pmix_v2 --time=00:05:00 --ntasks=1 --mem-per-cpu=25000 ./example/isosurface 10 0.5

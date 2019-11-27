@@ -13,7 +13,6 @@ int FilterManager::profileSubscribe(std::string varName, FilterProfile &fp)
         //same as the CMNOTEXIST
     case FMANAGERSTATUS::CMNOTEXIST:
     {
-
         constraintManager *cm = new constraintManager(fp.m_stepFilterName, fp.m_blockIDFilterName, fp.m_contentFilterName);
         cm->addSubscriber(fp.m_subscriberAddr);
         std::map<std::string, constraintManager *> temp;
@@ -23,7 +22,6 @@ int FilterManager::profileSubscribe(std::string varName, FilterProfile &fp)
     }
     case FMANAGERSTATUS::CMEXIST:
     {
-
         spdlog::info("failed to subscribe filter profile, the cm {} exist " , fp.m_profileName);
         //use error code here
     }
@@ -61,9 +59,9 @@ void FilterManager::notify(size_t step, size_t blockID, std::set<std::string> &s
     //go through the list of the subscriber
     for (auto elem : subscriberAddrSet)
     {
-        spdlog::debug("notify subscriber addr {}", elem);
-        int status = dsnotify_subscriber(*(this->m_Engine), elem, step, blockID);
-        spdlog::debug("notify status for {} is {}", elem, status);
+        spdlog::info("notify subscriber addr {}", elem);
+        //int status = dsnotify_subscriber(*(this->m_Engine), elem, step, blockID);
+        //spdlog::debug("notify status for {} is {}", elem, status);
     }
     return;
 }

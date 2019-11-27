@@ -2,6 +2,7 @@
 #include "../server/memcache.h"
 #include "../server/filterManager.h"
 #include <unistd.h>
+//#include <omp.h>
 
 size_t elemInOnedim = 100;
 
@@ -14,7 +15,6 @@ void testput_double_1d(std::string varName, size_t i, MemCache *mcache)
     {
         array.push_back(i * 1.1);
     }
-
 
     int ts = 0;
     //TODO distinguish local info and the global info
@@ -30,31 +30,42 @@ void testput_double_1d(std::string varName, size_t i, MemCache *mcache)
     mcache->putIntoCache<double>(datameta, blockID, array);
 }
 
-
-
 int main(int ac, char *av[])
 {
+    tl::abt scope;
 
     std::string varName = "testName1d";
 
-    FilterProfile fp("testProfile","default","default","default","testsubaddr");
+    FilterProfile fp("testProfile", "default", "default", "default", "testsubaddr");
 
-    FilterManager * fmanager = new FilterManager();
-    fmanager->profileSubscribe(varName,fp);
+    FilterManager *fmanager = new FilterManager();
+    fmanager->profileSubscribe(varName, fp);
 
     //init memory cache
-    MemCache *mcache = new MemCache(10);
+    MemCache *mcache = new MemCache(8);
 
     mcache->loadFilterManager(fmanager);
 
-    for (size_t i = 0; i < 100; i++)
+    //first principle for using argobots
+    //it is still dangerous to mix the argoboots with the openmp, pthread
+    auto self_es = tl::xstream::self();
+    std::vector<tl::managed<tl::thread>> ults;
+    for (size_t i = 0; i < 1000; i++)
     {
-        testput_double_1d(varName, i, mcache);
-        std::cout << "ok to put the block " << i << std::endl;
+        auto th = self_es.make_thread([i,&varName,&mcache](){
+            testput_double_1d(varName, i, mcache);
+            std::cout << "ok to put the block " << i << std::endl;
+        });
+        ults.push_back(std::move(th));
     }
+    for(auto& th : ults) {
+        th->join();
+    }
+    
+    ults.clear();
 
-    sleep(20);
-
+    //sleep(20);
+    //TODO check the memcache before exit, to see if it finish all the thread then exit
     free(mcache);
 
     return 0;

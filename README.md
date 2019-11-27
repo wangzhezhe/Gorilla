@@ -59,7 +59,7 @@ We adopt the [Mochi](https://mochi.readthedocs.io/en/latest/) software stack for
 
 The master-slave pattern is used as the distributed strategy of the staging service. During the stage of the initialization, the slave node will register their address into the master process (process with rank 0). The master service will write the address into the configuration file when the registration step finishes. Every server only need to run on one node, each server process use the Argobot libarary to manamge the threads on this nodes such as processing the rpc requests and start the data checking service. 
 
-In order to utilize the bandwith of the different nodes, when data consumer put the data, we use round roubin patten to get an address (the master server provides the api to return the registered slave service) and the producer will put the data into this nodes. The producer will put the metadata such as the variable name, step, bounding box and the partition identified into the server.
+In order to utilize the bandwith of the different nodes, when data consumer put the data, we use round roubin patten to get an address (the master server provides the api to return the registered slave service) and the producer will put the data into this nodes. The producer will put the metadata such as the variable name, step, bounding box and the partition identified into the dedicated metadata service (this is dependes on the strategies of the scalability, which will be discussed in details latter).
 
 
 ### In situ data analytics <a name="analytics"></a>
@@ -69,6 +69,57 @@ The idea of data-driven and in-situ checking service is inspired by the [Meteor 
 #### profile subscribe
 
 The `subscribe` interface use the profile to tell the staging service how to check the data and what data should be checked. Since the data from the specific vaiable could locate on any server (we use the round robin for data put), we need to subscribe the profile to all the staging server. The user just need to subscribe the profile to the master service and the master service will propagate this profile to the slave services. Since the subscribe is not a high frequent and the data included by profile is just the meta infomation, the overhead of the subscribe is trivial.
+
+#### scalability
+
+one question for the subscription part is that, when the filter is subscribed to the staging service, how the staging know where is the specific data that the subscriber interested. The straightforward solution is subscribe to all the nodes described above. This is not efficient enough if the number of the server is large. For more flexible case, if this profile need to unsubscribe during the workflow running, the master need to send unsubscribe to all the staging service, which is also not efficient. Therefore, the metadata service is necessary, specifically, it the input of the metadata service is the interesting domain of the subscriber and the output is the address of the service where data located. Essentially, the metadata service will maintain the following table (we assume all variable use the same domain, otherwise, we need several those tables):
+
+
+| index  |  partition identifier |profileName | step 1  | step2 |...| stepn  |
+|--------|----------|------------|---------|-------|----|--------|
+| 1      |(lowerbound,upperbound)|(list of subscribed profiles)|addr_11| addr_12 |...| addr_1n |
+| ...    |...|...|...|...|...|...|
+| k      |(lowerbound,upperbound)|(list of subscribed profiles)|addr_k1| addr_k2 |...| addr_kn |
+
+The proportional relation between different entities:
+
+partition identifier:subscribed profile (1:N)
+partition identifier:variable Name (1:N) (multiple variables can be located in same partitions)
+variable Name : partition identifier (1:N) (ont varaible may across multiple partitions)
+variable Name : step (1:N)
+
+
+There are different patterns to many different implements for implementating the [scalable metadata management service](https://dl.acm.org/citation.cfm?id=3212686) such as table base, hash based, DHT based or bloom filter based methods.
+
+Specifically, we divide the all the services used by staging service into the rawdata service and the metadata service. The above-mentioned table is maintained by the metadata service. After the data put operation, the rawdata service will send the request to the metadata service to update the table. In order to create the table to store the partition information, the user need to call the `init` RPC and send the partition information into the metadata servie. We assume the partition information is static for whole steps firstly. When there is data put operation, the addr of the service where data located for specific step will be registered to the metadata service. The row of the specific partition will also be updated. 
+
+At the beginning state, the metadata table is empty, after the init operation, the metadata table will be 
+
+| index  |  partition identifier |
+|--------|----------|
+| 1      |(lowerbound,upperbound)|
+| ...    |...|
+| k      |(lowerbound,upperbound)|
+
+After the subscribed operation, the metadata table will be 
+
+
+| index  |  partition identifier |profileName |
+|--------|----------|---|
+| 1      |(lowerbound,upperbound)|(list of subscribed profiles)|
+| ...    |...|
+| k      |(lowerbound,upperbound)|(list of subscribed profiles)|
+
+If there are data put operation, the corrosponding row will be updated , the raw data service will also ask the metadata service if this partition is subscribed, then the list of the partitiond list will be replied. If the raw node service not create the function defined at the profile, the corresponding functions will be created and the checking operation will be executed. 
+
+By this way, the subscribe operation will not be propagted to all the raw data service list and it will only be replied when the data is first pulled onto the specific nodes and there are subscription at the same time. Essentially, we let the checking operation between region executed at the metadata service to decrease the number of the subscription by this pattern.
+
+The next question is how to maintain the metadata table we listed above in efficient and scalable manner. When the number of the partition increase and there are large number of the request come at the same time to check if the specific partition are subscribed, there will be a bottleneck to use the single service to maintain the metadata table.
+
+The idea of the distributed solution to manage the metadata table is to distribute them among the metadata service evenly. Current solution is to set the number of the metadata service before the system starts. then the master also know the total number of the partitions by `init` function. For example, there are 2n partitions in total and two metadata services. The first service will in charge of the partition from the 0 to n-1 and the second service will in charge of the partition from the n to 2n-1. The region represented by 0 to n-1 can be represented by the bounding box and the region represented by n to 2n-1 can also be represented by the bounding box. Those information can be propagate to all the compute service at the initial step (only need to propagate once at initial step. Or this info can be fetched by the other raw data service at the put operation). Anyhow, the raw data service need to know what is the metadata service it corresponds to when it update the metadata table after the put operation.
+
+
+#### content of the subscription
 
 The profile need to include the following information:
 
@@ -184,7 +235,14 @@ srun --mpi=pmix_v2 -n 4 ./example/isosurface 20 0.5
 
 ### TODO list
 
-update the getaddr interfaces
+The milestone doc 
+(the link of the google sheet)
+https://docs.google.com/spreadsheets/d/1Lr7T4FPxmjMw1FA57rc72ltGA0c_QiA0uM8_2E-LDUs/edit#gid=0
+
+update the delete function of the memcache, if the there is thread pool then wait the finish of all the threads then delete the thread pool
+using the queue to check the pushed threads here
+
+update the getaddr interfaces (add the round roubin addr get)
 
 update the put/get interface to the async mode
 
