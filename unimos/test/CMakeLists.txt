@@ -30,6 +30,11 @@ add_executable(test_mem_putget_parallel test_mem_putget_parallel.cpp)
 target_link_libraries(test_mem_putget_parallel memcache filterManager constraintManager OpenMP::OpenMP_CXX ${CMAKE_THREAD_LIBS_INIT})
 
 
+add_library(hilbert ../hilbert/hilbert.c)
+add_executable(test_hilbert test_hilbert.cpp)
+target_link_libraries(test_hilbert hilbert)
+
+
 # Link test executable against gtest & gtest_main
 add_test( NAME test_mem_putget COMMAND test_mem_putget)
 add_test( NAME test_tool COMMAND test_tool)
