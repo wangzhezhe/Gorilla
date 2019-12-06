@@ -1,78 +1,105 @@
-### this doc list some the key questions of the system design
+## this doc list some the key questions of the system design
 
-**the motivation and the background**
+### the motivation and the background
 
-For in-transit processing, the data is acquired by the `data get` operation after the `data put`. This pattern is not flexible for the situation that only some parts of the data need to be processed. For example, when there are multiple partitions of the data is put into the staging service, but only some parts of the data need to be processed, it is necessary to filter out the partition that satisfies the user requirements. To fully utilize the idle resources of the staging service and process the specific data partition only when it is necessary, it is necessary to integrate the mechanism of the dynamic task trigger service into the staging node. The task trigger condition can be the operation such as feature detection, data error detection,  or just the data transfer operation such as dumping the data into the disk or transfer the data to the visualization.
+(key challenges, this comes from the ISDM report)
+Data management for the workflow faces an increasing diversity and complexity of in situ use cases and platforms. Many of these cases require the ability to make decisions based on prior computation. In the past, control decisions could be made a priori by humans because workflows were simple (e.g., one simulation and one visualization) and had static resource requirements that were known in advance. This is no longer true, as tasks are becoming more difficult
+to control manually (e.g., deep learning hyperparameter optimization) and because the overall workflows are becoming larger and more complex, featuring multiple data sources and sinks with dynamically changing requirements. Automated, rather than manual, control of in situ workflows is needed, based on rigorous, explainable, reliable, and trustworthy decision-making.
 
-**the state-of-art solution for the in-situ workflow**
+The essence of decision making in workflow management is to trigger a specific task based on a particular condition. This condition can come from the data during the workflow execution or the runtime information of the workflow management tool. We use the `dynamic task trigger` to represents the capability of that triggering the task dynamically based on the specific condition.
 
-Stream processing based on the parallel I/O tool:
-Task A sends the data to parallel I/O (such as ADIOS) and underlying device, the task B load the data from the parallel I/O and process the data. Multiple tasks can be made based on the parallel I/O service. 
+### the state-of-art solution for the dynamic task trigger
 
-In-situ (In-line in-situ, tightly coupdled): 
-The analytics and the visualize is composed together with the simulation. The advantage is to save the time caused by the data transfer between tasks. The defect is the complexity of the workflow design since different services need to be compiled together. Another defect is the pause of simulation during the execution.
+**the in-situ detection is tightly coupled with the simulation**
 
-In-situ (visualization adaptor):
-The visualization tool such as the Catalyst is instrumented into the simulation. The raw data is transferred to the visualization tool, such as the Paraview for in-situ processing. The user could get the simulation results in real-time.
+One solution is to integrate the in-situ analytics such as the feature detection algorithm with the simulation. [This work](https://arxiv.org/pdf/1506.08258.pdf) presents the concept of the indicator and trigger. Specifically, the indicator and trigger are lightweight functions evaluated at a high frequency to make dynamic data-driven control-flow decisions. One body of research focuses on "quick sketches" based on the statistical characteristic to trigger some actions. Some works explore how to use the model comes from the offline machine learning to detect the features.Such as [this example](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8365977). Since both the simulation and the analytics are data-intensive operations, the limitation for this pattern is that the time used for executing the analytics will influence the execution time of the simulation. There is also a limitation to compile the detection and the in-situ feature detection together if they use different source code and build tools. [Ascent](https://dl.acm.org/citation.cfm?doid=3281464.3281468) also provides the capability of executing the predefined feature detection during workflow execution. When there are interesting things happening, the associated tasks will be triggered.
 
-In-transit (loosely coupled):
-The data is sent to the staging service by data put API, then data is acquired by `data get` from the analytics/visualization. The staging service can be used to process the data such as error detection before the data get operation. 
+**the in-situ detection is loosely coupled with the simulation**
 
-There still lacks a general programmable mechanism in staging service to control the data trigger based by data-driven pattern. The task in staging service needs to launch dynamically when user-defined requirements are satisfied. This mechanism is required by in-situ workflows for different scenarios. For example, the feature detection can be integrated into the staging service. The subsequent task is triggered for specific data partition when data satisfy a specific pattern. The error detection operation can be integrated into the staging service, the data partition with the error value will not be processed by subsequent task, and the alert message will be sent out.
+Catalyst/SENSI can connect the ParaView server to a running simulation. Data can be extracted from Catalyst instrumented simulation to the ParaView server, and the in-situ analytics can be modified by Paraview during the execution of the simulation. It is also possible to pause the simulation by Paraview in an interactive way. However, the main goal of the middleware, such as SENSI focuses on how to integrate the analytics to assist visualization. Another type of middleware is the data staging service, which moves output data from compute nodes to staging or I/O nodes prior to data storage service (DataStager, DataSpace). By using the high-speed network, this pattern reduces the perturbation when extracting and processing the data. There is a trend to utilize the computing capability at the data staging nodes to improve the flexibility of the workflow. For example, [in this work](https://dl.acm.org/citation.cfm?id=3356158), the error detection operation is integrated with the data staging service. Once a silent error is detected at the staging service before checkpointing, the simulation is rolled back to the last checkpoint and re-executed. However, there is still a lack of a generalized dynamic task trigger mechanism at the data staging service to allow users to express the dynamic task trigger based on customized data checking and feature detection operation.
 
-Although there are several tool provides the in-memory execution based on parallel IO (HDF5, ADIOS).
+### the expression of the dynamic task trigger
 
-SENSI https://gitlab.kitware.com/sensei/sensei/tree/master
-Ascent  https://ascent.readthedocs.io/en/latest/Overview.html https://github.com/Alpine-DAV/ascent
-CINEMA https://cinemascience.github.io/examples.html https://cinemasciencewebsite.readthedocs.io/en/latest/
-
-All these tools are tightly coupled with the visualization tools and aim to filter/trigger the data for visualization. There still lacks a more general dynamic trigger tool at the data staging layer.
-
-**the expression of the dynamic task trigger**
-
-If we use the DAG to represent the task execution. In the DAG, the node of every graph represents a dataset and the edge between two nodes represents the dynamic trigger. The edge between two nodes contains three necessary elements: (DataChecking, Indicator, Condition, Action).
-
-For example, for the `Data_A -> Data_B` where the `->` represents the dynamic task trigger.
-
-The `DataChecking` is a function that maps the `Data_A` into `Indicator`. The `Indicator` is a flag which can be a single value or specific data structure. The `Condition` is the operation that maps the `Indicator` into a boolean value. If the boolean value is true, the `Action` is executed and if the boolean value is false, the `Action` will not be executed. The `Action` is a function that transfer the `Data_A` into the `Data_B`.
-
-For the static trigger, the `DataChecking` and the `Indicator` are empty, the `Condition` is always true. The `DataChecking` operation can be splitted into two specific types, the `metadata_Checking` is executed at the metadata server and the `rawdata_Checking` is executed at the raw data service.
+The dynamic task trigger can be composed by following necessary elements:
 
 ```
-// this is the pseudocode code
-// define the necessary elements
-define DataChecking
-define Indicator
-define Condition 
-define Action
-
-//define the dynamic trigger
-dynamicTrigger dtsource(DataChecking,Indicator,Condition,Action)
-dynamicTrigger dttask(DataChecking,Indicator,Condition,Action)
-
-DAG dag
-dag.dtsource().dttask()
-
-startExecution(dag,boundingbox)
+(Function, Operator, Action)
 ```
 
-**how the put operation work**
+The `Function` is the function that is called when the dynamic trigger starts, it can be the function to get and check the specific data. The `Operator` will use the results of the function execution to caculate the indicator value. If indicator is true, the `Action` will be executed.
 
-The first step of the data put operation is same with the DataSpaces. 
 
-**how the task scheduler work for dynamic task trigger**
+The control flow for the expression `dynamicTrigger(f,o,a)` is
 
-When the `startExecution` is called, the `DAG` will be put to the corresponding task scheduler. If the domain across multiple metadata server, all the metadata server will get coresponding DAG. Then when there is metadata update for specific metadata server, the data checking operation will be executed, then the indicator is executed according to the condition. If it is ok to check the metadata, the RPC will be sent to the raw data service to check the raw data.
+```
+results = f()
+indicator = operator(results)
+if(indicator){
+    call a()
+}
+```
 
-(TBD)
-If there is one data partition across the whole domain but multiple metadata service, all the metadata server contain the metadata of this partition. When there is subscribe, the DAG locates on every data server. When there is data update, the same metadata locates on different metadata service. If using the same scheduler strategies, the raw data will be checked multiple times. (potential solution, before sending the DAG to the raw data service, ask if this DAG is in execution) (control the number of the master server, make it larger than the partition number)
+For example, one common case is that
 
-**how to run the task and where to run the task**
+```
+If the average value for data set d is larger than 10, then trigger task t
+```
 
-the task (Action) will run when the indicator satisfy the condition. The action can run at the metadata server (there might be several partitions returns several indicator values)
+For this expression, the checking function is `avg of data set d`, and the operator is to execute the `comparison operation (>)` (The number 5 can be the parameter associated with the operator), the action is the task `t`. The function, operator and the action defined here are the interfaces which can be implemented by different concrete class.
 
-**how to build complex cases based on the condition trigger primitives**
+### how to integrate the dynamic trigger with the staging service
 
-(TBD, one potential solution is to use different status to label the raw data)
+The data is divided into the metadata and the raw data, we could execute the following dynamic trigger at the staging service when there is the update of specific metadata:
 
-<img src="../fig/workflowexample.png" alt="drawing" width="500"/>
+```
+dynamicTrigger(getMeta(),operator,action)
+```
+
+The first parameter is the function `getMeta` in this case, it will extract the metadata of specific variable. For example, the function might extract the timestep from the metadata. The `operator` can be the `greater than`, in this case, the action will be triggered whent the step is larger then specific threshold.
+
+The `action` defined here can be another dynamic trigger:
+
+```
+dynamicTrigger(rpcCall,operator,action)
+```
+
+The first parameter is the `rpcCall` that sends RPC to the raw data service. This RPC will notify the `task execution enginge` at the raw data service to execute the checking function. The return value might be a list that contains the results of the checking operation from different data partitions. The `operator` can be more complicated in this case since it needs to calculate the indicator value based on several return values from the RPC call. 
+
+### how the put operation work
+
+The first step of the data put operation is same with the DataSpaces. The dynamic trigger will be executed when coresponding metadat is updated.
+
+### how the dynamic task trigger manager work
+
+When the dynamic task trigger is subscribed into the staging service (meta data management service), the description of the dynamic trigger will be put to the corresponding task metadata service according to the spatial index. Then when there is a metadata update for a specific metadata server, the data checking operation will be executed, and the execution results are returned to the metadata service after the data checking operation. The metadata server will evaluate the indicator according to the operator defined by the dynamic task trigger, and if the indicator value returned by the operator is true, the subsequent task will be executed.
+
+This is the time sequence which shows the interaction between the metadata service and the raw data service:
+
+<img src="../fig/timesequence.png" alt="drawing" width="500"/>
+
+### the behaviour of the metadata servers
+
+When registering the dynamic trigger into the staging service, the prototype of API is `register(<varName>,<bounding box>,<tuple of the function name that represents the dynamic task trigger>)`. At the register step, the dynamic trigger is indexed by a string (name of the dyanmci trigger) at the metadata server. The server that accepts the dynamic request will calculate the metadata server that corresponds with the region of the bounding box. If there is only one metadata server, the dynamic trigger will be registered into that server. If the region of the bounding box is across the multiple metadata servers, the information of the dynamic trigger is put at the first metadata server, and other metadata servers will store `(<varName> <bounding box> <the address of the fist metadata server> <the name of the dynamic task trigger>)`. In this case, the other metadata server will store a `pointer` to the original metadata server where the real information of the dynamic task triggered located. 
+
+When the data indexed by the second metadata server is updated, the dynamic trigger at the second metadata is executed. Since this is only a dummy dynamic task trigger, it will send a request to the first metadata server to start the real task trigger operation. This strategy will avoid the dynamic trigger to be executed several times if the subscribed domain across the multiple metadata servers. After the metadata put operation, the metadata server just need to check if there is specific `dynamic trigger expression` registered at the current server. The corresponding dynamic trigger will be executed if there are registered dynamic triggers.
+
+### the raw data management and the metadata management
+
+1> how the data is stored and indexed at the raw data service？
+
+The storage layer will use the FIFO cache, there is a queue that maintain the window of the steps. The data out of this window will be dumped into the persistent storage. The data at the raw data server is indexed by the `<step, varName, partition id>`, and both metadata and the raw data are stored there. 
+
+2> how the metadata is indexed at the metadata server ?
+
+The data partition at the metadata server is indexed by the `<step, varName, bounding box>`. the value is the `<address of the raw data server, the partition id>`. 
+
+3> how specific metadata server is found when the raw data service updates the metadata service or when there is API sent by the client according to the bounding box.
+
+The SFC curve is used to transfer the multi-dimensional global domain space into the 1d space, and then the 1d domain is partitioned according to the number of the metadata servers.
+
+
+### task execution engine
+
+The capability to execute the task at the staging service is provided by the Argobot. It also serves as the thread management tool for the underlying RPC communication layer.
+
+
