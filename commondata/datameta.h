@@ -11,13 +11,6 @@
 #include <thallium/serialization/stl/array.hpp>
 
 
-//the bbox for the application domain
-struct BBOX{
-    std::array<double, 3> m_lb{{0,0,0}};
-    std::array<double, 3> m_ub{{0,0,0}};
-};
-
-
 struct FilterProfile{
 
     FilterProfile(){};

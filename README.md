@@ -235,9 +235,7 @@ srun --mpi=pmix_v2 -n 4 ./example/isosurface 20 0.5
 
 ### TODO list
 
-The milestone doc 
-(the link of the google sheet)
-https://docs.google.com/spreadsheets/d/1Lr7T4FPxmjMw1FA57rc72ltGA0c_QiA0uM8_2E-LDUs/edit#gid=0
+make the metadata service workable, Queue+MAP
 
 update the delete function of the memcache, if the there is thread pool then wait the finish of all the threads then delete the thread pool
 using the queue to check the pushed threads here

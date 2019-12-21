@@ -39,10 +39,6 @@ xpkg_import_module (abtio REQUIRED abt-io)
 include_directories(${gorilla_SOURCE_DIR}/dep)
 
 
-
-
-
-
 # build the server library
 find_package(MPI REQUIRED) 
 find_package(Threads)
