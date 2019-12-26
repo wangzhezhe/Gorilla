@@ -34,65 +34,20 @@ xpkg_import_module (margo REQUIRED margo)
 find_package (thallium REQUIRED)
 xpkg_import_module (abtio REQUIRED abt-io)
 
-
 # add the depedency
 include_directories(${gorilla_SOURCE_DIR}/dep)
 
-
-# build the server library
-find_package(MPI REQUIRED) 
-find_package(Threads)
-add_library(memcache 
-${gorilla_SOURCE_DIR}/unimos/server/memcache.cpp
-${gorilla_SOURCE_DIR}/unimos/server/objectbyrawmem.cpp
-)
-
-add_library(endpointmng 
-${gorilla_SOURCE_DIR}/unimos/server/endpointManagement.cpp
-)
+add_library(dhtmanager 
+${gorilla_SOURCE_DIR}/DHTManager/dhtmanager.cpp)
 
 
-add_library(unimosclientlib
-${gorilla_SOURCE_DIR}/unimos/client/unimosclient.cpp
-)
+add_library(metadatamanager 
+${gorilla_SOURCE_DIR}/server/MetadataManager/metadata.cpp)
+target_link_libraries (metadatamanager thallium)
 
-add_library(constraintManager 
-${gorilla_SOURCE_DIR}/unimos/server/constraintManager.cpp
-)
-target_link_libraries(constraintManager thallium unimosclientlib)
-
-add_library(filterManager 
-${gorilla_SOURCE_DIR}/unimos/server/filterManager.cpp
-)
-target_link_libraries(filterManager constraintManager thallium unimosclientlib)
-
-
-add_executable (unimos_server ${gorilla_SOURCE_DIR}/unimos/server/unimosserver.cpp)
-target_link_libraries (unimos_server memcache endpointmng filterManager constraintManager unimosclientlib thallium MPI::MPI_CXX ${CMAKE_THREAD_LIBS_INIT})
-
-
-# execute the module load mpi before this part
-add_executable(unimos_client ${gorilla_SOURCE_DIR}/unimos/client/minidsclient.cpp)
-target_link_libraries (unimos_client MPI::MPI_CXX unimosclientlib thallium)
-
-
-add_executable(largedatatest ${gorilla_SOURCE_DIR}/unimos/client/largedatatest.cpp)
-target_link_libraries (largedatatest MPI::MPI_CXX unimosclientlib thallium)
-
-
-add_executable(test_client_put ${gorilla_SOURCE_DIR}/unimos/client/test_client_put.cpp)
-target_link_libraries (test_client_put unimosclientlib thallium)
-
-
-
-add_subdirectory(controller)
 
 # add enable_testing
 if (ENABLE_TESTING)
-  add_subdirectory(unimos/test)
+  add_subdirectory(test)
 endif()
 
-
-if (ENABLE_EXAMPLE)
-  add_subdirectory(example)
-endif()

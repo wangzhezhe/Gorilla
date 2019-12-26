@@ -87,7 +87,7 @@ When the data indexed by the second metadata server is updated, the dynamic trig
 
 1> how the data is stored and indexed at the raw data service？
 
-The storage layer will use the FIFO cache, there is a queue that maintain the window of the steps. The data out of this window will be dumped into the persistent storage. The data at the raw data server is indexed by the `<step, varName, partition id>`, and both metadata and the raw data are stored there. 
+The storage layer will use the FIFO cache, there is a queue that maintain the window of the steps. The data out of this window will be dumped into the persistent storage. The data at the raw data server is indexed by the `<step, varName, partition id>`, and both metadata and the raw data are stored there. (refer to ls_add_obj and ss_storage for DataSpaces implementation)
 
 2> how the metadata is indexed at the metadata server ?
 
