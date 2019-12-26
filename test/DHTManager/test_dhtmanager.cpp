@@ -165,7 +165,7 @@ void testBBX() {
   //  throw std::runtime_error("failed for testing the overlap of ra,rb\n");
   //}
 
-  BBX *rac = dhtm->getOverlapBBX(ra, rc);
+  BBX *rac = getOverlapBBX(ra, rc);
   if (rac == NULL) {
     throw std::runtime_error(
         "failed for testing the overlap of ra,rc, it should not be null\n");
@@ -177,7 +177,7 @@ void testBBX() {
     throw std::runtime_error("failed for testing the overlap of ra,rc\n");
   }
 
-  BBX *rad = dhtm->getOverlapBBX(ra, rd);
+  BBX *rad = getOverlapBBX(ra, rd);
 
   if (rad == NULL) {
     throw std::runtime_error(
@@ -199,13 +199,13 @@ void testBound() {
   Bound *b = new Bound(30, 50);
   Bound *c = new Bound(15, 40);
 
-  Bound *d = dhtm->getOverlapBound(a, b);
+  Bound *d =  getOverlapBound(a, b);
   if (d != NULL) {
     throw std::runtime_error(
         "failed for test bound for overlap of a,b it should be null\n");
   }
 
-  Bound *e = dhtm->getOverlapBound(a, c);
+  Bound *e =  getOverlapBound(a, c);
   if (e == NULL) {
     throw std::runtime_error(
         "failed for test bound, overlap of a,c should be not null\n");
@@ -215,7 +215,7 @@ void testBound() {
     throw std::runtime_error("failed for caculating the overlap of a,c\n");
   }
 
-  Bound *f = dhtm->getOverlapBound(c, b);
+  Bound *f =  getOverlapBound(c, b);
   if (f == NULL) {
     throw std::runtime_error(
         "failed for test bound, overlap of c,b should be not null\n");

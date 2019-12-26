@@ -4,6 +4,12 @@ target_link_libraries(test_dhtmanager dhtmanager)
 add_executable(test_metadatamanager ./MetaData/test_metadata.cpp)
 target_link_libraries(test_metadatamanager metadatamanager)
 
+
+add_executable(test_bbx ./Util/test_bbx.cpp)
+target_link_libraries(test_bbx)
+
 add_test( NAME test_dhtmanager COMMAND test_dhtmanager)
 
 add_test( NAME test_metadatamanager COMMAND test_metadatamanager)
+
+add_test( NAME test_bbx COMMAND test_bbx)

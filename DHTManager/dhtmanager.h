@@ -1,39 +1,13 @@
 #ifndef DHTMANAGER_H
 #define DHTMANAGER_H
 
-#include <climits>
+
 #include <iostream>
 #include <map>
 #include <vector>
+#include "../utils/bbxtool.h"
 
-// the bound value for specific dimention
-struct Bound {
-  Bound(){};
-  Bound(int lb, int ub) : m_lb(lb), m_ub(ub){};
-  int m_lb = INT_MAX;
-  int m_ub = INT_MIN;
-  ~Bound(){};
-};
-
-// the bbox for the application domain
-// the lb/ub represents the lower bound and the upper bound of every dimention
-// Attention, if there is 1 elements for every dimention, the lower bound is
-// same with the upper bound
-// TODO update, use the vector of the Bound
-struct BBX {
-  // the bound for every dimention
-  BBX(){};
-  // the default sequence is x-y-z
-  std::vector<Bound *> BoundList;
-  ~BBX();
-
-  void printBBXinfo() {
-    int dim = BoundList.size();
-    for (int i = 0; i < dim; i++) {
-      std::cout << "dim id:" << i << ",lb:" << BoundList[i]->m_lb << ",ub:" << BoundList[i]->m_ub<< std::endl;
-    }
-  }
-};
+using namespace BBXTOOL;
 
 struct ResponsibleMetaServer {
   ResponsibleMetaServer(int metaServerID, BBX *bbx)
@@ -50,10 +24,6 @@ struct DHTManager {
   // init the metaServerBBOXList according to the partitionNum and the bbox of
   // the global domain
   void initDHT(int ndim, int metaServerNum, BBX* globalBBX);
-
-  Bound *getOverlapBound(Bound *a, Bound *b);
-
-  BBX *getOverlapBBX(BBX *a, BBX *b);
 
   // get the corresponding metaserver according to the input bbox
   std::vector<ResponsibleMetaServer> getMetaServerID(BBX *BBXQuery);

@@ -33,51 +33,6 @@ int nextPowerOf2(int n)
     return 1 << count;  
 }
 
-Bound *DHTManager::getOverlapBound(Bound *a, Bound *b) {
-
-  if ((a->m_ub < b->m_lb) || (a->m_lb > b->m_ub)) {
-    return NULL;
-  }
-
-  Bound *overlap = new Bound();
-  overlap->m_lb = std::max(a->m_lb, b->m_lb);
-  overlap->m_ub = std::min(a->m_ub, b->m_ub);
-
-  return overlap;
-}
-
-BBX *DHTManager::getOverlapBBX(BBX *a, BBX *b) {
-
-  int aDim = a->BoundList.size();
-  int bDim = b->BoundList.size();
-
-  if (aDim != bDim) {
-    throw std::runtime_error(
-        "the dimention of two bounding box is not equal aDim is " +
-        std::to_string(aDim) + " bDim is " + std::to_string(bDim));
-    return NULL;
-  }
-
-  if (aDim == 0 || bDim > 3) {
-    throw std::runtime_error("the dimention of bounding box can not be 0 or "
-                             "value larger than 3, current value is: " +
-                             std::to_string(aDim));
-    return NULL;
-  }
-
-  BBX *overlapBBX = new BBX();
-  for (int i = 0; i < aDim; i++) {
-    Bound *bound = getOverlapBound(a->BoundList[i], b->BoundList[i]);
-    if (bound == NULL) {
-      // if there is not matching for any dimention, return NULL
-      return NULL;
-    } else {
-      overlapBBX->BoundList.push_back(bound);
-    }
-  }
-
-  return overlapBBX;
-}
 
 // init the metaServerBBOXList according to the metaServerNum(partitionNum) and
 // the bbox of the global domain The hilbert DHT is only suitable for the cubic

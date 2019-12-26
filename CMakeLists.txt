@@ -37,12 +37,15 @@ xpkg_import_module (abtio REQUIRED abt-io)
 # add the depedency
 include_directories(${gorilla_SOURCE_DIR}/dep)
 
+
+
 add_library(dhtmanager 
 ${gorilla_SOURCE_DIR}/DHTManager/dhtmanager.cpp)
+target_link_libraries (dhtmanager)
 
 
 add_library(metadatamanager 
-${gorilla_SOURCE_DIR}/server/MetadataManager/metadata.cpp)
+${gorilla_SOURCE_DIR}/server/MetadataManager/metadataManager.cpp)
 target_link_libraries (metadatamanager thallium)
 
 

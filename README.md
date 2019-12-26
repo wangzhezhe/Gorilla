@@ -235,7 +235,10 @@ srun --mpi=pmix_v2 -n 4 ./example/isosurface 20 0.5
 
 ### TODO list
 
-make the metadata service workable, Queue+MAP
+update the raw data server (use one layer map to index and store id into the metadata server)
+
+when delete metadata, delete the raw data
+when delete the raw data, delete the metadata
 
 update the delete function of the memcache, if the there is thread pool then wait the finish of all the threads then delete the thread pool
 using the queue to check the pushed threads here

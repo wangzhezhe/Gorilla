@@ -66,6 +66,7 @@ public:
     BlockMeta getFromCache(std::string varName, size_t ts, size_t blockID, void *&rawData);
     BlockMeta getRegionFromCache(std::string varName, size_t ts, size_t blockID, std::array<size_t, 3> baseOffset, std::array<size_t, 3> regionShape, void *&rawData);
     
+    //execute the data checking service
     void doChecking(DataMeta &dataMeta, size_t blockID);
     void loadFilterManager(FilterManager* fmanager){m_filterManager=fmanager;return;}
 

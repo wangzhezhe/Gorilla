@@ -91,7 +91,7 @@ The storage layer will use the FIFO cache, there is a queue that maintain the wi
 
 2> how the metadata is indexed at the metadata server ?
 
-The data partition at the metadata server is indexed by the `<step, varName, bounding box>`. the value is the `<address of the raw data server, the partition id>`. 
+The data partition at the metadata server is indexed by the `<step, varName, bounding box>`. the value is the `<address of the raw data server, the partition id>`. (refer to dht_find_entry_all for the DataSpaces implementation, if there are multiple rectangles on one metadata server, some efficient index mechanism such as R tree can be used on specific metadata server)
 
 3> how specific metadata server is found when the raw data service updates the metadata service or when there is API sent by the client according to the bounding box.
 
