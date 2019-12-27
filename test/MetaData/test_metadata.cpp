@@ -3,7 +3,7 @@
 #include "../server/MetadataManager/metadataManager.h"
 
 void testMetaDataOverlap() {
-  std::cout << "---testMetaDataOverlap---" << std::endl;
+  std::cout << "---testMetaDataOverlap1---" << std::endl;
   tl::abt scope;
   MetaDataManager metam;
   std::string varname = "testVarName";
@@ -29,6 +29,22 @@ void testMetaDataOverlap() {
       metam.getOverlapEndpoints(0, varname, queryBBX);
   for (auto it = endpointList.begin(); it != endpointList.end(); ++it) {
     it->printInfo();
+  }
+
+  if (endpointList.size() != 4) {
+    throw std::runtime_error("failed for metaDataMap testMetaDataOverlap\n");
+  }
+
+  std::cout << "---testMetaDataOverlap2---" << std::endl;
+  BBX *queryBBX2 = new BBX({{0, 0, 0}}, {{3, 3, 0}});
+
+  std::vector<RawDataEndpoint> endpointList2 =
+      metam.getOverlapEndpoints(0, varname, queryBBX2);
+  for (auto it = endpointList2.begin(); it != endpointList2.end(); ++it) {
+    it->printInfo();
+  }
+  if (endpointList2.size() != 1) {
+    throw std::runtime_error("failed for metaDataMap testMetaDataOverlap\n");
   }
 }
 

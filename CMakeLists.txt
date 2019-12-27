@@ -49,6 +49,13 @@ ${gorilla_SOURCE_DIR}/server/MetadataManager/metadataManager.cpp)
 target_link_libraries (metadatamanager thallium)
 
 
+add_library(rawdatamanager 
+${gorilla_SOURCE_DIR}/server/RawdataManager/blockManager.cpp
+${gorilla_SOURCE_DIR}/server/RawdataManager/rawmemobj/rawmemobj.cpp
+)
+target_link_libraries(rawdatamanager thallium)
+
+
 # add enable_testing
 if (ENABLE_TESTING)
   add_subdirectory(test)

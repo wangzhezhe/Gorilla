@@ -15,16 +15,19 @@
 
 namespace tl = thallium;
 
+
 // the abstraction that manage the storage for one data block
 struct DataBlockInterface {
   // the data structure of block summary is same for different data block
   // but the storage part is different
   BlockSummary m_blockSummary;
 
-  DataBlockInterface(BlockSummary blockSummary)
-      : m_blockSummary(blockSummary){};
+  DataBlockInterface(BlockSummary& blockSummary)
+      : m_blockSummary(blockSummary){std::cout << "DataBlockInterface is initialized"  << std::endl;};
 
   virtual BlockSummary getData(void *&dataContainer) = 0;
+  
+  //put data into coresponding data structure for specific implementation
   virtual int putData(void *dataContainer) = 0;
 
   virtual BlockSummary getDataRegion(std::array<size_t, 3> baseOffset,
@@ -45,13 +48,13 @@ public:
   // put/get data by Object
   // parse the interface by the defination
 
-  int putBlock(DRIVERTYPE driverType, size_t blockID, void *dataPointer);
+  int putBlock(std::string driverType, size_t blockID, BlockSummary& m_blockSummary, void *dataPointer);
 
   // this function can be called when the blockid is accuired from the metadata
   // service this is just get the summary information of block data
-  BlockSummary getBlockSummary(DRIVERTYPE driverType, size_t blockID);
-  BlockSummary getBlock(DRIVERTYPE driverType, size_t blockID, void *&rawData);
-  BlockSummary getSubregionalBlock(DRIVERTYPE driverType, size_t blockID,
+  BlockSummary getBlockSummary(std::string driverType, size_t blockID);
+  BlockSummary getBlock(std::string driverType, size_t blockID, void *&rawData);
+  BlockSummary getSubregionalBlock(std::string driverType, size_t blockID,
                                    std::array<size_t, 3> baseOffset,
                                    std::array<size_t, 3> regionShape,
                                    void *&rawData);
@@ -68,9 +71,8 @@ public:
 
 private:
   tl::mutex m_DataBlockMapMutex;
-
   // map the block id into the
-  std::map<size_t, DataBlockInterface *>> DataBlockMap;
+  std::map<size_t, DataBlockInterface *> DataBlockMap;
   int checkDataExistance(size_t blockID);
 
   // the thread pool to check the constraints
