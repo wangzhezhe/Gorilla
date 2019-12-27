@@ -61,7 +61,8 @@ struct BlockSummary {
   size_t m_elemSize = 0;
   size_t m_elemNum = 0;
   std::string m_drivertype = DRIVERTYPE_RAWMEM;
-  // TODO, update this, use the index BBX
+
+  //TODO, consider to add the real bbox, since the real data dimention might be smaller than the index dimention
   std::array<size_t, 3> m_indexlb{{0, 0, 0}};
   // the origin can be caculated by offset
   std::array<size_t, 3> m_indexub{{0, 0, 0}};

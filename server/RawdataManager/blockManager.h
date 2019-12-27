@@ -15,29 +15,30 @@
 
 namespace tl = thallium;
 
-
 // the abstraction that manage the storage for one data block
 struct DataBlockInterface {
   // the data structure of block summary is same for different data block
   // but the storage part is different
   BlockSummary m_blockSummary;
 
-  DataBlockInterface(BlockSummary& blockSummary)
-      : m_blockSummary(blockSummary){std::cout << "DataBlockInterface is initialized"  << std::endl;};
+  DataBlockInterface(BlockSummary &blockSummary)
+      : m_blockSummary(blockSummary) {
+    std::cout << "DataBlockInterface is initialized" << std::endl;
+  };
 
   virtual BlockSummary getData(void *&dataContainer) = 0;
-  
-  //put data into coresponding data structure for specific implementation
-  virtual int putData(void *dataContainer) = 0;
 
-  virtual BlockSummary getDataRegion(std::array<size_t, 3> baseOffset,
-                                     std::array<size_t, 3> regionShape,
-                                     void *&rawData) = 0;
+  // put data into coresponding data structure for specific implementation
+  virtual int putData(void *dataSourcePtr) = 0;
+
+  virtual BlockSummary getDataSubregion(std::array<size_t, 3> subregionlb,
+                                        std::array<size_t, 3> subregionub,
+                                        void *&dataContainer) = 0;
+
+  // TODO generate RawDataEndpointFromBlockSummary
 
   ~DataBlockInterface(){};
 };
-
-
 
 class BlockManager {
 public:
@@ -48,16 +49,17 @@ public:
   // put/get data by Object
   // parse the interface by the defination
 
-  int putBlock(std::string driverType, size_t blockID, BlockSummary& m_blockSummary, void *dataPointer);
+  int putBlock(std::string driverType, size_t blockID,
+               BlockSummary &m_blockSummary, void *dataPointer);
 
   // this function can be called when the blockid is accuired from the metadata
   // service this is just get the summary information of block data
-  BlockSummary getBlockSummary(std::string driverType, size_t blockID);
-  BlockSummary getBlock(std::string driverType, size_t blockID, void *&rawData);
-  BlockSummary getSubregionalBlock(std::string driverType, size_t blockID,
-                                   std::array<size_t, 3> baseOffset,
-                                   std::array<size_t, 3> regionShape,
-                                   void *&rawData);
+  BlockSummary getBlockSummary(size_t blockID);
+  BlockSummary getBlock(size_t blockID, void *&dataContainer);
+  BlockSummary getBlockSubregion(size_t blockID,
+                                   std::array<size_t, 3> subregionlb,
+                                   std::array<size_t, 3> subregionub,
+                                   void *&dataContainer);
 
   // execute the data checking service
   // void doChecking(DataMeta &dataMeta, size_t blockID);

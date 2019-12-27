@@ -13,21 +13,21 @@ namespace tl = thallium;
 struct RawDataEndpoint {
   RawDataEndpoint(){};
   RawDataEndpoint(std::string rawDataServerAddr, std::string rawDataID,
-                  std::array<int, 3> indexlb, std::array<int, 3> indexub)
+                  size_t dims, std::array<int, 3> indexlb,
+                  std::array<int, 3> indexub)
       : m_rawDataServerAddr(rawDataServerAddr), m_rawDataID(rawDataID),
-        m_indexlb(indexlb), m_indexub(indexub){};
+        m_dims(dims), m_indexlb(indexlb), m_indexub(indexub){};
   std::string m_rawDataServerAddr;
-
   std::string m_rawDataID;
-
+  size_t m_dims = 0;
   std::array<int, 3> m_indexlb{{0, 0, 0}};
   std::array<int, 3> m_indexub{{0, 0, 0}};
 
   void printInfo() {
     std::cout << "server addr " << m_rawDataServerAddr << " dataID "
-              << m_rawDataID << " lb " << m_indexlb[0] << "," << m_indexlb[1]
-              << "," << m_indexlb[2] << " ub " << m_indexub[0] << ","
-              << m_indexub[1] << "," << m_indexub[2] << std::endl;
+              << m_rawDataID << "dims " << m_dims << " lb " << m_indexlb[0] << ","
+              << m_indexlb[1] << "," << m_indexlb[2] << " ub " << m_indexub[0]
+              << "," << m_indexub[1] << "," << m_indexub[2] << std::endl;
   }
 
   ~RawDataEndpoint(){};

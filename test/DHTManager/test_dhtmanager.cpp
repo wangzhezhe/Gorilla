@@ -6,7 +6,7 @@ void testInit1d() {
   std::cout << "------init 1d------" << std::endl;
   DHTManager *dhtm = new DHTManager();
   Bound *a = new Bound(0, 15);
-  BBX *ra1d = new BBX();
+  BBX *ra1d = new BBX(1);
   ra1d->BoundList.push_back(a);
   dhtm->initDHT(1, 4, ra1d);
   dhtm->printDTMInfo();
@@ -36,7 +36,7 @@ void testInit2d() {
   // there are problems for other number
   // TODO provide partition method that is not limit to the 2^n
   Bound *a = new Bound(0, 511);
-  BBX *ra2d = new BBX();
+  BBX *ra2d = new BBX(2);
   ra2d->BoundList.push_back(a);
   ra2d->BoundList.push_back(a);
   dhtm->initDHT(2, 4, ra2d);
@@ -66,7 +66,7 @@ void testInit2dEgecase() {
 
   // if the dim is not the 2^n
   Bound *a = new Bound(0, 9);
-  BBX *ra2d = new BBX();
+  BBX *ra2d = new BBX(2);
   ra2d->BoundList.push_back(a);
   ra2d->BoundList.push_back(a);
   dhtm->initDHT(2, 4, ra2d);
@@ -80,7 +80,7 @@ void testInit3d() {
   // there are problems for other number
   // TODO provide partition method that is not limit to the 2^n
   Bound *a = new Bound(0, 7);
-  BBX *ra3d = new BBX();
+  BBX *ra3d = new BBX(3);
   ra3d->BoundList.push_back(a);
   ra3d->BoundList.push_back(a);
   ra3d->BoundList.push_back(a);
@@ -94,19 +94,19 @@ void testgetMetaServerID() {
 
   // if the dim is not the 2^n
   Bound *a = new Bound(0, 15);
-  BBX *globalDomain = new BBX();
+  BBX *globalDomain = new BBX(2);
   globalDomain->BoundList.push_back(a);
   globalDomain->BoundList.push_back(a);
 
   dhtm->initDHT(2, 4, globalDomain);
 
   Bound *b = new Bound(4, 10);
-  BBX *queryDomain1 = new BBX();
+  BBX *queryDomain1 = new BBX(2);
   queryDomain1->BoundList.push_back(b);
   queryDomain1->BoundList.push_back(b);
 
   Bound *c = new Bound(4, 6);
-  BBX *queryDomain2 = new BBX();
+  BBX *queryDomain2 = new BBX(2);
   queryDomain2->BoundList.push_back(c);
   queryDomain2->BoundList.push_back(c);
 
@@ -134,28 +134,28 @@ void testBBX() {
   Bound *d = new Bound(0, 1);
   Bound *e = new Bound(1, 2);
 
-  BBX *ra = new BBX();
+  BBX *ra = new BBX(2);
   ra->BoundList.push_back(a);
   ra->BoundList.push_back(a);
 
-  BBX *rb = new BBX();
+  BBX *rb = new BBX(2);
   rb->BoundList.push_back(b);
   rb->BoundList.push_back(b);
 
-  BBX *rc = new BBX();
+  BBX *rc = new BBX(2);
   rc->BoundList.push_back(c);
   rc->BoundList.push_back(c);
 
-  BBX *rd = new BBX();
+  BBX *rd = new BBX(2);
   rd->BoundList.push_back(d);
   rd->BoundList.push_back(e);
 
-  BBX *ra3 = new BBX();
+  BBX *ra3 = new BBX(3);
   ra3->BoundList.push_back(a);
   ra3->BoundList.push_back(a);
   ra3->BoundList.push_back(a);
 
-  BBX *rb3 = new BBX();
+  BBX *rb3 = new BBX(3);
   ra3->BoundList.push_back(a);
   ra3->BoundList.push_back(a);
   ra3->BoundList.push_back(b);
@@ -227,7 +227,6 @@ void testBound() {
 }
 
 int main() {
-
   // test bound
   testBound();
 

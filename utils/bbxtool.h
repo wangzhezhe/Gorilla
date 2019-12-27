@@ -27,7 +27,10 @@ struct Bound {
 // TODO update, use the vector of the Bound
 struct BBX {
   // the bound for every dimention
-  BBX(){};
+
+  BBX(size_t dims): m_dims(dims){};
+  //the value of the m_dims represent the valid dimentions for this bounding box
+  size_t m_dims=3;
   /*
   BBX(std::array<int, 2> indexlb, std::array<int, 2> indexub) {
     for (int i = 0; i < 2; i++) {
@@ -36,7 +39,10 @@ struct BBX {
     }
   };
   */
-  BBX(std::array<int, 3> indexlb, std::array<int, 3> indexub) {
+  //TODO, the bounding box here can larger than 3 in theory, we only implement the 3 for get subregion
+  BBX(size_t dimNum, std::array<int, 3> indexlb, std::array<int, 3> indexub) {
+    m_dims = dimNum;
+    //if there is only one dim, the second and third value will be the 0
     for (int i = 0; i < 3; i++) {
       Bound *b = new Bound(indexlb[i], indexub[i]);
       BoundList.push_back(b);
@@ -86,8 +92,8 @@ inline Bound *getOverlapBound(Bound *a, Bound *b) {
 };
 
 inline BBX *getOverlapBBX(BBX *a, BBX *b) {
-  int aDim = a->BoundList.size();
-  int bDim = b->BoundList.size();
+  int aDim = a->m_dims;
+  int bDim = b->m_dims;
 
   if (aDim != bDim) {
     throw std::runtime_error(
@@ -103,7 +109,7 @@ inline BBX *getOverlapBBX(BBX *a, BBX *b) {
     return NULL;
   }
 
-  BBX *overlapBBX = new BBX();
+  BBX *overlapBBX = new BBX(aDim);
   for (int i = 0; i < aDim; i++) {
     Bound *bound = getOverlapBound(a->BoundList[i], b->BoundList[i]);
     if (bound == NULL) {

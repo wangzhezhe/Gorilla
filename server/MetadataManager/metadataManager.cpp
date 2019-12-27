@@ -44,13 +44,14 @@ MetaDataManager::getOverlapEndpoints(size_t step, std::string varName,
   }
 
   int size = m_metaDataMap[step][varName].size();
-
+  
   // go through vector to check the overlapping part
   for (int i = 0; i < size; i++) {
     std::array<int, 3> m_indexlb = m_metaDataMap[step][varName][i].m_indexlb;
     std::array<int, 3> m_indexub = m_metaDataMap[step][varName][i].m_indexub;
-    BBX *bbx = new BBX(m_indexlb, m_indexub);
-    
+    size_t dims = m_metaDataMap[step][varName][i].m_dims;
+    BBX *bbx = new BBX(dims, m_indexlb, m_indexub);
+
     BBX *overlapbbx = getOverlapBBX(bbx, querybbx);
 
     if (overlapbbx != NULL) {
@@ -58,7 +59,7 @@ MetaDataManager::getOverlapEndpoints(size_t step, std::string varName,
       std::array<int, 3> indexlb = overlapbbx->getIndexlb();
       std::array<int, 3> indexub = overlapbbx->getIndexub();
       RawDataEndpoint rde(m_metaDataMap[step][varName][i].m_rawDataServerAddr,
-                          m_metaDataMap[step][varName][i].m_rawDataID, indexlb,
+                          m_metaDataMap[step][varName][i].m_rawDataID, dims, indexlb,
                           indexub);
       endpointList.push_back(rde);
     }

@@ -13,17 +13,17 @@ void testMetaDataOverlap() {
   std::string dataID3 = "testDataID3";
   std::string dataID4 = "testDataID4";
 
-  RawDataEndpoint rde1(serverAddr, dataID1, {{0, 0}}, {{5, 5}});
-  RawDataEndpoint rde2(serverAddr, dataID2, {{0, 6}}, {{5, 11}});
-  RawDataEndpoint rde3(serverAddr, dataID3, {{6, 6}}, {{11, 11}});
-  RawDataEndpoint rde4(serverAddr, dataID4, {{6, 0}}, {{11, 5}});
+  RawDataEndpoint rde1(serverAddr, dataID1, 2, {{0, 0}}, {{5, 5}});
+  RawDataEndpoint rde2(serverAddr, dataID2, 2, {{0, 6}}, {{5, 11}});
+  RawDataEndpoint rde3(serverAddr, dataID3, 2, {{6, 6}}, {{11, 11}});
+  RawDataEndpoint rde4(serverAddr, dataID4, 2, {{6, 0}}, {{11, 5}});
 
   metam.updateMetaData(0, varname, rde1);
   metam.updateMetaData(0, varname, rde2);
   metam.updateMetaData(0, varname, rde3);
   metam.updateMetaData(0, varname, rde4);
 
-  BBX *queryBBX = new BBX({{3, 3, 0}}, {{8, 8, 0}});
+  BBX *queryBBX = new BBX(2, {{3, 3, 0}}, {{8, 8, 0}});
 
   std::vector<RawDataEndpoint> endpointList =
       metam.getOverlapEndpoints(0, varname, queryBBX);
@@ -36,7 +36,7 @@ void testMetaDataOverlap() {
   }
 
   std::cout << "---testMetaDataOverlap2---" << std::endl;
-  BBX *queryBBX2 = new BBX({{0, 0, 0}}, {{3, 3, 0}});
+  BBX *queryBBX2 = new BBX(2, {{0, 0, 0}}, {{3, 3, 0}});
 
   std::vector<RawDataEndpoint> endpointList2 =
       metam.getOverlapEndpoints(0, varname, queryBBX2);
@@ -57,12 +57,12 @@ void testMetaData() {
     std::string serverAddr2 = "testserverAddr2" + std::to_string(i);
     std::string serverAddr3 = "testserverAddr3" + std::to_string(i);
 
-    RawDataEndpoint rde1(serverAddr1, std::to_string(i), {{0, 0, 0}},
+    RawDataEndpoint rde1(serverAddr1, std::to_string(i), 3, {{0, 0, 0}},
                          {{1, 1, 1}});
-    RawDataEndpoint rde2(serverAddr2, std::to_string(i), {{0, 0, 0}},
+    RawDataEndpoint rde2(serverAddr2, std::to_string(i), 3, {{0, 0, 0}},
                          {{1, 1, 1}});
 
-    RawDataEndpoint rde3(serverAddr3, std::to_string(i), {{0, 0, 0}},
+    RawDataEndpoint rde3(serverAddr3, std::to_string(i), 3, {{0, 0, 0}},
                          {{1, 1, 1}});
 
     metam.updateMetaData(i, varname, rde1);

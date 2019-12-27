@@ -1,20 +1,23 @@
 
 
-enum DYPE {typea, typeb}
+struct inner{
+    inner(){};
+    int innerx=1;
+    int innery=2;
+    int innerz=3;
+    ~inner(){};
+};
 
 class point {
-
-    private:
-
+    public:
         double x;
         double y;
         double z;
-        DYPE t;
+        inner m_i;
 
-    public:
 
-        point(double a=0.0, double b=0.0, double c=0.0, DYPE type=DYPE::typea)
-            : x(a), y(b), z(c), t(type) {}
+        point(double a=0.0, double b=0.0, double c=0.0)
+            : x(a), y(b), z(c) {}
 
         template<typename A> friend void serialize(A& ar, point& p);
 
@@ -28,6 +31,7 @@ void serialize(A& ar, point& p) {
     ar & p.x;
     ar & p.y;
     ar & p.z;
-    ar & p.t;
-
+    ar & p.m_i.innerx;
+    ar & p.m_i.innery;
+    ar & p.m_i.innerz;
 }

@@ -85,7 +85,7 @@ void DHTManager::initDHT(int ndim, int metaServerNum, BBX *globalBBX) {
       if (iter == metaServerIDToBBX.end()) {
 
         Bound *b = new Bound();
-        BBX *bbx = new BBX();
+        BBX *bbx = new BBX(1);
         bbx->BoundList.push_back(b);
         this->metaServerIDToBBX[serverID] = bbx;
       }
@@ -117,7 +117,7 @@ void DHTManager::initDHT(int ndim, int metaServerNum, BBX *globalBBX) {
 
           Bound *b1 = new Bound();
           Bound *b2 = new Bound();
-          BBX *bbx = new BBX();
+          BBX *bbx = new BBX(2);
           bbx->BoundList.push_back(b1);
           bbx->BoundList.push_back(b2);
           this->metaServerIDToBBX[serverID] = bbx;
@@ -156,7 +156,7 @@ void DHTManager::initDHT(int ndim, int metaServerNum, BBX *globalBBX) {
             Bound *b1 = new Bound();
             Bound *b2 = new Bound();
             Bound *b3 = new Bound();
-            BBX *bbx = new BBX();
+            BBX *bbx = new BBX(3);
             bbx->BoundList.push_back(b1);
             bbx->BoundList.push_back(b2);
             bbx->BoundList.push_back(b3);

@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
     std::function<void(const tl::request&, const point&, const point&)> dot_product = 
         [&myEngine](const tl::request& req, const point& p, const point& q) {
 
-            std::cout << "type " << p.t << std::endl;
+            std::cout << "inner " << p.m_i.innerx << " " << p.m_i.innery << " " << p.m_i.innerz << std::endl;
             req.respond(p*q);
             myEngine.finalize();
         };
