@@ -15,10 +15,10 @@ struct RawMemObj : public DataBlockInterface {
   // put data into coresponding data structure for specific implementation
   int putData(void *dataSourcePtr);
 
-   BlockSummary getDataSubregion(std::array<size_t, 3> subregionlb,
+  BlockSummary getDataSubregion(std::array<size_t, 3> subregionlb,
                                         std::array<size_t, 3> subregionub,
                                         void *&dataContainer);
-
+ 
   void *m_rawMemPtr = NULL;
 
   ~RawMemObj(){

@@ -23,7 +23,7 @@ BlockSummary RawMemObj::getData(void *&dataContainer) {
 }
 
 
-//this is a kind of data filter???
+//this is a kind of data filter ???
 BlockSummary RawMemObj::getDataSubregion(std::array<size_t, 3> subregionlb,
                                          std::array<size_t, 3> subregionub,
                                          void *&dataContainer) {

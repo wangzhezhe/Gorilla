@@ -84,7 +84,6 @@ add_executable(test_client_put ${gorilla_SOURCE_DIR}/unimos/client/test_client_p
 target_link_libraries (test_client_put unimosclientlib thallium)
 
 
-
 add_subdirectory(controller)
 
 # add enable_testing

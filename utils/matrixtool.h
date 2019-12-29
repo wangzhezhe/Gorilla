@@ -14,36 +14,41 @@
 
 using namespace BBXTOOL;
 
-namespace MATRIXTOOL {
+namespace MATRIXTOOL
+{
 
 // TODO the dimention can be larger than 3
 // the start position of the global domain is (0,0,0)
 // the sequence of the bound is x,y,z
 // assume the elem number of the matrix match with the globalUb
-void *getSubMatrix(size_t elemSize, std::array<size_t, 3> subLb,
-                   std::array<size_t, 3> subUb, std::array<size_t, 3> gloablUb,
-                   void *globalMatrix) {
+void *getSubMatrix(size_t elemSize, std::array<size_t, DEFAULT_MAX_DIM> subLb,
+                   std::array<size_t, DEFAULT_MAX_DIM> subUb, std::array<size_t, DEFAULT_MAX_DIM> gloablUb,
+                   void *globalMatrix)
+{
 
   // check subdomain is valid
-  if (subUb[2] < subLb[2] || subUb[1] < subLb[1] || subUb[0] < subLb[0]) {
+  if (subUb[2] < subLb[2] || subUb[1] < subLb[1] || subUb[0] < subLb[0])
+  {
     throw std::runtime_error("invalid subdomain bounding box");
     return NULL;
   }
 
   // check the subdomain is in global domain
   if (subUb[2] > gloablUb[2] || subUb[1] > gloablUb[1] ||
-      subUb[0] > gloablUb[0]) {
+      subUb[0] > gloablUb[0])
+  {
     throw std::runtime_error(
         "subdomain should in the bounding box of the global domain");
     return NULL;
   }
 
-  std::array<size_t, 3> subLen;
-  std::array<size_t, 3> globalLen;
+  std::array<size_t, DEFAULT_MAX_DIM> subLen;
+  std::array<size_t, DEFAULT_MAX_DIM> globalLen;
   size_t globalelemNum = 1;
   size_t subelemNum = 1;
 
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < DEFAULT_MAX_DIM; i++)
+  {
     subLen[i] = subUb[i] - subLb[i] + 1;
     globalLen[i] = gloablUb[i] - 0 + 1;
     subelemNum = subelemNum * subLen[i];
@@ -55,25 +60,33 @@ void *getSubMatrix(size_t elemSize, std::array<size_t, 3> subLb,
 
   void *subMrx = (void *)malloc(elemSize * subelemNum);
 
-  if (subMrx == NULL) {
+  if (subMrx == NULL)
+  {
     throw std::runtime_error("failed to allocate the memory for sub mstrix");
   }
 
   // if there is full overlap, return direactly
   if (subLb[2] == gloablUb[2] && subLb[1] == gloablUb[1] &&
-      subLb[0] == gloablUb[0]) {
+      subLb[0] == gloablUb[0])
+  {
     std::memcpy(subMrx, (char *)globalMatrix, elemSize * globalelemNum);
   }
 
   size_t globalIndex = 0;
   size_t subIndex = 0;
-  for (size_t z = 0; z <= gloablUb[2]; z++) {
+  for (size_t z = 0; z <= gloablUb[2]; z++)
+  {
     // avoid unnessasery check
-    if (z >= subLb[2] && z <= subUb[2]) {
-      for (size_t y = 0; y <= gloablUb[1]; y++) {
-        if (y >= subLb[1] && y <= subUb[1]) {
-          for (size_t x = 0; x <= gloablUb[0]; x++) {
-            if (x >= subLb[0] && x <= subUb[0]) {
+    if (z >= subLb[2] && z <= subUb[2])
+    {
+      for (size_t y = 0; y <= gloablUb[1]; y++)
+      {
+        if (y >= subLb[1] && y <= subUb[1])
+        {
+          for (size_t x = 0; x <= gloablUb[0]; x++)
+          {
+            if (x >= subLb[0] && x <= subUb[0])
+            {
               globalIndex =
                   z * globalLen[1] * globalLen[0] + y * globalLen[0] + x;
               // be careful to minus the boundry for when caculate the index for
@@ -94,7 +107,8 @@ void *getSubMatrix(size_t elemSize, std::array<size_t, 3> subLb,
 }
 
 // assume that the bounding box match with the data size
-struct MatrixView {
+struct MatrixView
+{
   MatrixView(BBX *bbx, void *data) : m_bbx(bbx), m_data(data){};
   BBX *m_bbx = NULL;
   void *m_data = NULL;
@@ -102,80 +116,113 @@ struct MatrixView {
 };
 
 // assemble separate matrixView into the intact matrixView
-MatrixView matrixAssemble(std::vector<MatrixView> matrixViewList,
-                          BBX *intactBBX) {
+// assume the offset is decreased from the matrix
+MatrixView matrixAssemble(size_t elemSize, std::vector<MatrixView> &matrixViewList,
+                          BBX *intactBBX)
+{
 
-  // generate bit string for every bound
-  // refer to https://owlcation.com/stem/C-bitset-with-example for bit set
-  // use vector since the length of bitset need to be fixed from the beginning
-  std::vector<std::vector<bool>> flagTable;
-  for (int i = 0; i < intactBBX->m_dims; i++) {
-    int elemNumInDim = intactBBX->BoundList[i]->m_ub - intactBBX->BoundList[i]->m_lb + 1;
-    std::vector<bool> flag(elemNumInDim, false);
-    flagTable.push_back(flag);
-  }
+  size_t intactElemNum = intactBBX->getElemNum();
+  //the flag to detect if there is value for each position and
+  //if there is overlap between different matrix
+  std::vector<bool> flag(intactElemNum, false);
+  for (auto it = matrixViewList.begin(); it != matrixViewList.end(); ++it)
+  {
 
-  // check if dimention match with the intactBBX
-  for (auto it = matrixViewList.begin(); it != matrixViewList.end(); ++it) {
     MatrixView mv = *it;
-    if (mv.m_bbx->m_dims != intactBBX->m_dims) {
-      throw std::runtime_error(
-          "the dims in matrixViewList not match with the query bbx");
+    size_t mvDim = mv.m_bbx->m_dims;
+    if (mvDim != intactBBX->m_dims)
+    {
+      throw std::runtime_error("the dims in matrixViewList not match with the query bbx");
     }
 
-    // go through every dimention and update the flag table
-    for (int i = 0; i < mv.m_bbx->m_dims; i++) {
-      // for dimention i
-      size_t templb = mv.m_bbx->BoundList[i]->m_lb;
-      size_t tempub = mv.m_bbx->BoundList[i]->m_ub;
-      for (int j = templb; j <= tempub; j++) {
-        int elemSize = flagTable[i].size();
-        // the upperbound should less than the boundy
-        if (j < elemSize) {
-          // if the flag is already been true, there is overlap
-          if (flagTable[i][j] == true) {
-            throw std::runtime_error(
-                "there is overlaping between boundies in list");
-          } else {
-            flagTable[i][j] = true;
-          }
+    std::array<int, DEFAULT_MAX_DIM> sublb = mv.m_bbx->getIndexlb();
+    std::array<int, DEFAULT_MAX_DIM> subub = mv.m_bbx->getIndexub();
 
-        } else {
-          throw std::runtime_error(
-              "the boundry in list beyond the intact boundy");
+    //for every bbx, go through every elements
+    //the part can be accelerated by using multiple thread
+    for (int z = sublb[2]; z <= subub[2]; z++)
+    {
+      for (int y = sublb[1]; y <= subub[1]; y++)
+      {
+        for (int x = sublb[0]; x <= subub[0]; x++)
+        {
+          //std::cout << "coordinates " << x << "," << y << "," << z << std::endl;
+          //caculate intactIndex
+          //caculate the subdomainIndex
+          //copy from the subdomain position into the position with the intact position
+          //mv is the view of the subdomain and the intactView is the view of the whole domain
+          size_t globalIndex = intactBBX->getPhysicalIndex(mvDim, {{x, y, z}});
+          if (flag[globalIndex] == false)
+          {
+            flag[globalIndex] = true;
+          }
+          else
+          {
+            throw std::runtime_error("there is overlaping between sub matrix");
+          }
         }
       }
     }
   }
 
-  // go through every dimention and check if there is element that is not
-  // covered
-  for (int i = 0; i < intactBBX->m_dims; i++) {
-    int elemSize = flagTable[i].size();
-    for (int j = 0; j < elemSize; j++) {
-      if (flagTable[i][j] == false) {
-        char str[200];
-        sprintf(str, "the elements at dim %d position %d is not covered", i, j);
-        throw std::runtime_error(std::string(str));
-      }
+
+
+  
+  for (int i = 0; i < intactElemNum; i++)
+  {
+    if (flag[i] == false)
+    {
+      throw std::runtime_error("the element in intact matrix is not covered");
     }
   }
 
-  std::cout << "ok to check the data cover for matrix assemble" << std::endl;
-  
-  MatrixView intectView(NULL,NULL);
-  // copy the elements from every piece into the intact domain
+  std::cout << "ok to check the data cover for matrix assembly" << std::endl;
 
+  //start to copy the element from the subdomain into the intact domain
+  void *intactDataPtr = (void *)malloc(elemSize * intactElemNum);
+
+  //allocate the space for intecatView
+  MatrixView intactView(intactBBX, intactDataPtr);
+
+  // copy the elements from every piece into the intact domain
   // check if every piece is included in the matrixViewList
   // check if there is overlaping between two matrix
   // go through every bound, check if position in the bound is covered
 
-  // assign the space for the intactBBX
+  for (auto it = matrixViewList.begin(); it != matrixViewList.end(); ++it)
+  {
+    MatrixView mv = *it;
+    size_t dim = mv.m_bbx->m_dims;
 
-  // copy every pieces into the intactBBX
-  
+    std::array<int, DEFAULT_MAX_DIM> sublb = mv.m_bbx->getIndexlb();
+    std::array<int, DEFAULT_MAX_DIM> subub = mv.m_bbx->getIndexub();
 
-  return intectView;
+    //for every bbx, go through every elements
+    //the part can be accelerated by using multiple thread
+    for (int z = sublb[2]; z <= subub[2]; z++)
+    {
+      for (int y = sublb[1]; y <= subub[1]; y++)
+      {
+        for (int x = sublb[0]; x <= subub[0]; x++)
+        {
+          //std::cout << "coordinates " << x << "," << y << "," << z << std::endl;
+          //caculate intactIndex
+          //caculate the subdomainIndex
+          //copy from the subdomain position into the position with the intact position
+          //mv is the view of the subdomain and the intactView is the view of the whole domain
+          size_t subIndex = mv.m_bbx->getPhysicalIndex(dim, {{x, y, z}});
+          size_t globalIndex = intactView.m_bbx->getPhysicalIndex(dim, {{x, y, z}});
+
+          //std::cout << "subIndex " << subIndex << " globalIndex " << globalIndex << std::endl;
+
+          //data one data for one time
+          memcpy((char *)intactView.m_data + globalIndex * elemSize,
+                 (char *)mv.m_data + subIndex * elemSize, elemSize);
+        }
+      }
+    }
+  }
+  return intactView;
 }
 
 } // namespace MATRIXTOOL

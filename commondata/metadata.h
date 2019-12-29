@@ -64,7 +64,7 @@ struct BlockSummary {
 
   //TODO, consider to add the real bbox, since the real data dimention might be smaller than the index dimention
   std::array<size_t, 3> m_indexlb{{0, 0, 0}};
-  // the origin can be caculated by offset
+  //the origin can be caculated by offset
   std::array<size_t, 3> m_indexub{{0, 0, 0}};
 
   BlockSummary(){};
