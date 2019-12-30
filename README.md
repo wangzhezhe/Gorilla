@@ -235,7 +235,9 @@ srun --mpi=pmix_v2 -n 4 ./example/isosurface 20 0.5
 
 ### TODO list
 
-update the raw data server (use one layer map to index and store id into the metadata server)
+add a exmple for put get
+
+add the controller part (when express every parts of the controller, use two parts, just the name and the parameters list, that all for the user interface)
 
 when delete metadata, delete the raw data
 when delete the raw data, delete the metadata

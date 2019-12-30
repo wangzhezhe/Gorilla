@@ -12,10 +12,10 @@
 //Thaliium may not good at transfer enum type
 //enum DRIVERTYPE { RAWMEM, VTK };
 
+static std::string const DRIVERTYPE_RAWMEM = "RAWMEM";
 
-static std::string const DRIVERTYPE_RAWMEM = "RAWMEM";   
-
-struct FilterProfile {
+struct FilterProfile
+{
 
   FilterProfile(){};
 
@@ -36,7 +36,9 @@ struct FilterProfile {
 
   ~FilterProfile(){};
 
-  template <typename A> void serialize(A &ar) {
+  template <typename A>
+  void serialize(A &ar)
+  {
     ar &m_profileName;
     ar &m_stepFilterName;
     ar &m_blockIDFilterName;
@@ -46,17 +48,18 @@ struct FilterProfile {
 };
 
 // the meta data to index the raw data and block id
-struct MetaData {
+struct MetaData
+{
   std::string m_varName;
   size_t step;
 };
 
-
 // the Block Summary for every data block, this info is stored at the raw data
 // server
-struct BlockSummary {
+struct BlockSummary
+{
   // for empty meta data, the initial value is 0
-  std::string m_typeName = "";
+  //std::string m_typeName = "";
   // number of the dimension
   size_t m_elemSize = 0;
   size_t m_elemNum = 0;
@@ -68,11 +71,20 @@ struct BlockSummary {
   std::array<size_t, 3> m_indexub{{0, 0, 0}};
 
   BlockSummary(){};
-  BlockSummary(std::string typeName, size_t elemSize, size_t elemNum,
+  BlockSummary( size_t elemSize, size_t elemNum,
                std::string driverType, std::array<size_t, 3> indexlb,
                std::array<size_t, 3> indexub)
-      : m_typeName(typeName), m_elemSize(elemSize), m_elemNum(elemNum),
+      : m_elemSize(elemSize), m_elemNum(elemNum),
         m_drivertype(driverType), m_indexlb(indexlb), m_indexub(indexub){};
+
+  std::array<size_t, 3> getShape()
+  {
+    std::array<size_t, 3> shape;
+    for (int i = 0; i < 3; i++)
+    {
+      shape[i] = m_indexub[i] - m_indexlb[i] + 1;
+    }
+  };
 
   /*
   size_t getValidDimention() {
@@ -104,9 +116,10 @@ struct BlockSummary {
   }
   */
 
-  void printSummary() {
-    std::cout << ", m_typeName " << m_typeName << ", m_elemSize " << m_elemSize
-              << " m_elemNum " << m_elemNum << "m_drivertype " << m_drivertype
+  void printSummary()
+  {
+    std::cout << "m_elemSize " << m_elemSize
+              << " m_elemNum " << m_elemNum << " m_drivertype " << m_drivertype
               << ", m_indexlb " << m_indexlb[0] << " " << m_indexlb[1] << " "
               << m_indexlb[2] << ", m_indexub " << m_indexub[0] << " "
               << m_indexub[1] << " " << m_indexub[2] << std::endl;
@@ -115,8 +128,9 @@ struct BlockSummary {
 
   ~BlockSummary(){};
 
-  template <typename A> void serialize(A &ar) {
-    ar &m_typeName;
+  template <typename A>
+  void serialize(A &ar)
+  {
     ar &m_elemSize;
     ar &m_elemNum;
     ar &m_drivertype;

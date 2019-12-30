@@ -101,5 +101,3 @@ The SFC curve is used to transfer the multi-dimensional global domain space into
 ### task execution engine
 
 The capability to execute the task at the staging service is provided by the Argobot. It also serves as the thread management tool for the underlying RPC communication layer.
-
-

@@ -31,12 +31,11 @@ find_package (mercury REQUIRED)
 include_directories(${MERCURY_INCLUDE_DIR})
 xpkg_import_module (argobots REQUIRED argobots)
 xpkg_import_module (margo REQUIRED margo)
-find_package (thallium REQUIRED)
 xpkg_import_module (abtio REQUIRED abt-io)
+find_package (thallium REQUIRED)
 
 # add the depedency
 include_directories(${gorilla_SOURCE_DIR}/dep)
-
 
 
 add_library(dhtmanager 
@@ -53,8 +52,25 @@ add_library(rawdatamanager
 ${gorilla_SOURCE_DIR}/server/RawdataManager/blockManager.cpp
 ${gorilla_SOURCE_DIR}/server/RawdataManager/rawmemobj/rawmemobj.cpp
 )
-target_link_libraries(rawdatamanager thallium)
+target_link_libraries(rawdatamanager thallium abt-io)
 
+
+find_package(VTK COMPONENTS
+    FiltersCore
+    IOImage
+    IOXML
+    CommonCore
+    FiltersSources
+)
+
+add_library(defaultfunc 
+${gorilla_SOURCE_DIR}/server/ExecutionEngine/defaultFunctions/defaultfunc.cpp)
+target_link_libraries(defaultfunc ${VTK_LIBRARIES})
+
+
+add_library(exengine 
+${gorilla_SOURCE_DIR}/server/ExecutionEngine/executionengine.cpp)
+target_link_libraries(rawdatamanager exengine thallium defaultfunc)
 
 # add enable_testing
 if (ENABLE_TESTING)

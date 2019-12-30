@@ -2,6 +2,8 @@
 #ifndef FILTERMANAGER_H
 #define FILTERMANAGER_H
 
+// store the registered triggers
+
 #include <map>
 #include <set>
 #include <string>

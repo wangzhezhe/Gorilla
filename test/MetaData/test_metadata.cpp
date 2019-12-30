@@ -2,6 +2,7 @@
 
 #include "../server/MetadataManager/metadataManager.h"
 
+
 void testMetaDataOverlap() {
   std::cout << "---testMetaDataOverlap1---" << std::endl;
   tl::abt scope;
@@ -102,6 +103,5 @@ void testMetaData() {
 int main() {
 
   testMetaData();
-
   testMetaDataOverlap();
 }

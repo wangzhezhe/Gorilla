@@ -35,3 +35,5 @@ Blob detection: calculate the isosurface of the simulation data and detect the n
 Critical area detection: use the threshold filter to extract the interesting domain and output the interesting domain to persistent storage.
 
 Data error detection: detect the error at the simulation data and notify the user if there is error detection.
+
+TODO? consider the percentage of the interesting data?? slow high, when it is better to use this method

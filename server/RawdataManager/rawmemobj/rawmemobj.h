@@ -1,5 +1,8 @@
 
 
+#ifndef RAWMEMOBJ_H
+#define RAWMEMOBJ_H
+
 #include "../blockManager.h"
 #include <iostream>
 
@@ -28,3 +31,5 @@ struct RawMemObj : public DataBlockInterface {
   };
 
 };
+
+#endif
