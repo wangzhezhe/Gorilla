@@ -64,13 +64,20 @@ find_package(VTK COMPONENTS
 )
 
 add_library(defaultfunc 
-${gorilla_SOURCE_DIR}/server/ExecutionEngine/defaultFunctions/defaultfunc.cpp)
+${gorilla_SOURCE_DIR}/server/ExecutionEngine/defaultFunctions/defaultfuncraw.cpp
+${gorilla_SOURCE_DIR}/server/ExecutionEngine/defaultFunctions/defaultfuncmeta.cpp
+)
 target_link_libraries(defaultfunc ${VTK_LIBRARIES})
 
 
 add_library(exengine 
 ${gorilla_SOURCE_DIR}/server/ExecutionEngine/executionengine.cpp)
-target_link_libraries(rawdatamanager exengine thallium defaultfunc)
+target_link_libraries(exengine rawdatamanager thallium defaultfunc)
+
+add_library(trigger 
+${gorilla_SOURCE_DIR}/server/TriggerManager/dynamictrigger.cpp)
+target_link_libraries(trigger exengine thallium defaultfunc)
+
 
 # add enable_testing
 if (ENABLE_TESTING)
