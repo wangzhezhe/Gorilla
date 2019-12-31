@@ -54,7 +54,7 @@ ${gorilla_SOURCE_DIR}/server/RawdataManager/rawmemobj/rawmemobj.cpp
 )
 target_link_libraries(rawdatamanager thallium abt-io)
 
-
+find_package(MPI REQUIRED) 
 find_package(VTK COMPONENTS
     FiltersCore
     IOImage
@@ -77,6 +77,16 @@ target_link_libraries(exengine rawdatamanager thallium defaultfunc)
 add_library(trigger 
 ${gorilla_SOURCE_DIR}/server/TriggerManager/dynamictrigger.cpp)
 target_link_libraries(trigger exengine thallium defaultfunc)
+
+
+add_executable (unimos_server 
+${gorilla_SOURCE_DIR}/server/unimosserver.cpp
+${gorilla_SOURCE_DIR}/server/addrManagement.cpp
+)
+target_link_libraries (unimos_server thallium MPI::MPI_CXX)
+
+
+
 
 
 # add enable_testing

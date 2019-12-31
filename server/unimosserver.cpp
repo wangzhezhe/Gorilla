@@ -1,5 +1,5 @@
 
-//the mini data space server that provide the get and put api
+//the unified in memory server that contains both metadata manager and raw data manager
 
 #include <iostream>
 #include <fstream>
@@ -14,248 +14,33 @@
 //import this to parse the template
 #include <spdlog/spdlog.h>
 #include "mpi.h"
-#include "memcache.h"
-#include "endpointManagement.h"
 #include "../utils/stringtool.h"
-#include "../client/unimosclient.h"
-#include "filterManager.h"
+#include "addrManagement.h"
+#include "settings.h"
 
 namespace tl = thallium;
 
-
 //global variables
-
 tl::abt scope;
 
 //The pointer to the enginge should be set as global element
 //this shoule be initilized after the initilization of the argobot
-tl::engine *globalClientEnginePointer = nullptr;
-
-//init memory cache
-//TODO this shouled be loaded in main
-MemCache *mcache = new MemCache(4);
-//init filter manager
-FilterManager *fmanager = new FilterManager();
-//load the filter manager
-
-//the manager for all the server endpoints
-endPointsManager *epManager = new endPointsManager();
+tl::engine *globalEnginePointer = nullptr;
 
 //name of configure file, the write one line, the line is the rank0 addr
-std::string masterConfigFile = "./unimos_server.conf";
+//std::string masterConfigFile = "./unimos_server.conf";
+Settings gloablSettings;
 
 std::string MasterIP = "";
 //rank & proc number for current MPI process
 int globalRank = 0;
 int globalProc = 0;
 
-/*
-the rpc call for testing using
-void hello(const tl::request &req, const std::string &name)
-{
-    spdlog::debug("Hello {}", name);
-}
+//the manager for all the server endpoints
+endPointsManager *epManager = new endPointsManager();
 
-void putDoubleVector(const tl::request &req, const std::vector<double> &inputVector)
-{
-    spdlog::debug("check vector at the server:");
-    int size = inputVector.size();
-    for (int i = 0; i < size; i++)
-    {
-        spdlog::debug("index {} value {} inputVector[i]");
-    }
-    return;
-}
-
-void putMetaData(const tl::request &req, DataMeta &datameta)
-{
-    spdlog::debug("check putMetaData at the server:");
-    datameta.printMeta();
-    return;
-}
-*/
-
-//get the shape of the data and the client could allocate the memory
-//the sammary is only need to be called once for each time step
-//when the data is distributed among multiple blocks, it is better to start query arbitrary region until all data block is ready
-void dsgetBlockMeta(const tl::request &req, const std::string &varName, const int &ts, size_t &blockID)
-{
-    BlockMeta blockmeta = mcache->getBlockMeta(varName, ts, blockID);
-    std::cout << "check get results at server end ts " << ts << std::endl;
-    blockmeta.printMeta();
-
-    req.respond(blockmeta);
-}
-
-//TODO upadte the interface for querying addr
-void getaddr(const tl::request &req, const std::string &varName, const int &ts, const size_t &blockid)
-{
-    if (epManager->ifAllRegister(globalProc))
-    {
-
-        std::string serverAddr = epManager->getByVarTsBlockID(varName, ts, blockid);
-        req.respond(serverAddr);
-    }
-
-    //spdlog::debug("varname {} and ts {} getaddr  {}", varName, ts, serverAddr);
-
-    else
-    {
-        //other wise, return the ip
-        req.respond(std::string("NOREGISTER"));
-    }
-}
-
-//return the error code
-//be careful with the parameters, they should match with the type used at the client end
-//otherwise, there are some template issues
-
-void dsput(const tl::request &req, DataMeta &datameta, size_t &blockID, tl::bulk &dataBulk)
-{
-    spdlog::debug("execute dataspace put:");
-    datameta.printMeta();
-    spdlog::debug("blockID is {} ", blockID);
-
-    //get the bulk value
-    tl::endpoint ep = req.get_endpoint();
-
-    //assign the memory
-    size_t mallocSize = datameta.extractBlockMeta().getBlockMallocSize();
-
-    spdlog::debug("malloc size is {}", mallocSize);
-
-    try
-    {
-        void *localContainer = (void *)malloc(mallocSize);
-
-        if (localContainer == NULL)
-        {
-            req.respond(-1);
-        }
-
-        //it is mandatory to use this expression
-        std::vector<std::pair<void *, std::size_t>> segments(1);
-        segments[0].first = localContainer;
-        segments[0].second = mallocSize;
-
-        //create the container for the data
-        tl::bulk local = globalClientEnginePointer->expose(segments, tl::bulk_mode::write_only);
-        dataBulk.on(ep) >> local;
-
-        spdlog::debug("Server received bulk, check the contents: ");
-
-        //check the bulk
-        /*
-        double *rawdata = (double *)localContainer;
-        for (int i = 0; i < 10; i++)
-        {
-            std::cout << "index " << i << " value " << *rawdata << std::endl;
-            rawdata++;
-        }
-        */
-
-        //TODO get the pointer wisely to decrease the data copy
-        //generate the empty container firstly, then get the data pointer
-        int status = mcache->putIntoCache(datameta, blockID, localContainer);
-
-        //TODO update the return value
-        req.respond(status);
-
-        spdlog::debug("ok to put the data");
-    }
-    catch (...)
-    {
-        spdlog::debug("exception for data put");
-        req.respond(-1);
-    }
-
-    return;
-}
-
-//get the whole object
-void dsget(const tl::request &req, std::string &varName, int &ts, size_t &blockID, tl::bulk &clientBulk)
-{
-    //get variable type from the data
-    void *data = nullptr;
-
-    spdlog::debug("dsget by varName: {} ts {} blockID {}", varName, ts, blockID);
-
-    try
-    {
-        BlockMeta blockMeta = mcache->getFromCache(varName, ts, blockID, data);
-        //get the data value
-        if (blockMeta.getValidDimention() == 0)
-        {
-            spdlog::debug("failed to get the data at the server end");
-            //return empty bulk info if it is failed to get data
-            //how to adjust it is empty at the client end?
-            req.respond(-1);
-            return;
-        }
-        std::vector<std::pair<void *, std::size_t>> segments(1);
-        segments[0].first = (void *)(data);
-        segments[0].second = blockMeta.getBlockMallocSize();
-
-        tl::bulk returnBulk = globalClientEnginePointer->expose(segments, tl::bulk_mode::read_only);
-
-        tl::endpoint ep = req.get_endpoint();
-        clientBulk.on(ep) << returnBulk;
-
-        req.respond(0);
-    }
-    catch (...)
-    {
-        spdlog::debug("exception for get");
-        req.respond(-1);
-    }
-
-    /*
-    double *rawdata = (double *)data;
-    std::cout << "check the get data at the server end" << std::endl;
-
-    for (int i = 0; i < 10; i++)
-    {
-        std::cout << "index " << i << " value " << *rawdata << std::endl;
-        rawdata++;
-    }
-    */
-}
-
-//get the object in specific region
-void dsgetregion(const tl::request &req, std::string &varName, int &ts, std::array<size_t, 3> baseoffset,
-                 std::array<size_t, 3> shape, tl::bulk &clientBulk)
-{
-
-    //todo
-}
-
-//todo, this api should be divided into two parts
-//the first is for master, all other clients will subscribe to the master
-//the second is between the master and other work node, the master will transfer the profile to all other node
-void subscribeProfile(const tl::request &req, std::string &varName, FilterProfile &fp)
-{
-    //subscribe profile to the server
-    //call the subscribe of the filter manager
-    //tl::endpoint ep = req.get_endpoint();
-    //std::string subscriberAddr = std::string(ep);
-    //spdlog::debug("subscribe the profile from {}", subscriberAddr);
-    //update the subscriber position of the profile
-    if (globalRank == 0)
-    {
-        //subscribe to all the worker
-        //get serverList
-        dssubscribe_broadcast(*globalClientEnginePointer, epManager->m_endPointsLists, varName, fp);
-        spdlog::debug("master send subscribe to worker");
-        req.respond(0);
-    }
-    else
-    {
-
-        int status = fmanager->profileSubscribe(varName, fp);
-        spdlog::debug("worker node {} subscribe", globalRank);
-        req.respond(status);
-    }
-}
+//the global manager DHT
+DHTManager *dhtManager = nullptr;
 
 void gatherIP(std::string engineName, std::string endpoint)
 {
@@ -354,38 +139,63 @@ void gatherIP(std::string engineName, std::string endpoint)
         {
             std::cout << ipList[i] << std::endl;
             //only store the worker addr
-            if (epManager->nodeAddr.compare(ipList[i]) != 0)
-            {
-                spdlog::info("push back addr {}", ipList[i]);
-                epManager->m_endPointsLists.push_back(ipList[i]);
-            }
+            //if (epManager->nodeAddr.compare(ipList[i]) != 0)
+            //{
+            spdlog::info("rank {} add raw data server {}", globalRank, ipList[i]);
+            epManager->m_endPointsLists.push_back(ipList[i]);
+
+            //}
         }
 
         free(rcvString);
     }
+
+    //TODO bradcaster the ip to all the worker nodes use the thallium api
+}
+
+//currently, we use the global dht
+//this can also be binded with specific variables
+//when the global mesh changes, the dht changes
+void updateDHT(const tl::request &req, std::vector<MetaAddtWrapper> &datawrapperList)
+{
+
+    //put the metadata into current epManager
+    epManager->metaAddtWrapperList = datawrapperList;
+    epManager->m_metaServerNum = datawrapperList.size();
+
+    for (int i = 0; i < epManager->m_metaServerNum; i++)
+    {
+        spdlog::info("rank {} add meta addr")
+    }
+
+    //get mesh dim from the setting
+
+    //get global bbx from the setting
+
+    //dhtManager = initDHT(int ndim, int metaServerNum, BBX *globalBBX)
+
+    //put the data wrapper list into the DHT
+
+    return;
 }
 
 void runRerver(std::string networkingType)
 {
 
     tl::engine dataMemEnginge(networkingType, THALLIUM_SERVER_MODE);
+    globalEnginePointer = &dataMemEnginge;
 
-    //another option is to use the unique pointer to point to the entity of the engine
-    //use the unique pointer to make sure the destructor is called when the variable is out of the scope
-    globalClientEnginePointer = &dataMemEnginge;
-
-    //globalClientEnginePointer = new tl::engine(networkingType, THALLIUM_SERVER_MODE);
-    //std::string addr = globalClientEnginePointer->self();
-
-    fmanager->m_Engine = &dataMemEnginge;
+    globalEnginePointer->define("updateDHT", updateDHT).disable_response();
 
     //globalClientEnginePointer->define("hello", hello).disable_response();
     //globalClientEnginePointer->define("putDoubleVector", putDoubleVector).disable_response();
     //globalClientEnginePointer->define("putMetaData", putMetaData).disable_response();
+    /*
     globalClientEnginePointer->define("dsput", dsput);
     globalClientEnginePointer->define("dsget", dsget);
     globalClientEnginePointer->define("dsgetBlockMeta", dsgetBlockMeta);
     globalClientEnginePointer->define("subscribeProfile", subscribeProfile);
+    */
 
     std::string addr = dataMemEnginge.self();
 
@@ -393,20 +203,18 @@ void runRerver(std::string networkingType)
     {
         spdlog::info("Start the unimos server with addr for master: {}", addr);
 
-        globalClientEnginePointer->define("getaddr", getaddr);
+        //globalClientEnginePointer->define("getaddr", getaddr);
         std::string masterAddr = IPTOOL::getClientAdddr(networkingType, addr);
         std::ofstream confFile;
-        confFile.open(masterConfigFile);
+        confFile.open(gloablSettings->masterAddr);
         confFile << masterAddr << "\n";
         confFile.close();
     }
 
     //write the addr out here
-
     gatherIP(networkingType, addr);
 
     //the destructor of the engine will be called when the variable is out of the scope
-
     return;
 }
 
@@ -430,28 +238,19 @@ int main(int argc, char **argv)
     //spdlog::set_default_logger(file_logger);
 
     //default value
-    int logLevel = 0;
+
     bool addFilter = false;
-    if (argc < 2)
+    if (argc != 2)
     {
-        std::cerr << "Usage: " << argv[0] << " <networkingType> filter <loglevel>" << std::endl;
+
+        gloablSettings = Settings::from_json(argv[1]);
+        std::cerr << "Usage: " << argv[0] << "unimos_server <path of setting.json>" << std::endl;
         exit(0);
     }
-    std::string networkingType = argv[1];
 
-    if (argc > 2)
-    {
-        std::string filterKey = argv[2];
-        if (filterKey.compare(std::string("filter")) == 0)
-        {
-            addFilter = true;
-        }
-    }
+    std::string networkingType = gloablSettings.protocol;
 
-    if (argc == 4)
-    {
-        logLevel = atoi(argv[3]);
-    }
+    int logLevel = gloablSettings.logLevel;
 
     if (logLevel == 0)
     {
@@ -473,15 +272,18 @@ int main(int argc, char **argv)
         std::cout << "total process num: " << globalProc << std::endl;
     }
 
+    //TODO, use extra configuration here
     epManager->m_serverNum = globalProc;
+    epManager->m_metaServerNum = globalProc;
 
     try
     {
         //load the filter manager
+        bool addFilter = gloablSettings.datachecking;
 
         if (addFilter == true)
         {
-            mcache->loadFilterManager(fmanager);
+            //mcache->loadFilterManager(fmanager);
             spdlog::info("load the filter for rank {}", globalRank);
         }
 

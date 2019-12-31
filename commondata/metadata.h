@@ -48,10 +48,13 @@ struct FilterProfile
 };
 
 // the meta data to index the raw data and block id
-struct MetaData
+struct MetaAddtWrapper
 {
-  std::string m_varName;
-  size_t step;
+  MetaAddtWrapper(){};
+  MetaAddtWrapper(int index, std::string addr):m_index(index),m_addr(addr){}
+  int m_index;
+  std::string m_addr;
+  ~MetaAddtWrapper(){};
 };
 
 // the Block Summary for every data block, this info is stored at the raw data

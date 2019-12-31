@@ -37,4 +37,4 @@ add_test( NAME test_rawdatamanager COMMAND test_rawdatamanager)
 
 add_test( NAME test_exengine COMMAND test_exengine)
 
-add_test( NAME test_trigger COMMAND test_exengine)
+add_test( NAME test_trigger COMMAND test_trigger)

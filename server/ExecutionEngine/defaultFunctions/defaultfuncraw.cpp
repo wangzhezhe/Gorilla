@@ -1,4 +1,4 @@
-#include "defaultfunc.h"
+#include "defaultfuncraw.h"
 #include <string>
 #include <vtkImageData.h>
 #include <vtkImageImport.h>

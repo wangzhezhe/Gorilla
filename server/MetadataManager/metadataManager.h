@@ -49,8 +49,7 @@ struct MetaDataManager {
   tl::mutex m_metaDataMapMutex;
 
   // TODO use more advanced structure such as R tree to index the endpoint here
-  std::map<size_t, std::map<std::string, std::vector<RawDataEndpoint>>>
-      m_metaDataMap;
+  std::map<size_t, std::map<std::string, std::vector<RawDataEndpoint>>> m_metaDataMap;
 
   void updateMetaData(size_t step, std::string varName, RawDataEndpoint rde);
 

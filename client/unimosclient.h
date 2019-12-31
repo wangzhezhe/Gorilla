@@ -18,6 +18,8 @@
 
 namespace tl = thallium;
 
+namespace UNICLIENT{
+    
 extern std::string masterConfig;
 
 /*
@@ -27,6 +29,7 @@ extern std::string masterConfig;
     //attention, the return value here shoule be same with the type defined at the server end
     int ret = sum.on(server)(42,63);
 */
+
 
 
 BlockMeta dspaces_client_getblockMeta(tl::engine &myEngine, std::string serverAddr, std::string varName, int ts, size_t blockID);
@@ -55,5 +58,9 @@ int dsnotify_subscriber(tl::engine &myEngine, std::string serverAddr, size_t& st
 
 
 std::string loadMasterAddr();
+
+}
+
+
 
 #endif

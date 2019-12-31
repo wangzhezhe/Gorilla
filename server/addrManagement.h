@@ -1,16 +1,19 @@
-#ifndef EPMANAGEMENT_H
-#define EPMANAGEMENT_H
+#ifndef ADDRMANAGEMENT_H
+#define ADDRMANAGEMENT_H
 
 
 #include <string>
 #include <iostream>
 #include <vector>
 
-
 struct endPointsManager
 {
     int m_serverNum;
+    //the list of all the servers
     std::vector<std::string> m_endPointsLists;
+    
+    int m_metaServerNum;
+
 
     endPointsManager(){};
     endPointsManager(int totalServerNum):m_serverNum(totalServerNum){};
@@ -33,6 +36,8 @@ struct endPointsManager
     //hash the varName + ts
     std::string getByVarTs(std::string varName, int ts);
     std::string getByVarTsBlockID(std::string varName, int ts, size_t blockID);
+
+    void broadCasterMetaServer();
 };
 
 
