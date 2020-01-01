@@ -34,13 +34,21 @@ xpkg_import_module (margo REQUIRED margo)
 xpkg_import_module (abtio REQUIRED abt-io)
 find_package (thallium REQUIRED)
 
+
+# add uuid 
+pkg_search_module(UUID REQUIRED uuid)
+
+
 # add the depedency
-include_directories(${gorilla_SOURCE_DIR}/dep)
+include_directories(
+     ${gorilla_SOURCE_DIR}/dep
+     ${UUID_INCLUDE_DIRS}
+)
 
 
 add_library(dhtmanager 
-${gorilla_SOURCE_DIR}/DHTManager/dhtmanager.cpp)
-target_link_libraries (dhtmanager)
+${gorilla_SOURCE_DIR}/server/DHTManager/dhtmanager.cpp
+${gorilla_SOURCE_DIR}/utils/hilbert/hilbert.c)
 
 
 add_library(metadatamanager 
@@ -63,12 +71,12 @@ find_package(VTK COMPONENTS
     FiltersSources
 )
 
+
 add_library(defaultfunc 
 ${gorilla_SOURCE_DIR}/server/ExecutionEngine/defaultFunctions/defaultfuncraw.cpp
 ${gorilla_SOURCE_DIR}/server/ExecutionEngine/defaultFunctions/defaultfuncmeta.cpp
 )
 target_link_libraries(defaultfunc ${VTK_LIBRARIES})
-
 
 add_library(exengine 
 ${gorilla_SOURCE_DIR}/server/ExecutionEngine/executionengine.cpp)
@@ -79,11 +87,17 @@ ${gorilla_SOURCE_DIR}/server/TriggerManager/dynamictrigger.cpp)
 target_link_libraries(trigger exengine thallium defaultfunc)
 
 
+add_library (unimos_client 
+${gorilla_SOURCE_DIR}/client/unimosclient.cpp)
+target_link_libraries (unimos_client thallium)
+
+
 add_executable (unimos_server 
 ${gorilla_SOURCE_DIR}/server/unimosserver.cpp
-${gorilla_SOURCE_DIR}/server/addrManagement.cpp
+${gorilla_SOURCE_DIR}/server/addrManager.cpp
+${gorilla_SOURCE_DIR}/server/settings.cpp
 )
-target_link_libraries (unimos_server thallium MPI::MPI_CXX)
+target_link_libraries (unimos_server thallium MPI::MPI_CXX unimos_client dhtmanager rawdatamanager ${UUID_LIBRARIES})
 
 
 

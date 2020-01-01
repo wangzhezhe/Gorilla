@@ -13,9 +13,6 @@ size_t getIdByVarTs(std::string varName, int ts){
     return strHashID;
 }
 
-
-
-
 size_t getIdByVarTsBlockID(std::string varName, int ts, size_t blockid){
     std::string identifier = varName + "_" + std::to_string(ts) + "_" + std::to_string(blockid);
     std::hash<std::string> hashFun;

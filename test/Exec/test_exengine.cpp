@@ -37,7 +37,7 @@ void test_executeVTK_raw()
                std::array<size_t, DRIVERTYPE_RAWMEM> indexub)
     */
 
-    BlockSummary bs(sizeof(double), len * len * len, DRIVERTYPE_RAWMEM, {{0, 0, 0}}, {{9, 9, 9}});
+    BlockSummary bs(sizeof(double), len * len * len, DRIVERTYPE_RAWMEM, 3,  {{0, 0, 0}}, {{9, 9, 9}});
     std::string funcName = "testvtk";
     exengine->execute(funcName, bs, rawdata.data());
     //make sure the delete operation is called

@@ -50,15 +50,15 @@ public:
   // put/get data by Object
   // parse the interface by the defination
 
-  int putBlock(size_t blockID,
+  int putBlock(std::string blockID,
                BlockSummary &m_blockSummary, void *dataPointer);
 
   // this function can be called when the blockid is accuired from the metadata
   // service this is just get the summary information of block data
-  size_t getBlockSize(size_t blockID);
-  BlockSummary getBlockSummary(size_t blockID);
-  BlockSummary getBlock(size_t blockID, void *&dataContainer);
-  BlockSummary getBlockSubregion(size_t blockID,
+  size_t getBlockSize(std::string blockID);
+  BlockSummary getBlockSummary(std::string blockID);
+  BlockSummary getBlock(std::string blockID, void *&dataContainer);
+  BlockSummary getBlockSubregion(std::string blockID,
                                    std::array<size_t, 3> subregionlb,
                                    std::array<size_t, 3> subregionub,
                                    void *&dataContainer);
@@ -76,7 +76,7 @@ public:
 private:
   tl::mutex m_DataBlockMapMutex;
   // map the block id into the
-  std::map<size_t, DataBlockInterface *> DataBlockMap;
+  std::map<std::string, DataBlockInterface *> DataBlockMap;
   int checkDataExistance(size_t blockID);
 };
 

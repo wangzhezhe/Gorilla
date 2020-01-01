@@ -8,7 +8,7 @@ void test_rawdatamanager_basic()
   tl::abt scope;
   BlockManager bm;
   BlockSummary bs;
-  bm.putBlock(123, bs, NULL);
+  bm.putBlock("123", bs, NULL);
 }
 
 void test_rawdatamanager_putget()
@@ -17,6 +17,8 @@ void test_rawdatamanager_putget()
   //assume the real data match with the BlockSummary
   tl::abt scope;
   BlockManager bm;
+
+  
 
   std::array<size_t, 3> indexlb = {{0, 0, 0}};
   std::array<size_t, 3> indexub = {{99, 0, 0}};
@@ -32,9 +34,9 @@ void test_rawdatamanager_putget()
                std::string driverType, std::array<size_t, 3> indexlb,
                std::array<size_t, 3> indexub)
   */
-  BlockSummary bs(sizeof(double), 100, DRIVERTYPE_RAWMEM, indexlb, indexub);
+  BlockSummary bs(sizeof(double), 100, DRIVERTYPE_RAWMEM, 1, indexlb, indexub);
 
-  size_t blockid = 123;
+  std::string blockid = "123";
   bm.putBlock(blockid, bs, rawdata.data());
 
   //test get data

@@ -4,7 +4,7 @@
 #include "rawmemobj/rawmemobj.h"
 #include <iostream>
 
-int BlockManager::putBlock(size_t blockID,
+int BlockManager::putBlock(std::string blockID,
                            BlockSummary &blockSummary, void *dataPointer)
 {
 
@@ -21,9 +21,10 @@ int BlockManager::putBlock(size_t blockID,
   {
     throw std::runtime_error("unsuported driver type " + blockSummary.m_drivertype);
   }
+  return 0;
 }
 
-BlockSummary BlockManager::getBlockSummary(size_t blockID)
+BlockSummary BlockManager::getBlockSummary(std::string blockID)
 {
   this->m_DataBlockMapMutex.lock();
   BlockSummary bs = this->DataBlockMap[blockID]->m_blockSummary;
@@ -31,7 +32,7 @@ BlockSummary BlockManager::getBlockSummary(size_t blockID)
   return bs;
 }
 
-BlockSummary BlockManager::getBlock(size_t blockID, void *&dataContainer)
+BlockSummary BlockManager::getBlock(std::string blockID, void *&dataContainer)
 {
   this->m_DataBlockMapMutex.lock();
   BlockSummary bs = DataBlockMap[blockID]->getData(dataContainer);
@@ -39,7 +40,7 @@ BlockSummary BlockManager::getBlock(size_t blockID, void *&dataContainer)
   return bs;
 }
 
-BlockSummary BlockManager::getBlockSubregion(size_t blockID,
+BlockSummary BlockManager::getBlockSubregion(std::string blockID,
                                              std::array<size_t, 3> subregionlb,
                                              std::array<size_t, 3> subregionub,
                                              void *&dataContainer)
@@ -53,7 +54,7 @@ BlockSummary BlockManager::getBlockSubregion(size_t blockID,
   return BlockSummary();
 }
 
-size_t BlockManager::getBlockSize(size_t blockID)
+size_t BlockManager::getBlockSize(std::string blockID)
 {
   this->m_DataBlockMapMutex.lock();
   BlockSummary bs = DataBlockMap[blockID]->m_blockSummary;

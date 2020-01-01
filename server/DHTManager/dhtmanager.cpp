@@ -36,7 +36,7 @@ int nextPowerOf2(int n)
 
 // init the metaServerBBOXList according to the metaServerNum(partitionNum) and
 // the bbox of the global domain The hilbert DHT is only suitable for the cubic
-void DHTManager::initDHT(int ndim, int metaServerNum, BBX *globalBBX) {
+void DHTManager::initDHT(size_t ndim, size_t metaServerNum, BBX *globalBBX) {
   
   if(globalBBX->BoundList.size()!=ndim){
       throw std::runtime_error("dim num should same with the number of bound in globalBBX");

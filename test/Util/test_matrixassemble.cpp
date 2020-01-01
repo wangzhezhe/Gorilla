@@ -14,11 +14,25 @@ void test_assemble_not_ok()
   std::cout << "---test_assemble_not_ok 1d---" << std::endl;
   std::vector<MatrixView> matrixViewList1d;
 
-  BBX *bbx1d1 = new BBX(1, {{0}}, {{3}});
-  BBX *bbx1d2 = new BBX(1, {{4}}, {{6}});
-  BBX *bbx1d3 = new BBX(2, {{7}}, {{11}});
+  std::array<size_t, 3> lb;
+  std::array<size_t, 3> ub;
 
-  BBX *bbxquery = new BBX(1, {{0}}, {{9}});
+  lb = {{0}};
+  ub = {{3}};
+
+  BBX *bbx1d1 = new BBX(1, lb, ub);
+
+  lb = {{4}};
+  ub = {{6}};
+  BBX *bbx1d2 = new BBX(1, lb, ub);
+
+  lb = {{7}};
+  ub = {{11}};
+  BBX *bbx1d3 = new BBX(2, lb, ub);
+
+  lb = {{0}};
+  ub = {{9}};
+  BBX *bbxquery = new BBX(1, lb, ub);
 
   MatrixView mv1d1(bbx1d1, NULL);
   MatrixView mv1d2(bbx1d2, NULL);
@@ -48,11 +62,19 @@ void test_assemble_not_ok()
 
   std::vector<MatrixView> matrixViewList2d;
 
-  BBX *bbx2d1 = new BBX(2, {{0, 0}}, {{3, 3}});
-  BBX *bbx2d2 = new BBX(2, {{1, 1}}, {{6, 6}});
-  BBX *bbx2d3 = new BBX(2, {{7, 7}}, {{9, 9}});
+  lb = {{0, 0}};
+  ub = {{3, 3}};
 
-  BBX *bbxquery2 = new BBX(2, {{0, 0}}, {{9, 9}});
+  BBX *bbx2d1 = new BBX(2, lb, ub);
+  lb = {{1, 1}};
+  ub = {{6, 6}};
+  BBX *bbx2d2 = new BBX(2, lb, ub);
+  lb = {{7, 7}};
+  ub = {{9, 9}};
+  BBX *bbx2d3 = new BBX(2, lb, ub);
+  lb = {{0, 0}};
+  ub = {{9, 9}};
+  BBX *bbxquery2 = new BBX(2, lb, ub);
 
   MatrixView mv2d1(bbx2d1, NULL);
   MatrixView mv2d2(bbx2d2, NULL);
@@ -81,11 +103,21 @@ void test_assemble_not_ok()
   std::cout << "---test_assemble_not_ok 3d---" << std::endl;
 
   std::vector<MatrixView> matrixViewList3d;
-  BBX *bbx3d1 = new BBX(3, {{0, 0, 0}}, {{3, 3, 3}});
-  BBX *bbx3d2 = new BBX(3, {{4, 4, 5}}, {{6, 6, 6}});
-  BBX *bbx3d3 = new BBX(3, {{7, 7, 7}}, {{9, 9, 9}});
 
-  BBX *bbxquery3 = new BBX(3, {{0, 0, 0}}, {{9, 9, 9}});
+  lb = {{0, 0, 0}};
+  ub = {{3, 3, 3}};
+
+  BBX *bbx3d1 = new BBX(3, lb, ub);
+  lb = {{4, 4, 5}};
+  ub = {{6, 6, 6}};
+
+  BBX *bbx3d2 = new BBX(3, lb, ub);
+  lb = {{7, 7, 7}};
+  ub = {{9, 9, 9}};
+  BBX *bbx3d3 = new BBX(3, lb, ub);
+  lb = {{0, 0, 0}};
+  ub = {{9, 9, 9}};
+  BBX *bbxquery3 = new BBX(3, lb, ub);
 
   MatrixView mv3d1(bbx3d1, NULL);
   MatrixView mv3d2(bbx3d2, NULL);
@@ -119,26 +151,41 @@ void test_check_ok_1d()
   //1d
   std::vector<MatrixView> matrixViewList1d;
 
-  BBX *bbx1d1 = new BBX(1, {{0}}, {{30}});
+  std::array<size_t, 3> lb;
+  std::array<size_t, 3> ub;
+
+  lb = {{0}};
+  ub= {{30}};
+
+  BBX *bbx1d1 = new BBX(1,lb ,ub );
   std::vector<double> dataVector1;
   for (int i = 0; i <= 30; i++)
   {
     dataVector1.push_back(1.1);
   }
-  BBX *bbx1d2 = new BBX(1, {{31}}, {{60}});
+  lb = {{31}};
+  ub= {{60}};
+
+  BBX *bbx1d2 = new BBX(1, lb, ub );
   std::vector<double> dataVector2;
   for (int i = 31; i <= 60; i++)
   {
     dataVector2.push_back(2.2);
   }
-  BBX *bbx1d3 = new BBX(1, {{61}}, {{90}});
+  lb = {{61}};
+  ub= {{90}};
+
+  BBX *bbx1d3 = new BBX(1, lb, ub);
   std::vector<double> dataVector3;
   for (int i = 61; i <= 90; i++)
   {
     dataVector3.push_back(3.3);
   }
 
-  BBX *intectRegion = new BBX(1, {{0}}, {{90}});
+
+  lb = {{0}};
+  ub= {{90}};
+  BBX *intectRegion = new BBX(1, lb, ub);
 
   MatrixView mv1d1(bbx1d1, dataVector1.data());
   MatrixView mv1d2(bbx1d2, dataVector2.data());
@@ -182,21 +229,33 @@ void test_check_ok_2d()
 
   std::vector<MatrixView> matrixViewList2d;
 
-  BBX *bbx2d1 = new BBX(2, {{0, 0}}, {{30, 30}});
+  std::array<size_t, 3> lb;
+  std::array<size_t, 3> ub;
+
+  lb = {{0, 0}};
+  ub = {{30, 30}};
+
+  BBX *bbx2d1 = new BBX(2, lb, ub);
   std::vector<double> dataVector1;
   size_t elemNum = bbx2d1->getElemNum();
   for (int i = 0; i <= elemNum; i++)
   {
     dataVector1.push_back(1.1);
   }
-  BBX *bbx2d2 = new BBX(2, {{31, 0}}, {{60, 30}});
+
+   lb = {{31, 0}};
+  ub = {{60, 30}};
+  BBX *bbx2d2 = new BBX(2,lb ,ub );
   elemNum = bbx2d2->getElemNum();
   std::vector<double> dataVector2;
   for (int i = 0; i <= elemNum; i++)
   {
     dataVector2.push_back(2.2);
   }
-  BBX *bbx2d3 = new BBX(2, {{0, 31}}, {{30, 60}});
+
+     lb = {{0, 31}};
+  ub = {{30, 60}};
+  BBX *bbx2d3 = new BBX(2, lb ,ub);
   elemNum = bbx2d3->getElemNum();
   std::vector<double> dataVector3;
   for (int i = 0; i <= elemNum; i++)
@@ -204,7 +263,10 @@ void test_check_ok_2d()
     dataVector3.push_back(3.3);
   }
 
-  BBX *bbx2d4 = new BBX(2, {{31, 31}}, {{60, 60}});
+       lb = {{31, 31}};
+  ub = {{60, 60}};
+
+  BBX *bbx2d4 = new BBX(2, lb ,ub);
   elemNum = bbx2d4->getElemNum();
   std::vector<double> dataVector4;
   for (int i = 0; i <= elemNum; i++)
@@ -212,7 +274,10 @@ void test_check_ok_2d()
     dataVector4.push_back(4.4);
   }
 
-  BBX *intectRegion = new BBX(2, {{0, 0}}, {{60, 60}});
+
+       lb = {{0, 0}};
+  ub = {{60, 60}};
+  BBX *intectRegion = new BBX(2, lb , ub);
 
   MatrixView mv2d1(bbx2d1, dataVector1.data());
   MatrixView mv2d2(bbx2d2, dataVector2.data());
@@ -274,14 +339,23 @@ void test_check_ok_3d()
 
   std::vector<MatrixView> matrixViewList3d;
 
-  BBX *bbx3d1 = new BBX(3, {{0, 0, 0}}, {{30, 30, 0}});
+    std::array<size_t, 3> lb;
+  std::array<size_t, 3> ub;
+
+  lb = {{0, 0, 0}};
+  ub= {{30, 30, 0}};
+
+  BBX *bbx3d1 = new BBX(3, lb, ub );
   std::vector<double> dataVector1;
   size_t elemNum = bbx3d1->getElemNum();
   for (int i = 0; i <= elemNum; i++)
   {
     dataVector1.push_back(1.1);
   }
-  BBX *bbx3d2 = new BBX(3, {{0, 0, 1}}, {{30, 30, 1}});
+
+    lb = {{0, 0, 1}};
+  ub= {{30, 30, 1}};
+  BBX *bbx3d2 = new BBX(3, lb , ub);
   elemNum = bbx3d2->getElemNum();
   std::vector<double> dataVector2;
   for (int i = 0; i <= elemNum; i++)
@@ -289,7 +363,11 @@ void test_check_ok_3d()
     dataVector2.push_back(2.2);
   }
 
-  BBX *intectRegion = new BBX(3, {{0, 0, 0}}, {{30, 30, 1}});
+
+      lb ={{0, 0, 0}};
+  ub= {{30, 30, 1}};
+
+  BBX *intectRegion = new BBX(3, lb, ub);
 
   MatrixView mv3d1(bbx3d1, dataVector1.data());
   MatrixView mv3d2(bbx3d2, dataVector2.data());

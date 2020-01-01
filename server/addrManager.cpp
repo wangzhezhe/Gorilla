@@ -1,8 +1,8 @@
 
-#include "addrManagement.h"
+#include "addrManager.h"
 #include "../utils/hash.h"
 
-std::string endPointsManager::getByVarTs(std::string varName, int ts)
+std::string AddrManager::getByVarTs(std::string varName, int ts)
 {
 
     size_t hashId = HASHFUNC::getIdByVarTs(varName, ts);
@@ -19,7 +19,7 @@ std::string endPointsManager::getByVarTs(std::string varName, int ts)
     return m_endPointsLists[serverId];
 }
 
-std::string endPointsManager::getByVarTsBlockID(std::string varName, int ts, size_t blockID)
+std::string AddrManager::getByVarTsBlockID(std::string varName, int ts, size_t blockID)
 {
 
     size_t hashId = HASHFUNC::getIdByVarTsBlockID(varName, ts, blockID);
@@ -36,25 +36,38 @@ std::string endPointsManager::getByVarTsBlockID(std::string varName, int ts, siz
     return m_endPointsLists[serverId];
 }
 
-void broadcastMetaServer()
+std::string AddrManager::getByRRobin()
+{
+
+    std::string serverAddr = m_endPointsLists[this->m_rrobinValue];
+
+    this->m_rrbinMutex.lock();
+    this->m_rrobinValue = (this->m_rrobinValue + 1) % (this->m_endPointsLists.size());
+    this->m_rrbinMutex.unlock();
+
+    return serverAddr;
+}
+
+void AddrManager::broadcastMetaServer(UniClient *globalClient)
 {
     //send the meta server to all the compute node (except the master server itsself)
 
-    int metaDatasize = m_metaserverLists.size();
-    std::vector<MetaAddtWrapper> metaAddtWrapperList;
+    int metaServerNum = this->m_metaServerNum;
+    std::vector<MetaAddrWrapper> metaAddrWrapperList;
 
-    for (int i = 0; i < metaDatasize; i++)
+    for (int i = 0; i < metaServerNum; i++)
     {
-        MetaAddtWrapper mdw(i, m_metaserverLists[i]);
-        metaAddtWrapperList.push_back(mdw);
+        MetaAddrWrapper mdw(i, this->m_endPointsLists[i]);
+        metaAddrWrapperList.push_back(mdw);
     }
-
 
     for (auto it = m_endPointsLists.begin(); it != m_endPointsLists.end(); it++)
     {
         std::string serverAddr = *it;
-        if(serverAddr.compare(epManager->nodeAddr)!=0){
-            UNICLIENT::updateDHT(serverAddr, metaAddtWrapperList);
+        int status = globalClient->updateDHT(serverAddr, metaAddrWrapperList);
+        if (status != 0)
+        {
+            throw std::runtime_error("failed to update DHT for server: " + serverAddr);
         }
     }
     return;

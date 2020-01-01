@@ -23,7 +23,7 @@ struct DHTManager {
 
   // init the metaServerBBOXList according to the partitionNum and the bbox of
   // the global domain
-  void initDHT(int ndim, int metaServerNum, BBX* globalBBX);
+  void initDHT(size_t ndim, size_t metaServerNum, BBX* globalBBX);
 
   // get the corresponding metaserver according to the input bbox
   std::vector<ResponsibleMetaServer> getMetaServerID(BBX *BBXQuery);

@@ -22,10 +22,17 @@ target_link_libraries(test_exengine exengine defaultfunc thallium ${VTK_LIBRARIE
 add_executable(test_trigger ./Trigger/test_trigger.cpp)
 target_link_libraries(test_trigger trigger exengine defaultfunc thallium ${VTK_LIBRARIES})
 
-#add_executable(06_custom_server ./thalimtest/server.cpp)
-#target_link_libraries(06_custom_server thallium)
-#add_executable(06_custom_client ./thalimtest/client.cpp)
-#target_link_libraries(06_custom_client thallium )
+
+add_executable(test_addrManager ./Server/test_addrManager.cpp ${gorilla_SOURCE_DIR}/server/addrManager.cpp)
+target_link_libraries(test_addrManager ${UUID_LIBRARIES} thallium unimos_client)
+
+add_executable(test_put ./Server/test_put.cpp)
+target_link_libraries(test_put thallium unimos_client)
+
+add_executable(06_custom_server ./thalimtest/server.cpp)
+target_link_libraries(06_custom_server thallium)
+add_executable(06_custom_client ./thalimtest/client.cpp)
+target_link_libraries(06_custom_client thallium )
 
 add_test( NAME test_dhtmanager COMMAND test_dhtmanager)
 
@@ -38,3 +45,5 @@ add_test( NAME test_rawdatamanager COMMAND test_rawdatamanager)
 add_test( NAME test_exengine COMMAND test_exengine)
 
 add_test( NAME test_trigger COMMAND test_trigger)
+
+add_test( NAME test_addrManager COMMAND test_addrManager)

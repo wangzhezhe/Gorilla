@@ -1,6 +1,6 @@
 
 
-#include "../DHTManager/dhtmanager.h"
+#include "../server/DHTManager/dhtmanager.h"
 
 void testInit1d() {
   std::cout << "------init 1d------" << std::endl;

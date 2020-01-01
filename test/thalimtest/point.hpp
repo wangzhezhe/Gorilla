@@ -6,13 +6,15 @@ struct inner{
     int innery=2;
     int innerz=3;
     ~inner(){};
-    
+
+  /*  
     template<typename A>
     void serialize(A& ar, inner& i) {
     ar & i.innerx;
     ar & i.innery;
     ar & i.innerz;
     }
+  */
 };
 
 class point {
@@ -38,5 +40,7 @@ void serialize(A& ar, point& p) {
     ar & p.x;
     ar & p.y;
     ar & p.z;
-    ar & p.m_i;
+    ar & p.m_i.innerx;
+    ar & p.m_i.innery;
+    ar & p.m_i.innerz;
 }

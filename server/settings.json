@@ -4,7 +4,7 @@
     "metaserverNum": 2,
     "maxDimValue": 64,
     "protocol": "tcp",
-    "masterAddr":"./unimos_server.conf",
+    "masterInfo":"./unimos_server.conf",
     "datachecking": false,
-    "loglevel":0
+    "logLevel":1
 }
