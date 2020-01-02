@@ -49,15 +49,16 @@ struct BBX
   // TODO, the bounding box here can larger than 3 in theory, we only implement
   // the 3 for get subregion
 
-    BBX(size_t dimNum, std::array<size_t, DEFAULT_MAX_DIM> indexlb, std::array<size_t, DEFAULT_MAX_DIM> indexub){
-          m_dims = dimNum;
+  BBX(size_t dimNum, std::array<size_t, DEFAULT_MAX_DIM> indexlb, std::array<size_t, DEFAULT_MAX_DIM> indexub)
+  {
+    m_dims = dimNum;
     // if there is only one dim, the second and third value will be the 0
     for (int i = 0; i < m_dims; i++)
     {
       Bound *b = new Bound((int)indexlb[i], (int)indexub[i]);
       BoundList.push_back(b);
     }
-    };
+  };
 
   BBX(size_t dimNum, std::array<int, DEFAULT_MAX_DIM> indexlb, std::array<int, DEFAULT_MAX_DIM> indexub)
   {
@@ -94,6 +95,7 @@ struct BBX
     }
     return indexub;
   }
+
 
   size_t getElemNum()
   {

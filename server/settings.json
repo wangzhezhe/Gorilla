@@ -1,8 +1,8 @@
 {
 
-    "dims": 3,
-    "metaserverNum": 2,
-    "maxDimValue": 64,
+    "dims": 2,
+    "metaserverNum": 4,
+    "maxDimValue": 127,
     "protocol": "tcp",
     "masterInfo":"./unimos_server.conf",
     "datachecking": false,

@@ -41,8 +41,8 @@ BlockSummary BlockManager::getBlock(std::string blockID, void *&dataContainer)
 }
 
 BlockSummary BlockManager::getBlockSubregion(std::string blockID,
-                                             std::array<size_t, 3> subregionlb,
-                                             std::array<size_t, 3> subregionub,
+                                             std::array<int, 3> subregionlb,
+                                             std::array<int, 3> subregionub,
                                              void *&dataContainer)
 {
 

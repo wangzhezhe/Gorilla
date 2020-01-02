@@ -78,16 +78,17 @@ struct BlockSummary
   size_t m_dims = 3;
 
   //TODO, consider to add the real bbox, since the real data dimention might be smaller than the index dimention
-  std::array<size_t, 3> m_indexlb{{0, 0, 0}};
+  //the bounding box can be negative number, so use the int here
+  std::array<int, 3> m_indexlb{{0, 0, 0}};
   //the origin can be caculated by offset
-  std::array<size_t, 3> m_indexub{{0, 0, 0}};
+  std::array<int, 3> m_indexub{{0, 0, 0}};
 
   BlockSummary(){};
   BlockSummary(size_t elemSize, size_t elemNum,
                std::string driverType,
                size_t dims,
-               std::array<size_t, 3> indexlb,
-               std::array<size_t, 3> indexub)
+               std::array<int, 3> indexlb,
+               std::array<int, 3> indexub)
       : m_elemSize(elemSize), m_elemNum(elemNum),
         m_drivertype(driverType), m_dims(dims), m_indexlb(indexlb), m_indexub(indexub){};
 
@@ -161,6 +162,44 @@ struct BlockSummary
     ar &m_indexub;
   }
 };
+
+
+struct RawDataEndpoint {
+  RawDataEndpoint(){};
+  //the raw data end point info is part of the Block Summary
+  RawDataEndpoint(std::string rawDataServerAddr, std::string rawDataID,
+                  size_t dims, std::array<int, 3> indexlb,
+                  std::array<int, 3> indexub)
+      : m_rawDataServerAddr(rawDataServerAddr), m_rawDataID(rawDataID),
+        m_dims(dims), m_indexlb(indexlb), m_indexub(indexub){};
+  std::string m_rawDataServerAddr;
+  std::string m_rawDataID;
+  size_t m_dims = 0;
+  std::array<int, 3> m_indexlb{{0, 0, 0}};
+  std::array<int, 3> m_indexub{{0, 0, 0}};
+
+  void printInfo() {
+    std::cout << "server addr " << m_rawDataServerAddr << " dataID "
+              << m_rawDataID << "dims " << m_dims << " lb " << m_indexlb[0] << ","
+              << m_indexlb[1] << "," << m_indexlb[2] << " ub " << m_indexub[0]
+              << "," << m_indexub[1] << "," << m_indexub[2] << std::endl;
+  }
+
+  ~RawDataEndpoint(){};
+
+  template <typename A>
+  void serialize(A &ar)
+  {
+    ar &m_rawDataServerAddr;
+    ar &m_rawDataID;
+    ar &m_dims;
+    ar &m_indexlb;
+    ar &m_indexub;
+  }
+
+};
+
+
 
 /*
 // TODO change name to the metadata

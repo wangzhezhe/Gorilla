@@ -23,9 +23,9 @@
 #include "../commondata/metadata.h"
 #include "../client/unimosclient.h"
 #include "RawdataManager/blockManager.h"
+#include "MetadataManager/metadataManager.h"
 
 namespace tl = thallium;
-
 
 //global variables
 tl::abt scope;
@@ -52,6 +52,9 @@ DHTManager *dhtManager = new DHTManager();
 
 //the global manager for raw data
 BlockManager blockManager;
+
+//the meta data service
+MetaDataManager metaManager;
 
 void gatherIP(std::string engineName, std::string endpoint)
 {
@@ -200,6 +203,23 @@ void getaddrbyrrb(const tl::request &req)
     req.respond(serverAddr);
 }
 
+void putmetadata(const tl::request &req, size_t &step, std::string &varName, RawDataEndpoint &rde)
+{
+    try
+    {
+        spdlog::info("server {} put meta", addrManager->nodeAddr);
+        rde.printInfo();
+        metaManager.updateMetaData(step, varName, rde);
+        req.respond(0);
+    }
+    catch (...)
+    {
+        spdlog::debug("exception for meta data put step {} varname {}", step, varName);
+        rde.printInfo();
+        req.respond(-1);
+    }
+}
+
 //put the raw data into the raw data manager
 void putrawdata(const tl::request &req, size_t &step, std::string &varName, BlockSummary &blockSummary, tl::bulk &dataBulk)
 {
@@ -207,7 +227,7 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
     //assume data is different when every rawdataput is called
     //generate the unique id for new data
 
-    spdlog::debug("execute dataspace put:");
+    spdlog::debug("execute raw data put for server id {} :", globalRank);
     blockSummary.printSummary();
 
     //caculate the blockid by uuid
@@ -232,12 +252,10 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
     try
     {
         void *localContainer = (void *)malloc(mallocSize);
-
         if (localContainer == NULL)
         {
             req.respond(-1);
         }
-
         //it is mandatory to use this expression
         std::vector<std::pair<void *, std::size_t>> segments(1);
         segments[0].first = localContainer;
@@ -251,13 +269,14 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
 
         //check the bulk
 
-        //double *rawdata = (double *)localContainer;
-        //for (int i = 0; i < 10; i++)
-        //{
-        //   std::cout << "index " << i << " value " << *rawdata << std::endl;
-        //    rawdata++;
-        //}
-
+        double *rawdata = (double *)localContainer;
+        /*check the data contents at server end
+        for (int i = 0; i < 10; i++)
+        {
+           std::cout << "index " << i << " value " << *rawdata << std::endl;
+            rawdata++;
+        }
+        */
         //generate the empty container firstly, then get the data pointer
         int status = blockManager.putBlock(blockID, blockSummary, localContainer);
         if (status != 0)
@@ -276,22 +295,75 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
         //update the coresponding metadata server, send information to corespond meta
         if (gloablSettings.logLevel > 0)
         {
+            spdlog::info("step {} for var {}", step, varName);
             for (int i = 0; i < metaserverList.size(); i++)
-            { 
-                
-                spdlog::info ("step {} for var {}, metaserver index {}" , step, varName , metaserverList[i].m_metaServerID);
+            {
+                std::cout << "metaserver index " << metaserverList[i].m_metaServerID << std::endl;
                 metaserverList[i].m_bbx->printBBXinfo();
             }
         }
 
-        //TODO, update meta information
-        //respond
+        //TODO, update the metaManager
+        //update the metadata according to the address in tht metamap
+        //go through metaserverList, for every id get the address from metaServerIDToAddr
+        //send request to metaDataServer
+
+        /*
+        RawDataEndpoint(std::string rawDataServerAddr, std::string rawDataID,
+                  size_t dims, std::array<int, 3> indexlb,
+                  std::array<int, 3> indexub)
+        */
+
+        //update the coresponding metaserverList
+
+        for (auto it = metaserverList.begin(); it != metaserverList.end(); it++)
+        {
+            std::array<int, 3> indexlb = it->m_bbx->getIndexlb();
+            std::array<int, 3> indexub = it->m_bbx->getIndexub();
+            RawDataEndpoint rde(addrManager->nodeAddr, blockID, blockSummary.m_dims, indexlb, indexub);
+            int metaServerId = it->m_metaServerID;
+            if (dhtManager->metaServerIDToAddr.find(metaServerId) == dhtManager->metaServerIDToAddr.end())
+            {
+                throw std::runtime_error("faild to get the coresponding server id in dhtManager");
+            }
+            status = globalClient->putmetadata(dhtManager->metaServerIDToAddr[metaServerId], step, varName, rde);
+            if (status != 0)
+            {
+                throw std::runtime_error("faild to update the metadata for id " + std::to_string(metaServerId));
+            }
+        }
+
         req.respond(0);
     }
     catch (...)
     {
         spdlog::debug("exception for data put");
         req.respond(-1);
+    }
+}
+
+void getmetaServerList(const tl::request &req, size_t &dims, std::array<int, 3> &indexlb, std::array<int, 3> &indexub)
+{
+    std::vector<std::string> metaServerAddr;
+    try
+    {
+        BBXTOOL::BBX *BBXQuery = new BBXTOOL::BBX(dims, indexlb, indexub);
+        std::vector<ResponsibleMetaServer> metaserverList = dhtManager->getMetaServerID(BBXQuery);
+        for (auto it = metaserverList.begin(); it != metaserverList.end(); it++)
+        {
+            int metaServerId = it->m_metaServerID;
+            if (dhtManager->metaServerIDToAddr.find(metaServerId) == dhtManager->metaServerIDToAddr.end())
+            {
+                throw std::runtime_error("faild to get the coresponding server id in dhtManager for getmetaServerList");
+            }
+            metaServerAddr.push_back(dhtManager->metaServerIDToAddr[metaServerId]);
+        }
+        req.respond(metaServerAddr);
+    }
+    catch (std::exception& e)
+    {
+        spdlog::debug("exception for getmetaServerList: {}", std::string(e.what()));
+        req.respond(metaServerAddr);
     }
 }
 
@@ -307,6 +379,9 @@ void runRerver(std::string networkingType)
     globalServerEnginePtr->define("updateDHT", updateDHT);
     globalServerEnginePtr->define("getaddrbyrrb", getaddrbyrrb);
     globalServerEnginePtr->define("putrawdata", putrawdata);
+    globalServerEnginePtr->define("putmetadata", putmetadata);
+    globalServerEnginePtr->define("getmetaServerList", getmetaServerList);
+
 
     //for testing
     globalServerEnginePtr->define("hello", hello).disable_response();
@@ -422,9 +497,7 @@ int main(int argc, char **argv)
         globalBBX->BoundList.push_back(b);
     }
     dhtManager->initDHT(dataDims, gloablSettings.metaserverNum, globalBBX);
-
     std::cout << "---debug init ok " << std::endl;
-
     try
     {
         //load the filter manager

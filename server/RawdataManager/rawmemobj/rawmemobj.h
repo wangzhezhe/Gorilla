@@ -10,7 +10,7 @@
 struct RawMemObj : public DataBlockInterface {
 
   RawMemObj(BlockSummary &blockSummary) : DataBlockInterface(blockSummary){
-      std::cout << "RawMemObj is initialised" << std::endl;
+      //std::cout << "RawMemObj is initialised" << std::endl;
   };
 
   BlockSummary getData(void *&dataContainer);
@@ -18,8 +18,8 @@ struct RawMemObj : public DataBlockInterface {
   // put data into coresponding data structure for specific implementation
   int putData(void *dataSourcePtr);
 
-  BlockSummary getDataSubregion(std::array<size_t, 3> subregionlb,
-                                        std::array<size_t, 3> subregionub,
+  BlockSummary getDataSubregion(std::array<int, 3> subregionlb,
+                                        std::array<int, 3> subregionub,
                                         void *&dataContainer);
  
   void *m_rawMemPtr = NULL;

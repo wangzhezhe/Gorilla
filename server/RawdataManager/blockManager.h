@@ -24,7 +24,7 @@ struct DataBlockInterface {
 
   DataBlockInterface(BlockSummary &blockSummary)
       : m_blockSummary(blockSummary) {
-    std::cout << "DataBlockInterface is initialized" << std::endl;
+    //std::cout << "DataBlockInterface is initialized" << std::endl;
   };
 
   virtual BlockSummary getData(void *&dataContainer) = 0;
@@ -32,8 +32,8 @@ struct DataBlockInterface {
   // put data into coresponding data structure for specific implementation
   virtual int putData(void *dataSourcePtr) = 0;
 
-  virtual BlockSummary getDataSubregion(std::array<size_t, 3> subregionlb,
-                                        std::array<size_t, 3> subregionub,
+  virtual BlockSummary getDataSubregion(std::array<int, 3> subregionlb,
+                                        std::array<int, 3> subregionub,
                                         void *&dataContainer) = 0;
 
   // TODO generate RawDataEndpointFromBlockSummary
@@ -59,8 +59,8 @@ public:
   BlockSummary getBlockSummary(std::string blockID);
   BlockSummary getBlock(std::string blockID, void *&dataContainer);
   BlockSummary getBlockSubregion(std::string blockID,
-                                   std::array<size_t, 3> subregionlb,
-                                   std::array<size_t, 3> subregionub,
+                                   std::array<int, 3> subregionlb,
+                                   std::array<int, 3> subregionub,
                                    void *&dataContainer);
 
   // execute the data checking service

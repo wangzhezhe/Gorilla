@@ -24,8 +24,8 @@ BlockSummary RawMemObj::getData(void *&dataContainer) {
 
 
 //this is a kind of data filter ？
-BlockSummary RawMemObj::getDataSubregion(std::array<size_t, 3> subregionlb,
-                                         std::array<size_t, 3> subregionub,
+BlockSummary RawMemObj::getDataSubregion(std::array<int, 3> subregionlb,
+                                         std::array<int, 3> subregionub,
                                          void *&dataContainer) {
 
   /*
@@ -36,15 +36,16 @@ BlockSummary RawMemObj::getDataSubregion(std::array<size_t, 3> subregionlb,
 
   size_t elemSize = (size_t)this->m_blockSummary.m_elemSize;
   // decrease the offset
-  std::array<size_t, 3> offset = this->m_blockSummary.m_indexlb;
-  std::array<size_t, 3> subregionLbNonoffset = subregionlb;
-  std::array<size_t, 3> subregionUbNonoffset = subregionub;
-  std::array<size_t, 3> globalUbNonoffset = this->m_blockSummary.m_indexub;
-
+  std::array<int, 3> offset = this->m_blockSummary.m_indexlb;
+  std::array<size_t, 3> subregionLbNonoffset ;
+  std::array<size_t, 3> subregionUbNonoffset ;
+  std::array<size_t, 3> globalUbNonoffset ;
+  
+  //the value whithout offset should larger or equal to 0
   for (int i = 0; i < 3; i++) {
-    subregionLbNonoffset[i] = subregionLbNonoffset[i] - offset[i];
-    subregionUbNonoffset[i] = subregionUbNonoffset[i] - offset[i];
-    globalUbNonoffset[i] = globalUbNonoffset[i] - offset[i];
+    subregionLbNonoffset[i] = (size_t)(subregionlb[i] - offset[i]);
+    subregionUbNonoffset[i] = (size_t)(subregionub[i] - offset[i]);
+    globalUbNonoffset[i] = (size_t)(this->m_blockSummary.m_indexub[i] - offset[i]);
   }
 
   // check if the data elem number match with the required one

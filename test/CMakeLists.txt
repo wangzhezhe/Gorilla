@@ -29,6 +29,10 @@ target_link_libraries(test_addrManager ${UUID_LIBRARIES} thallium unimos_client)
 add_executable(test_put ./Server/test_put.cpp)
 target_link_libraries(test_put thallium unimos_client)
 
+add_executable(test_putget_meta ./Server/test_putget_meta.cpp)
+target_link_libraries(test_putget_meta thallium unimos_client)
+
+
 add_executable(06_custom_server ./thalimtest/server.cpp)
 target_link_libraries(06_custom_server thallium)
 add_executable(06_custom_client ./thalimtest/client.cpp)

@@ -18,10 +18,8 @@ void test_rawdatamanager_putget()
   tl::abt scope;
   BlockManager bm;
 
-  
-
-  std::array<size_t, 3> indexlb = {{0, 0, 0}};
-  std::array<size_t, 3> indexub = {{99, 0, 0}};
+  std::array<int, 3> indexlb = {{0, 0, 0}};
+  std::array<int, 3> indexub = {{99, 0, 0}};
   std::vector<double> rawdata;
 
   for (int i = 0; i <= 99; i++)

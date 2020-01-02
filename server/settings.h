@@ -19,14 +19,15 @@ struct Settings {
     static Settings from_json(const std::string &fname);
 
     void printsetting(){
-    std::cout<<"------settins------"<<std::endl;
+    std::cout<<"------settings------"<<std::endl;
     std::cout << "protocol:              " << this->protocol<< std::endl;
     std::cout << "masterInfo:            " << this->masterInfo << std::endl;
     std::cout << "datachecking:          " << this->datachecking << std::endl;
     std::cout << "dims:                  " << this->dims << std::endl;
     std::cout << "metaserverNum:         " << this->metaserverNum << std::endl;
+    std::cout << "maxDimValue:         " << this->maxDimValue << std::endl;
     std::cout << "logLevel:              " << this->logLevel << std::endl;
-    std::cout<<"------settins------"<<std::endl;
+    std::cout<<"--------------------"<<std::endl;
     }
 
     Settings& operator=(Settings& other)
