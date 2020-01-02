@@ -26,7 +26,8 @@ void MetaDataManager::updateMetaData(size_t step, std::string varName,
     if (this->m_metaDataMap.find(this->m_windowlb) !=
         this->m_metaDataMap.end())
     {
-      this->m_metaDataMap.erase(this->m_windowlb);
+      //TODO, need to call the rawdata manager
+      //this->m_metaDataMap.erase(this->m_windowlb);
     }
     m_metaDataMapMutex.unlock();
     this->m_windowlb++;
@@ -71,7 +72,8 @@ MetaDataManager::getOverlapEndpoints(size_t step, std::string varName,
 
 
       RawDataEndpoint rde(m_metaDataMap[step][varName][i].m_rawDataServerAddr,
-                          m_metaDataMap[step][varName][i].m_rawDataID, dims, indexlb,
+                          m_metaDataMap[step][varName][i].m_rawDataID, 
+                          dims, indexlb,
                           indexub);
       endpointList.push_back(rde);
     }

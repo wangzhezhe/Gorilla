@@ -240,7 +240,7 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
 
     std::string blockID(strID);
 
-    spdlog::debug("blockID is {} ", blockID);
+    spdlog::debug("blockID is {} on server {} ", blockID, addrManager->nodeAddr);
 
     tl::endpoint ep = req.get_endpoint();
 
@@ -279,6 +279,8 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
         */
         //generate the empty container firstly, then get the data pointer
         int status = blockManager.putBlock(blockID, blockSummary, localContainer);
+
+        spdlog::debug("---put block {} on server {} map size {}",blockID,addrManager->nodeAddr,blockManager.DataBlockMap.size());
         if (status != 0)
         {
             blockSummary.printSummary();
@@ -320,7 +322,12 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
         {
             std::array<int, 3> indexlb = it->m_bbx->getIndexlb();
             std::array<int, 3> indexub = it->m_bbx->getIndexub();
-            RawDataEndpoint rde(addrManager->nodeAddr, blockID, blockSummary.m_dims, indexlb, indexub);
+
+            RawDataEndpoint rde(
+                addrManager->nodeAddr,
+                blockID,
+                blockSummary.m_dims, indexlb, indexub);
+
             int metaServerId = it->m_metaServerID;
             if (dhtManager->metaServerIDToAddr.find(metaServerId) == dhtManager->metaServerIDToAddr.end())
             {
@@ -332,7 +339,8 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
                 throw std::runtime_error("faild to update the metadata for id " + std::to_string(metaServerId));
             }
         }
-
+        
+        free(BBXQuery);
         req.respond(0);
     }
     catch (...)
@@ -358,14 +366,93 @@ void getmetaServerList(const tl::request &req, size_t &dims, std::array<int, 3> 
             }
             metaServerAddr.push_back(dhtManager->metaServerIDToAddr[metaServerId]);
         }
+        free(BBXQuery);
         req.respond(metaServerAddr);
     }
-    catch (std::exception& e)
+    catch (std::exception &e)
     {
         spdlog::debug("exception for getmetaServerList: {}", std::string(e.what()));
         req.respond(metaServerAddr);
     }
 }
+
+void getRawDataEndpointList(const tl::request &req,
+                            size_t &step,
+                            std::string &varName,
+                            size_t &dims,
+                            std::array<int, 3> &indexlb,
+                            std::array<int, 3> &indexub)
+{
+    std::vector<RawDataEndpoint> rawDataEndpointList;
+    try
+    {
+        BBXTOOL::BBX *BBXQuery = new BBXTOOL::BBX(dims, indexlb, indexub);
+        rawDataEndpointList = metaManager.getOverlapEndpoints(step, varName, BBXQuery);
+        free(BBXQuery);
+        req.respond(rawDataEndpointList);
+    }
+    catch (std::exception &e)
+    {
+        spdlog::debug("exception for getRawDataEndpointList: {}", std::string(e.what()));
+        req.respond(rawDataEndpointList);
+    }
+}
+
+void getDataSubregion(const tl::request &req,
+                      std::string &blockID,
+                      size_t &dims,
+                      std::array<int, 3> &subregionlb,
+                      std::array<int, 3> &subregionub,
+                      tl::bulk &clientBulk)
+{
+
+    try
+    {
+        void *dataContainer = NULL;
+
+        spdlog::debug ("map size on server {} is {}",addrManager->nodeAddr, blockManager.DataBlockMap.size());        
+        if (blockManager.checkDataExistance(blockID) == false)
+        {
+            throw std::runtime_error("failed to get block id " + blockID + " on server with rank id " + std::to_string(globalRank));
+        }
+        BlockSummary bs = blockManager.getBlockSummary(blockID);
+        size_t elemSize = bs.m_elemSize;
+        BBXTOOL::BBX *bbx = new BBXTOOL::BBX(dims, subregionlb, subregionub);
+        size_t allocSize = elemSize * bbx->getElemNum();
+        spdlog::debug("alloc size at server {} is {}", globalRank, allocSize);
+
+
+        blockManager.getBlockSubregion(blockID, dims, subregionlb, subregionub, dataContainer);
+
+        std::vector<std::pair<void *, std::size_t>> segments(1);
+        segments[0].first = (void *)(dataContainer);
+        segments[0].second = allocSize;
+
+        tl::bulk returnBulk = globalServerEnginePtr->expose(segments, tl::bulk_mode::read_only);
+
+        tl::endpoint ep = req.get_endpoint();
+        clientBulk.on(ep) << returnBulk;
+        
+        free(bbx);
+        req.respond(0);
+    }
+    catch (std::exception &e)
+    {
+        spdlog::info("exception for getDataSubregion block id {} lb {},{},{} ub {},{},{}", blockID,
+                     subregionlb[0], subregionlb[1], subregionlb[2],
+                     subregionub[0], subregionub[1], subregionub[2]);
+        spdlog::info("exception for getDataSubregion: {}", std::string(e.what()));
+        req.respond(-1);
+    }
+}
+
+/*
+                                                std::string blockID,
+                                             size_t dims,
+                                             std::array<int, 3> subregionlb,
+                                             std::array<int, 3> subregionub,
+                                             void *&dataContainer
+*/
 
 void runRerver(std::string networkingType)
 {
@@ -381,7 +468,8 @@ void runRerver(std::string networkingType)
     globalServerEnginePtr->define("putrawdata", putrawdata);
     globalServerEnginePtr->define("putmetadata", putmetadata);
     globalServerEnginePtr->define("getmetaServerList", getmetaServerList);
-
+    globalServerEnginePtr->define("getRawDataEndpointList", getRawDataEndpointList);
+    globalServerEnginePtr->define("getDataSubregion", getDataSubregion);
 
     //for testing
     globalServerEnginePtr->define("hello", hello).disable_response();

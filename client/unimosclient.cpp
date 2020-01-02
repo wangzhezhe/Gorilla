@@ -91,17 +91,41 @@ std::vector<std::string> UniClient::getmetaServerList(size_t dims, std::array<in
     return metaserverList;
 }
 
-/*
-
-int UniClient::getqawDataEndpointList(std::vector<std::string> metaServerList, size_t step,
-                                      std::string varName,
-                                      size_t dim,
-                                      std::array<int, 3> indexlb,
-                                      std::array<int, 3> indexub)
+std::vector<RawDataEndpoint> UniClient::getrawDataEndpointList(std::string serverAddr,
+                                                               size_t step,
+                                                               std::string varName,
+                                                               size_t dims,
+                                                               std::array<int, 3> indexlb,
+                                                               std::array<int, 3> indexub)
 {
-    //go through the metaserver list and get the endpointlist for every server
+    tl::remote_procedure remotegetrawDataEndpointList = this->m_clientEnginePtr->define("getRawDataEndpointList");
+    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(serverAddr);
+    std::vector<RawDataEndpoint> rawDataEndpointList = remotegetrawDataEndpointList.on(serverEndpoint)(step, varName, dims, indexlb, indexub);
+    return rawDataEndpointList;
 }
 
+int UniClient::getSubregionData(std::string serverAddr, std::string blockID, size_t dataSize,
+                                 size_t dims,
+                                 std::array<int, 3> indexlb,
+                                 std::array<int, 3> indexub,
+                                 void *dataContainer)
+{
+
+    tl::remote_procedure remotegetSubregionData = this->m_clientEnginePtr->define("getDataSubregion");
+    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(serverAddr);
+
+    std::vector<std::pair<void *, std::size_t>> segments(1);
+    segments[0].first = (void *)(dataContainer);
+    segments[0].second = dataSize;
+
+    tl::bulk clientBulk = this->m_clientEnginePtr->expose(segments, tl::bulk_mode::write_only);
+
+    int status = remotegetSubregionData.on(serverEndpoint)(blockID, dims, indexlb, indexub, clientBulk);
+    return status;
+}
+//void getDataSubregion(const tl::request &req, std::string &blockID, size_t &dims, std::array<int, 3> &subregionlb, std::array<int, 3> &subregionub)
+
+/*
 //get the raw data according to the endpoint list
 int UniClient::getrawdata(std::string serverAddr, RawDataEndpoint &bs, void *dataContainer)
 {

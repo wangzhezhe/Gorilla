@@ -101,12 +101,16 @@ struct BlockSummary
     }
   };
 
-  size_t getTotalSize(){
-      if(m_drivertype.compare(DRIVERTYPE_RAWMEM)==0) {
-        return m_elemNum*m_elemSize;
-      }else{
-        throw std::runtime_error("unsuportted getsize for " + m_drivertype);
-      }
+  size_t getTotalSize()
+  {
+    if (m_drivertype.compare(DRIVERTYPE_RAWMEM) == 0)
+    {
+      return m_elemNum * m_elemSize;
+    }
+    else
+    {
+      throw std::runtime_error("unsuportted getsize for " + m_drivertype);
+    }
   }
 
   /*
@@ -163,8 +167,8 @@ struct BlockSummary
   }
 };
 
-
-struct RawDataEndpoint {
+struct RawDataEndpoint
+{
   RawDataEndpoint(){};
   //the raw data end point info is part of the Block Summary
   RawDataEndpoint(std::string rawDataServerAddr, std::string rawDataID,
@@ -178,9 +182,10 @@ struct RawDataEndpoint {
   std::array<int, 3> m_indexlb{{0, 0, 0}};
   std::array<int, 3> m_indexub{{0, 0, 0}};
 
-  void printInfo() {
+  void printInfo()
+  {
     std::cout << "server addr " << m_rawDataServerAddr << " dataID "
-              << m_rawDataID << "dims " << m_dims << " lb " << m_indexlb[0] << ","
+              << m_rawDataID  << " dims " << m_dims << " lb " << m_indexlb[0] << ","
               << m_indexlb[1] << "," << m_indexlb[2] << " ub " << m_indexub[0]
               << "," << m_indexub[1] << "," << m_indexub[2] << std::endl;
   }
@@ -196,10 +201,7 @@ struct RawDataEndpoint {
     ar &m_indexlb;
     ar &m_indexub;
   }
-
 };
-
-
 
 /*
 // TODO change name to the metadata

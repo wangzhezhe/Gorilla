@@ -165,9 +165,6 @@ MatrixView matrixAssemble(size_t elemSize, std::vector<MatrixView> &matrixViewLi
     }
   }
 
-
-
-  
   for (int i = 0; i < intactElemNum; i++)
   {
     if (flag[i] == false)
@@ -176,7 +173,7 @@ MatrixView matrixAssemble(size_t elemSize, std::vector<MatrixView> &matrixViewLi
     }
   }
 
-  std::cout << "ok to check the data cover for matrix assembly" << std::endl;
+  //std::cout << "ok to check the data cover for matrix assembly" << std::endl;
 
   //start to copy the element from the subdomain into the intact domain
   void *intactDataPtr = (void *)malloc(elemSize * intactElemNum);

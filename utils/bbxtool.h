@@ -143,6 +143,9 @@ struct BBX
 
     return index;
   }
+
+
+
 };
 
 inline Bound *getOverlapBound(Bound *a, Bound *b)
@@ -214,6 +217,10 @@ inline BBX *trimOffset(BBX *a, std::array<int, DEFAULT_MAX_DIM> offset)
 
   return trimbbx;
 }
+
+
+
+
 
 } // namespace BBXTOOL
 

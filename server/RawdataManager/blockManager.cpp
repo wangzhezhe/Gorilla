@@ -41,16 +41,15 @@ BlockSummary BlockManager::getBlock(std::string blockID, void *&dataContainer)
 }
 
 BlockSummary BlockManager::getBlockSubregion(std::string blockID,
+                                             size_t dims,
                                              std::array<int, 3> subregionlb,
                                              std::array<int, 3> subregionub,
                                              void *&dataContainer)
 {
 
   this->m_DataBlockMapMutex.lock();
-  BlockSummary bs = DataBlockMap[blockID]->getDataSubregion(
-      subregionlb, subregionub, dataContainer);
+  BlockSummary bs = DataBlockMap[blockID]->getDataSubregion(dims, subregionlb, subregionub, dataContainer);
   this->m_DataBlockMapMutex.unlock();
-
   return BlockSummary();
 }
 
@@ -60,4 +59,13 @@ size_t BlockManager::getBlockSize(std::string blockID)
   BlockSummary bs = DataBlockMap[blockID]->m_blockSummary;
   this->m_DataBlockMapMutex.unlock();
   return bs.m_elemNum * bs.m_elemSize;
+}
+
+
+bool BlockManager::checkDataExistance(std::string blockID){
+   if(this->DataBlockMap.find(blockID)!=this->DataBlockMap.end()){
+     return true;
+   }else{
+     return false;
+   }
 }
