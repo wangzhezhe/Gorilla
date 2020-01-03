@@ -12,7 +12,7 @@ void to_json(nlohmann::json &j, const Settings &s)
         {"maxDimValue", s.maxDimValue},
         {"protocol", s.protocol},
         {"masterInfo", s.masterInfo},
-        {"datachecking", s.datachecking},
+        {"addTrigger", s.addTrigger},
         {"logLevel", s.logLevel},
     };
 }
@@ -24,7 +24,7 @@ void from_json(const nlohmann::json &j, Settings &s)
     j.at("maxDimValue").get_to(s.maxDimValue);
     j.at("protocol").get_to(s.protocol);
     j.at("masterInfo").get_to(s.masterInfo);
-    j.at("datachecking").get_to(s.datachecking);
+    j.at("addTrigger").get_to(s.addTrigger);
     j.at("logLevel").get_to(s.logLevel);
 }
 
@@ -35,7 +35,7 @@ Settings::Settings()
     size_t maxDimValue = 8;
     std::string protocol = "tcp";
     std::string masterInfo = "./unimos_server.conf";
-    bool datachecking = false;
+    bool addTrigger = false;
     int logLevel = 0;
 }
 

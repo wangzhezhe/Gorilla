@@ -100,10 +100,12 @@ ${gorilla_SOURCE_DIR}/server/settings.cpp
 target_link_libraries (unimos_server thallium MPI::MPI_CXX unimos_client dhtmanager rawdatamanager metadatamanager ${UUID_LIBRARIES})
 
 
-
-
 # add enable_testing
 if (ENABLE_TESTING)
   add_subdirectory(test)
 endif()
 
+
+if (ENABLE_EXAMPLE)
+  add_subdirectory(example)
+endif()

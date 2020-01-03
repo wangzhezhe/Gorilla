@@ -2,6 +2,7 @@
 #define __UNIMOSCLIENT_H__
 
 #include "../commondata/metadata.h"
+#include "../utils/matrixtool.h"
 
 #include <vector>
 #include <iostream>
@@ -58,6 +59,15 @@ struct UniClient
                          std::array<int, 3> indexlb,
                          std::array<int, 3> indexub,
                          void *dataContainer);
+
+
+    MATRIXTOOL::MatrixView getArbitraryData(
+    size_t step,
+    std::string varName,
+    size_t elemSize,
+    size_t dims,
+    std::array<int, 3> indexlb,
+    std::array<int, 3> indexub);
 };
 
 #endif

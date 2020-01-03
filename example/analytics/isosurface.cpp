@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sstream>
+#include <mpi.h>
 
 #include <vtkImageData.h>
 #include <vtkImageImport.h>
@@ -11,26 +12,26 @@
 #include <vtkXMLImageDataWriter.h>
 #include <vtkXMLDataSetWriter.h>
 
-#include <thread>
 #include "../simulation/timer.hpp"
-#include "../../unimos/client/unimosclient.h"
+#include "../../client/unimosclient.h"
 
 void writeImageData(std::string fileName,
-                    std::array<size_t, 3> &shape,
-                    std::array<size_t, 3> &offset,
-                    const std::vector<double> &field)
+                    std::array<int, 3> &indexlb,
+                    std::array<int, 3> &indexub,
+                    void* fielddata)
 {
     auto importer = vtkSmartPointer<vtkImageImport>::New();
     importer->SetDataSpacing(1, 1, 1);
-    importer->SetDataOrigin(1.0 * offset[2], 1.0 * offset[1],
-                            1.0 * offset[0]);
-    importer->SetWholeExtent(0, shape[2] - 1, 0,
-                             shape[1] - 1, 0,
-                             shape[0] - 1);
+    importer->SetDataOrigin(1.0 * indexlb[2], 1.0 * indexlb[1],
+                            1.0 * indexlb[0]);
+    //from 0 to the shape -1 or from lb to the ub??
+    importer->SetWholeExtent(indexlb[2], indexub[2], indexlb[1],
+                             indexub[1], indexlb[0],
+                             indexub[0]);
     importer->SetDataExtentToWholeExtent();
     importer->SetDataScalarTypeToDouble();
     importer->SetNumberOfScalarComponents(1);
-    importer->SetImportVoidPointer(const_cast<double *>(field.data()));
+    importer->SetImportVoidPointer((double *)(fielddata));
     importer->Update();
 
     // Write the file by vtkXMLDataSetWriter
@@ -90,7 +91,8 @@ int main(int argc, char *argv[])
     MPI_Init(&argc, &argv);
 
     int rank, procs;
-
+    
+    //assume only start one server here
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &procs);
 
@@ -124,7 +126,8 @@ int main(int argc, char *argv[])
 #endif
 
     tl::engine clientEngine("verbs", THALLIUM_CLIENT_MODE);
-    std::string serverAddr = loadMasterAddr();
+    UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf");
+
 
     std::string VarNameU = "grascott_u";
 
@@ -141,19 +144,24 @@ int main(int argc, char *argv[])
 
         //read data
 
-
-
         //get blockMeta, extract the shape, offset, variableName
 
         //get variable
+        std::array<int, 3> indexlb = {{15,15,15}};
+        std::array<int, 3> indexub = {{47,47,47}};
 
-        size_t blockID = (size_t)rank;
-        std::string slaveAddr = dspaces_client_getaddr(clientEngine, serverAddr, VarNameU, step, blockID);
-        //TODO add checking operation here, if there is no meta info, waiting
-        BlockMeta blockmeta = dspaces_client_getblockMeta(clientEngine, slaveAddr, VarNameU, step, blockID);
-        blockmeta.printMeta();
-        std::vector<double> dataContainer(blockmeta.m_shape[0] * blockmeta.m_shape[1] * blockmeta.m_shape[2]);
-        dspaces_client_get(clientEngine, slaveAddr, VarNameU, step, blockID, dataContainer);
+        MATRIXTOOL::MatrixView dataView = uniclient->getArbitraryData(step, VarNameU, sizeof(double), 3, indexlb, indexub);
+
+        /*
+    size_t step,
+    std::string varName,
+    size_t elemSize,
+    size_t dims,
+    std::array<int, 3> indexlb,
+    std::array<int, 3> indexub)
+        */
+
+
 
 #ifdef ENABLE_TIMERS
         double time_read = timer_read.stop();
@@ -165,9 +173,9 @@ int main(int argc, char *argv[])
         //auto polyData = compute_isosurface(blockmeta.m_shape, blockmeta.m_offset, dataContainer, isovalue);
 
         char countstr[50];
-        sprintf(countstr, "%02d_%04d", blockID, step);
+        sprintf(countstr, "%02d_%04d", rank, step);
         std::string fname = "./vtkdata/vtkiso_" + std::string(countstr) + ".vti";
-        //writeImageData(fname, blockmeta.m_shape, blockmeta.m_offset, dataContainer);
+        writeImageData(fname, indexlb, indexub, dataView.m_data);
         //writePolyvtk(fname, polyData);
         std::cout << "ok for ts " << step << std::endl;
     }

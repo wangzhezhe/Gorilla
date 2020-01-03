@@ -11,7 +11,7 @@ add_executable(gray-scott
   ./simulation/writer.cpp
   ./simulation/settings.cpp)
 
-target_link_libraries(gray-scott MPI::MPI_C unimosclientlib thallium)
+target_link_libraries(gray-scott MPI::MPI_C unimos_client thallium)
 
 find_package(VTK COMPONENTS
     FiltersCore
@@ -21,4 +21,4 @@ find_package(VTK COMPONENTS
 )
 
 add_executable(isosurface analytics/isosurface.cpp)
-target_link_libraries(isosurface ${VTK_LIBRARIES} MPI::MPI_C unimosclientlib thallium)
+target_link_libraries(isosurface ${VTK_LIBRARIES} MPI::MPI_C unimos_client thallium)

@@ -10,10 +10,6 @@
 #include "gray-scott.h"
 #include "writer.h"
 
-#include "../../unimos/client/unimosclient.h"
-
-
-
 void print_settings(const Settings &s)
 {
     std::cout << "grid:             " << s.L << "x" << s.L << "x" << s.L
@@ -63,15 +59,18 @@ int main(int argc, char **argv)
         MPI_Abort(MPI_COMM_WORLD, -1);
     }
 
-
     Settings settings = Settings::from_json(argv[1]);
+
 
     GrayScott sim(settings, comm);
     sim.init();
 
+    
+
     //Init the writer
     tl::engine globalclientEngine("verbs", THALLIUM_CLIENT_MODE);
-    Writer stagingWriter(settings);
+    Writer dataWriter(&globalclientEngine);
+
 
     //writer_main.open(settings.output);
 
@@ -108,8 +107,6 @@ int main(int argc, char **argv)
             i++;
         }
 
-
-
 #ifdef ENABLE_TIMERS
         double time_compute = timer_compute.stop();
         MPI_Barrier(comm);
@@ -126,8 +123,7 @@ int main(int argc, char **argv)
         size_t blockID = rank;
         size_t step = i;
 
-        stagingWriter.write(sim, globalclientEngine, step, blockID);
-
+        dataWriter.write(sim, step);
 
 #ifdef ENABLE_TIMERS
         double time_write = timer_write.stop();
@@ -140,9 +136,7 @@ int main(int argc, char **argv)
 
         //if the inline engine is used, read data and generate the vtkm data here
         //the adis needed to be installed before using
-
     }
-
 
 #ifdef ENABLE_TIMERS
     //log << "total\t" << timer_total.elapsed() << "\t" << timer_compute.elapsed()
@@ -150,7 +144,6 @@ int main(int argc, char **argv)
 
     log.close();
 #endif
-
 
     MPI_Finalize();
 }

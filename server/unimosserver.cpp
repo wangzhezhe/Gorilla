@@ -589,9 +589,9 @@ int main(int argc, char **argv)
     try
     {
         //load the filter manager
-        bool addFilter = gloablSettings.datachecking;
+        bool ifTrigger = gloablSettings.addTrigger;
 
-        if (addFilter == true)
+        if (ifTrigger == true)
         {
             //mcache->loadFilterManager(fmanager);
             spdlog::info("load the filter for rank {}", globalRank);

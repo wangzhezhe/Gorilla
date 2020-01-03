@@ -5,22 +5,21 @@
 
 #include "gray-scott.h"
 #include "settings.h"
-#include "../../unimos/client/unimosclient.h"
 #include <vector>
+#include "../../client/unimosclient.h"
 
 namespace tl = thallium;
 
 class Writer
 {
 public:
-    Writer(const Settings &settings);
-    //use this if write to the files
-    //void open(const std::string &fname);
-    void write(const GrayScott &sim, tl::engine &myEngine, size_t &step, size_t &blockID);
-    //oid close();
+    Writer( tl::engine* clientEnginePtr ){
+        m_uniclient = new UniClient(clientEnginePtr, "./unimos_server.conf");
+    };
 
-protected:
-    std::string m_serverMasterAddr;
+    void write(const GrayScott &sim, size_t &step);
+    
+    UniClient * m_uniclient = NULL;
 };
 
 #endif

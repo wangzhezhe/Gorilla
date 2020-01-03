@@ -105,10 +105,10 @@ std::vector<RawDataEndpoint> UniClient::getrawDataEndpointList(std::string serve
 }
 
 int UniClient::getSubregionData(std::string serverAddr, std::string blockID, size_t dataSize,
-                                 size_t dims,
-                                 std::array<int, 3> indexlb,
-                                 std::array<int, 3> indexub,
-                                 void *dataContainer)
+                                size_t dims,
+                                std::array<int, 3> indexlb,
+                                std::array<int, 3> indexub,
+                                void *dataContainer)
 {
 
     tl::remote_procedure remotegetSubregionData = this->m_clientEnginePtr->define("getDataSubregion");
@@ -123,6 +123,96 @@ int UniClient::getSubregionData(std::string serverAddr, std::string blockID, siz
     int status = remotegetSubregionData.on(serverEndpoint)(blockID, dims, indexlb, indexub, clientBulk);
     return status;
 }
+
+//this method is the wrapper for the getSubregionData and getrawDataEndpointList
+//return the assembled matrix
+MATRIXTOOL::MatrixView UniClient::getArbitraryData(
+    size_t step,
+    std::string varName,
+    size_t elemSize,
+    size_t dims,
+    std::array<int, 3> indexlb,
+    std::array<int, 3> indexub)
+{
+
+    std::vector<std::string> metaList = this->getmetaServerList(dims, indexlb, indexub);
+
+    std::vector<MATRIXTOOL::MatrixView> matrixViewList;
+
+    for (auto it = metaList.begin(); it != metaList.end(); it++)
+    {
+        std::string metaServerAddr = *it;
+        std::cout << "metadata server " << metaServerAddr << std::endl;
+        std::vector<RawDataEndpoint> rweList = this->getrawDataEndpointList(metaServerAddr, step, varName, dims, indexlb, indexub);
+
+        for (auto itrwe = rweList.begin(); itrwe != rweList.end(); itrwe++)
+        {
+            itrwe->printInfo();
+
+            //get the subrigion according to the information at the list
+            //it is better to use the multithread here
+
+            //get subrigion of the data
+            //allocate size (use differnet strategy is the vtk object is used)
+            BBXTOOL::BBX *bbx = new BBXTOOL::BBX(dims, itrwe->m_indexlb, itrwe->m_indexub);
+            size_t allocSize = sizeof(double) * bbx->getElemNum();
+            std::cout << "alloc size is " << allocSize << std::endl;
+
+            void *subDataContainer = (void *)malloc(allocSize);
+
+            //get the data by subregion api
+
+            int status = this->getSubregionData(itrwe->m_rawDataServerAddr,
+                                                     itrwe->m_rawDataID,
+                                                     allocSize, dims,
+                                                     itrwe->m_indexlb,
+                                                     itrwe->m_indexub,
+                                                     subDataContainer);
+
+            if (status != 0)
+            {
+                throw std::runtime_error("failed for get subrigion data for current raw data endpoint");
+            }
+
+            //check resutls
+            std::cout << "check subregion value " << std::endl;
+            double *temp = (double *)subDataContainer;
+            for (int i = 0; i < 5; i++)
+            {
+                double value = *(temp + i);
+                std::cout << "value " << value << std::endl;
+            }
+
+            //put it into the Matrix View
+            MATRIXTOOL::MatrixView mv(bbx, subDataContainer);
+            matrixViewList.push_back(mv);
+        }
+    }
+
+    //assemble the matrix View
+    BBX *intactbbx = new BBX(dims, indexlb, indexub);
+    MATRIXTOOL::MatrixView mvassemble = MATRIXTOOL::matrixAssemble(elemSize, matrixViewList, intactbbx);
+
+    //free the element in matrixViewList
+/*
+    for (auto it = matrixViewList.begin(); it != matrixViewList.end(); it++)
+    {
+        if (it->m_bbx != NULL)
+        {
+            free(it->m_bbx);
+            it->m_bbx = NULL;
+        }
+        if (it->m_data != NULL)
+        {
+            free(it->m_data);
+            it->m_data = NULL;
+        }
+    }
+    */
+
+    return mvassemble;
+}
+
 //void getDataSubregion(const tl::request &req, std::string &blockID, size_t &dims, std::array<int, 3> &subregionlb, std::array<int, 3> &subregionub)
 
 /*

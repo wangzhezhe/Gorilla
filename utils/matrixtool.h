@@ -21,7 +21,7 @@ namespace MATRIXTOOL
 // the start position of the global domain is (0,0,0)
 // the sequence of the bound is x,y,z
 // assume the elem number of the matrix match with the globalUb
-void *getSubMatrix(size_t elemSize, std::array<size_t, DEFAULT_MAX_DIM> subLb,
+inline void *getSubMatrix(size_t elemSize, std::array<size_t, DEFAULT_MAX_DIM> subLb,
                    std::array<size_t, DEFAULT_MAX_DIM> subUb, std::array<size_t, DEFAULT_MAX_DIM> gloablUb,
                    void *globalMatrix)
 {
@@ -112,12 +112,14 @@ struct MatrixView
   MatrixView(BBX *bbx, void *data) : m_bbx(bbx), m_data(data){};
   BBX *m_bbx = NULL;
   void *m_data = NULL;
-  ~MatrixView(){};
+  ~MatrixView(){
+     //This is just a view, it will not release the data
+  };
 };
 
 // assemble separate matrixView into the intact matrixView
 // assume the offset is decreased from the matrix
-MatrixView matrixAssemble(size_t elemSize, std::vector<MatrixView> &matrixViewList,
+inline MatrixView matrixAssemble(size_t elemSize, std::vector<MatrixView> &matrixViewList,
                           BBX *intactBBX)
 {
 

@@ -96,7 +96,7 @@ void test_get_rawDatList()
 
     test_put();
 
-    //client engine
+    //init client engine
     tl::engine clientEngine("tcp", THALLIUM_CLIENT_MODE);
     UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf");
 
@@ -177,7 +177,7 @@ void test_get_rawDatList()
         }
     }
 
-    //free matrixViewList
+    //free matrixViewList manually according to different usecases
 }
 
 int main()

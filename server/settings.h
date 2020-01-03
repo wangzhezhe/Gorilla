@@ -8,7 +8,7 @@ struct Settings {
     Settings();
     std::string protocol;
     std::string masterInfo;
-    bool datachecking;
+    bool addTrigger;
     size_t dims;
     size_t metaserverNum;
     //if the maxDimValue is the 5, there are 6 numbers , namely 0 to 5
@@ -22,7 +22,7 @@ struct Settings {
     std::cout<<"------settings------"<<std::endl;
     std::cout << "protocol:              " << this->protocol<< std::endl;
     std::cout << "masterInfo:            " << this->masterInfo << std::endl;
-    std::cout << "datachecking:          " << this->datachecking << std::endl;
+    std::cout << "addTrigger:          " << this->addTrigger << std::endl;
     std::cout << "dims:                  " << this->dims << std::endl;
     std::cout << "metaserverNum:         " << this->metaserverNum << std::endl;
     std::cout << "maxDimValue:         " << this->maxDimValue << std::endl;
@@ -34,7 +34,7 @@ struct Settings {
     {
         protocol=other.protocol;
         masterInfo=other.masterInfo;
-        datachecking=other.datachecking;
+        addTrigger=other.addTrigger;
         dims=other.dims;
         metaserverNum=other.metaserverNum;
         maxDimValue=other.maxDimValue;

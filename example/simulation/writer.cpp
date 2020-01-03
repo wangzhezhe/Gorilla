@@ -1,37 +1,30 @@
 #include "writer.h"
 #include <iostream>
 
-//init the writer instance
-//init the staging client
-Writer::Writer(const Settings &settings)
-{
-    this->m_serverMasterAddr = loadMasterAddr(); 
-    std::cout << "serverMaster addr " << m_serverMasterAddr << std::endl;   
-}
 
-//void Writer::open(const std::string &fname)
-//{
-//writer = io.Open(fname, adios2::Mode::Write);
-// the key is fixed here
-//io.SetParameters({{"verbose", "4"}, {"writerID", fname}});
-//    return;
-//}
-
-//execute the data write operation
-void Writer::write(const GrayScott &sim, tl::engine &myEngine, size_t &step, size_t &blockID)
+void Writer::write(const GrayScott &sim, size_t &step)
 {
 
     std::vector<double> u = sim.u_noghost();
-    std::vector<double> v = sim.v_noghost();
 
     std::string VarNameU = "grascott_u";
-    std::array<size_t, 3> varuShape = {{sim.size_x, sim.size_y, sim.size_z}};
-    std::array<size_t, 3> offSet = {{sim.offset_x, sim.offset_y, sim.offset_z}};
 
-    //put u to the staging service
-    DataMeta dataMeta = DataMeta(VarNameU, step,  typeid(double).name(), sizeof(double), varuShape,offSet);
+    std::array<int, 3> indexlb = {{(int)sim.offset_x, (int)sim.offset_y, (int)sim.offset_z}};
+    std::array<int, 3> indexub = {{(int)(sim.offset_x + sim.size_x - 1), (int)(sim.offset_y + sim.size_y - 1), (int)(sim.offset_z + sim.size_z - 1)}};
 
-    std::string slaveAddr = dspaces_client_getaddr(myEngine, this->m_serverMasterAddr, VarNameU, step , blockID);
-    std::cout << "the slave server addr for ds put is " << slaveAddr << std::endl;
-    dspaces_client_put(myEngine, slaveAddr, dataMeta, blockID, u);
+    size_t elemSize = sizeof(double);
+    size_t elemNum = sim.size_x*sim.size_y*sim.size_z;
+    
+    //generate raw data summary block
+    BlockSummary bs(elemSize, elemNum,
+                    DRIVERTYPE_RAWMEM,
+                    3,
+                    indexlb,
+                    indexub);
+
+    int status = m_uniclient->putrawdata(step, VarNameU, bs, u.data());
+
+    if(status!=0){
+        throw std::runtime_error("failed to put data for step " + std::to_string(step));
+    }
 }
