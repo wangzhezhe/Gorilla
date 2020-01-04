@@ -10,6 +10,10 @@
 #include "gray-scott.h"
 #include "writer.h"
 
+
+
+
+
 void print_settings(const Settings &s)
 {
     std::cout << "grid:             " << s.L << "x" << s.L << "x" << s.L
@@ -124,6 +128,10 @@ int main(int argc, char **argv)
         size_t step = i;
 
         dataWriter.write(sim, step);
+        char countstr[50];
+        sprintf(countstr, "%03d_%04d", step, rank);
+        std::string fname = "./vtkdataraw/vtkiso_" + std::string(countstr) + ".vti";
+        dataWriter.writeImageData(sim,fname);
 
 #ifdef ENABLE_TIMERS
         double time_write = timer_write.stop();

@@ -65,8 +65,10 @@ void DHTManager::initDHT(size_t ndim, size_t metaServerNum, BBX *globalBBX) {
   serverNumberForEachNode = totalElems / metaServerNum;
 
   int nBits = computeBits(virtualMaxDimLen);
+  
   std::cout << "debug totalElems " << totalElems << " elemtNumberForEachNode "
             << serverNumberForEachNode << " virtualMaxDimLen " << virtualMaxDimLen << " nbits " << nBits << std::endl;
+  
   if (ndim == 1) {
     for (int i = 0; i < maxDimLen; i++) {
 

@@ -22,8 +22,7 @@ void writeImageData(std::string fileName,
 {
     auto importer = vtkSmartPointer<vtkImageImport>::New();
     importer->SetDataSpacing(1, 1, 1);
-    importer->SetDataOrigin(1.0 * indexlb[2], 1.0 * indexlb[1],
-                            1.0 * indexlb[0]);
+    importer->SetDataOrigin(0, 0, 0);
     //from 0 to the shape -1 or from lb to the ub??
     importer->SetWholeExtent(indexlb[2], indexub[2], indexlb[1],
                              indexub[1], indexlb[0],
@@ -173,7 +172,7 @@ int main(int argc, char *argv[])
         //auto polyData = compute_isosurface(blockmeta.m_shape, blockmeta.m_offset, dataContainer, isovalue);
 
         char countstr[50];
-        sprintf(countstr, "%02d_%04d", rank, step);
+        sprintf(countstr, "%03d_%04d", step, rank);
         std::string fname = "./vtkdata/vtkiso_" + std::string(countstr) + ".vti";
         writeImageData(fname, indexlb, indexub, dataView.m_data);
         //writePolyvtk(fname, polyData);

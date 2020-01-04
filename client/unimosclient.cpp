@@ -142,9 +142,11 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
     for (auto it = metaList.begin(); it != metaList.end(); it++)
     {
         std::string metaServerAddr = *it;
-        std::cout << "metadata server " << metaServerAddr << std::endl;
         std::vector<RawDataEndpoint> rweList = this->getrawDataEndpointList(metaServerAddr, step, varName, dims, indexlb, indexub);
-
+        std::cout << "metadata server " << metaServerAddr <<" size of rweList " << rweList.size() << std::endl;
+        if(rweList.size()==0){
+            throw std::runtime_error("failed to get the overlap raw data endpoint for " + metaServerAddr);
+        }
         for (auto itrwe = rweList.begin(); itrwe != rweList.end(); itrwe++)
         {
             itrwe->printInfo();
@@ -194,7 +196,7 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
     MATRIXTOOL::MatrixView mvassemble = MATRIXTOOL::matrixAssemble(elemSize, matrixViewList, intactbbx);
 
     //free the element in matrixViewList
-/*
+
     for (auto it = matrixViewList.begin(); it != matrixViewList.end(); it++)
     {
         if (it->m_bbx != NULL)
@@ -208,7 +210,7 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
             it->m_data = NULL;
         }
     }
-    */
+    
 
     return mvassemble;
 }

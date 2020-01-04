@@ -456,7 +456,6 @@ void getDataSubregion(const tl::request &req,
 
 void runRerver(std::string networkingType)
 {
-    std::cout << "---debug networkingType " << networkingType << std::endl;
     tl::engine serverEnginge(networkingType, THALLIUM_SERVER_MODE);
     globalServerEnginePtr = &serverEnginge;
 
@@ -547,8 +546,6 @@ int main(int argc, char **argv)
 
     std::string networkingType = gloablSettings.protocol;
 
-    std::cout << "debug check networking " << networkingType << std::endl;
-
     int logLevel = gloablSettings.logLevel;
 
     if (logLevel == 0)
@@ -585,7 +582,13 @@ int main(int argc, char **argv)
         globalBBX->BoundList.push_back(b);
     }
     dhtManager->initDHT(dataDims, gloablSettings.metaserverNum, globalBBX);
-    std::cout << "---debug init ok " << std::endl;
+    if(globalRank==0){
+        //print metaServerIDToBBX
+        for(auto it=dhtManager->metaServerIDToBBX.begin();it!=dhtManager->metaServerIDToBBX.end();it++){
+            std::cout << "init DHT, meta id " << it->first << std::endl;
+            it->second->printBBXinfo();
+        }
+    }
     try
     {
         //load the filter manager

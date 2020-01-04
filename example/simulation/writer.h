@@ -17,6 +17,8 @@ public:
         m_uniclient = new UniClient(clientEnginePtr, "./unimos_server.conf");
     };
 
+    void writeImageData(const GrayScott &sim, std::string fileName);
+
     void write(const GrayScott &sim, size_t &step);
     
     UniClient * m_uniclient = NULL;

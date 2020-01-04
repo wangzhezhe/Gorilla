@@ -12,7 +12,7 @@ void test_get_meta()
 {
 
     //client engine
-    tl::engine clientEngine("tcp", THALLIUM_CLIENT_MODE);
+    tl::engine clientEngine("verbs", THALLIUM_CLIENT_MODE);
     UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf");
 
     //although we use same config here, if the max length at the metaserver is different
@@ -47,7 +47,7 @@ void test_put()
 {
 
     //client engine
-    tl::engine clientEngine("tcp", THALLIUM_CLIENT_MODE);
+    tl::engine clientEngine("verbs", THALLIUM_CLIENT_MODE);
     UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf");
 
     //there is data screw if the length of the data is not the 2^n
@@ -88,8 +88,8 @@ void test_put()
 
     //check the output at the server end manually
 }
-
-void test_get_rawDatList()
+//use the dims=2  maxDimValue=127 as the config for server
+void test_get_2drawDatList()
 {
 
     //put some data
@@ -97,7 +97,7 @@ void test_get_rawDatList()
     test_put();
 
     //init client engine
-    tl::engine clientEngine("tcp", THALLIUM_CLIENT_MODE);
+    tl::engine clientEngine("verbs", THALLIUM_CLIENT_MODE);
     UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf");
 
     //although we use same config here, if the max length at the metaserver is different
@@ -106,72 +106,23 @@ void test_get_rawDatList()
     //if we use the 127 at the setting.json, there is 4 value in the vector
     std::array<int, 3> indexlb = {{10, 10, 0}};
     std::array<int, 3> indexub = {{99, 99, 0}};
+    
+    //get the data according to the arbitrary bounding box
+    MATRIXTOOL::MatrixView mvassemble = uniclient->getArbitraryData(
+        0,
+        "testVar",
+        sizeof(double),
+        2,
+        indexlb,
+        indexub);
 
-    std::vector<std::string> metaList = uniclient->getmetaServerList(2, indexlb, indexub);
-
-    std::vector<MATRIXTOOL::MatrixView> matrixViewList;
-
-    for (auto it = metaList.begin(); it != metaList.end(); it++)
-    {
-        std::string metaServerAddr = *it;
-        std::cout << "metadata server " << metaServerAddr << std::endl;
-
-        std::vector<RawDataEndpoint> rweList = uniclient->getrawDataEndpointList(metaServerAddr, 0, "testVar", 2, indexlb, indexub);
-
-        for (auto iit = rweList.begin(); iit != rweList.end(); iit++)
-        {
-            iit->printInfo();
-
-            //get the subrigion according to the information at the list
-            //it is better to use the multithread here
-
-            //get subrigion of the data
-            //allocate size (use differnet strategy is the vtk object is used)
-            BBXTOOL::BBX *bbx = new BBXTOOL::BBX(2, iit->m_indexlb, iit->m_indexub);
-            size_t allocSize = sizeof(double) * bbx->getElemNum();
-            std::cout << "alloc size is " << allocSize << std::endl;
-
-            void *subDataContainer = (void *)malloc(allocSize);
-
-            //get the data by subregion api
-
-            int status = uniclient->getSubregionData(iit->m_rawDataServerAddr,
-                                                     iit->m_rawDataID,
-                                                     allocSize, 2,
-                                                     iit->m_indexlb,
-                                                     iit->m_indexub,
-                                                     subDataContainer);
-
-            if (status != 0)
-            {
-                std::cout << "failed for get subrigion data for current iit" << std::endl;
-                exit(0);
-            }
-
-            //check resutls
-            std::cout << "check subregion value " << std::endl;
-            double *temp = (double *)subDataContainer;
-            for (int i = 0; i < 5; i++)
-            {
-                double value = *(temp + i);
-                std::cout << "value " << value << std::endl;
-            }
-
-            //put it into the Matrix View
-            MATRIXTOOL::MatrixView mv(bbx, subDataContainer);
-            matrixViewList.push_back(mv);
-        }
-    }
-
-    //assemble the matrix View
-    BBX *intactbbx = new BBX(2, indexlb, indexub);
-    MATRIXTOOL::MatrixView mvassemble = MATRIXTOOL::matrixAssemble(sizeof(double), matrixViewList, intactbbx);
     double *temp = (double *)(mvassemble.m_data);
     std::cout << "check whole region " << std::endl;
-    for (int i = 0; i < (90 * 90)-1; i++)
+    for (int i = 0; i < (90 * 90) - 1; i++)
     {
         double value = *(temp + i);
-        if(value!=i*0.1){
+        if (value != i * 0.1)
+        {
             std::cout << "index " << i << " value " << value << std::endl;
             throw std::runtime_error("failed to check the assemble data value");
         }
@@ -180,13 +131,23 @@ void test_get_rawDatList()
     //free matrixViewList manually according to different usecases
 }
 
+//use the dims=3 and maxDimValue=63 as the config for server
+void test_get_3drawDatList(){
+
+}
+
+
+//use srun oto tun this exp
 int main()
 {
     test_get_meta();
 
     //test_put();
 
-    test_get_rawDatList();
+    test_get_2drawDatList();
 
     //test_get_metaList();
+
+    //test_get_3drawDatList();
+
 }
