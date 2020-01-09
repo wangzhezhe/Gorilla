@@ -9,6 +9,8 @@
 #include <thallium/serialization/stl/string.hpp>
 #include <tuple>
 #include <typeinfo>
+#include <vector>
+
 //Thaliium may not good at transfer enum type
 //enum DRIVERTYPE { RAWMEM, VTK };
 
@@ -99,6 +101,7 @@ struct BlockSummary
     {
       shape[i] = m_indexub[i] - m_indexlb[i] + 1;
     }
+    return shape;
   };
 
   size_t getTotalSize()
@@ -185,7 +188,7 @@ struct RawDataEndpoint
   void printInfo()
   {
     std::cout << "server addr " << m_rawDataServerAddr << " dataID "
-              << m_rawDataID  << " dims " << m_dims << " lb " << m_indexlb[0] << ","
+              << m_rawDataID << " dims " << m_dims << " lb " << m_indexlb[0] << ","
               << m_indexlb[1] << "," << m_indexlb[2] << " ub " << m_indexub[0]
               << "," << m_indexub[1] << "," << m_indexub[2] << std::endl;
   }
@@ -203,56 +206,66 @@ struct RawDataEndpoint
   }
 };
 
-/*
-// TODO change name to the metadata
-// the meta is for all the blocks for specific timestep
-// this info is use for put the data, the server only store the BlockMeta for
-// every data block return the BlockMeta for dsget interface Although the
-// blockMeta is part of the DataMeta split them for easy serialize / deserialize
-struct DataMeta {
+struct DynamicTriggerInfo
+{
+  DynamicTriggerInfo(){};
 
-  // varname and ts is suitable for all the block data
-  std::string m_varName = "";
-  size_t m_steps = 0;
-  size_t m_elemSize = 0;
-  // this can be detected by testing m_shape
-  // size_t m_dimension;
-  std::string m_typeName = "";
-  std::array<size_t, 3> m_shape = {{0, 0, 0}};
-  // the offset can be the origin of the new grid
-  std::array<size_t, 3> m_offset = {{0, 0, 0}};
-  DataMeta(){};
-  DataMeta(std::string varName, size_t steps, std::string typeName,
-           size_t elemSize, std::array<size_t, 3> shape,
-           std::array<size_t, 3> offset = {{0, 0, 0}})
-      : m_varName(varName), m_steps(steps), m_typeName(typeName),
-        m_elemSize(elemSize), m_shape(shape), m_offset(offset){};
+  DynamicTriggerInfo(
+      std::string checkFunc,
+      std::vector<std::string> checkFuncPara,
+      std::string comparisonFunc,
+      std::vector<std::string> comparisonFuncPara,
+      std::string actionFunc,
+      std::vector<std::string> actionFuncPara)
+  {
 
-  void printMeta() {
-    std::cout << "varName " << m_varName << ", steps " << m_steps
-              << ", typeName " << m_typeName << ", elemSize " << m_elemSize
-              << ", shape " << m_shape[0] << " " << m_shape[1] << " "
-              << m_shape[2] << ", offset " << m_offset[0] << " " << m_offset[1]
-              << " " << m_offset[2] << std::endl;
-    return;
+    m_checkFunc = checkFunc;
+    m_checkFuncPara = checkFuncPara;
+    m_comparisonFunc = comparisonFunc;
+    m_comparisonFuncPara = comparisonFuncPara;
+
+    m_actionFunc = actionFunc;
+    m_actionFuncPara = actionFuncPara;
   }
 
-  BlockMeta extractBlockMeta() {
-    return BlockMeta(this->m_typeName, this->m_elemSize, this->m_shape,
-                     this->m_offset);
+  void printinfo()
+  {
+    std::cout << "checkFunc " << m_checkFunc << std::endl;
+    for (int i = 0; i < m_checkFuncPara.size(); i++)
+    {
+      std::cout << "parameter i " << i << m_checkFuncPara[i] << std::endl;
+    }
+
+    std::cout << "comparisonFunc " << m_comparisonFunc << std::endl;
+    for (int i = 0; i < m_comparisonFuncPara.size(); i++)
+    {
+      std::cout << "parameter i " << i << m_comparisonFuncPara[i] << std::endl;
+    }
+
+    std::cout << "actionFunc " << m_actionFunc << std::endl;
+    for (int i = 0; i < m_actionFuncPara.size(); i++)
+    {
+      std::cout << "parameter i " << i << m_actionFuncPara[i] << std::endl;
+    }
   }
 
-  template <typename A> void serialize(A &ar) {
-    ar &m_varName;
-    ar &m_steps;
-    ar &m_elemSize;
-    ar &m_typeName;
-    ar &m_shape;
-    ar &m_offset;
-  }
+  std::string m_checkFunc = "default";
+  std::vector<std::string> m_checkFuncPara;
+  std::string m_comparisonFunc = "default";
+  std::vector<std::string> m_comparisonFuncPara;
+  std::string m_actionFunc = "default";
+  std::vector<std::string> m_actionFuncPara;
 
-  ~DataMeta(){};
+  template <typename A>
+  void serialize(A &ar)
+  {
+    ar &m_checkFunc;
+    ar &m_checkFuncPara;
+    ar &m_comparisonFunc;
+    ar &m_comparisonFuncPara;
+    ar &m_actionFunc;
+    ar &m_actionFuncPara;
+  }
 };
-*/
 
 #endif

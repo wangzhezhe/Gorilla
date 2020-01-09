@@ -1,8 +1,8 @@
-#include "executionengine.h"
+#include "functionManager.h"
 #include <spdlog/spdlog.h>
 
 
-void ExecutionEngineRaw::execute(std::string fiunctionName, const BlockSummary &bs, void *inputData)
+void FunctionManagerRaw::execute(std::string fiunctionName, const BlockSummary &bs, void *inputData)
 {
 
     if (this->m_functionMap.find(fiunctionName) == this->m_functionMap.end())
@@ -16,7 +16,7 @@ void ExecutionEngineRaw::execute(std::string fiunctionName, const BlockSummary &
     return;
 }
 
-bool ExecutionEngineRaw::registerFunction(std::string functionName, rawdatafunctionPointer fp)
+bool FunctionManagerRaw::registerFunction(std::string functionName, rawdatafunctionPointer fp)
 {
 
     m_functionMapMutex.lock();

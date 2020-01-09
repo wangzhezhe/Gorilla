@@ -1,58 +1,114 @@
-#ifndef EXECUTIONENGINE_H
-#define EXECUTIONENGINE_H
+#ifndef FUNCTIONMNG_H
+#define FUNCTIONMNG_H
 
 #include "../../commondata/metadata.h"
-#include "../../utils/ArgothreadPool.h"
 #include "defaultFunctions/defaultfuncraw.h"
 #include "defaultFunctions/defaultfuncmeta.h"
+
 
 #include <thallium.hpp>
 #include <map>
 #include <vector>
 
+namespace tl = thallium;
+
+//forward declaration
+struct DynamicTriggerManager;
+
 //the function pointer that execute at the metadata server
 
-typedef std::string (*checkPtr)(std::vector<std::string> parameters);
+typedef std::string (*initCheckPtr)(
+    size_t step, 
+    std::string varName, 
+    RawDataEndpoint& rde);
+
+typedef std::string (*checkPtr)(
+    size_t step, 
+    std::string varName, 
+    RawDataEndpoint& rde,
+    std::vector<std::string> parameters);
 
 typedef bool (*comparisonPtr)(std::string checkResults, std::vector<std::string> parameters);
 
-typedef void (*actionPtr)(std::vector<std::string> parameters);
+typedef void (*initActionPtr)(
+    DynamicTriggerManager *dtm, 
+    size_t step, 
+    std::string varName, 
+    RawDataEndpoint& rde,
+    std::vector<std::string> parameters);
+
+typedef void (*actionPtr)(    
+    size_t step, 
+    std::string varName, 
+    RawDataEndpoint& rde,
+    std::vector<std::string> parameters);
 
 // one profile is corresponding to a constraint manager
 // the execute method can be implemented by different drivers
 // the execution engine runs at the meta server
-struct ExecutionEngineMeta
+struct FunctionManagerMeta
 {
-
-    ExecutionEngineMeta(size_t poolSize)
+    FunctionManagerMeta()
     {
-        this->m_threadPool = new ArgoThreadPool(poolSize);
-        m_metafunctionMapMutex.lock();
-        m_checkPtrMap["defaultCheck"] = &defaultCheck;
-        m_comparisonPtrMap["defaultComparison"] = &defaultComparison;
-        m_actionPtrMap["defaultAction"] = &defaultAction;
-        m_metafunctionMapMutex.unlock();
+        registerFunc();
     };
 
-    bool registerCheckFunc(std::string str, checkPtr checkfunc)
+    void registerFunc(){
+
+        registerInitCheckFunc("defaultCheckGetStep",&defaultCheckGetStep);
+        registerComparisonFunc("defaultComparisonStep",&defaultComparisonStep);
+        registerInitActionFunc("defaultActionSartDt",&defaultActionSartDt);
+
+
+
+        registerCheckFunc("defaultCheck", &defaultCheck);
+        registerComparisonFunc("defaultComparison", &defaultComparison);
+        registerActionFunc("defaultAction", &defaultAction);
+
+        return;
+    }
+
+    void registerInitCheckFunc(std::string str, initCheckPtr checkfunc){
+        m_metafunctionMapMutex.lock();
+        m_initCheckPtrMap[str] = checkfunc;
+        m_metafunctionMapMutex.unlock();
+    }
+
+    void registerCheckFunc(std::string str, checkPtr checkfunc)
     {
         m_metafunctionMapMutex.lock();
         m_checkPtrMap[str] = checkfunc;
         m_metafunctionMapMutex.unlock();
     };
 
-    bool registerComparisonFunc(std::string str, comparisonPtr comparisonfunc)
+    void registerComparisonFunc(std::string str, comparisonPtr comparisonfunc)
     {
         m_metafunctionMapMutex.lock();
         m_comparisonPtrMap[str] = comparisonfunc;
         m_metafunctionMapMutex.unlock();
     };
 
-    bool registerActionFunc(std::string str, actionPtr actionfunc)
+        void registerInitActionFunc(std::string str, initActionPtr actionfunc)
+    {
+        m_metafunctionMapMutex.lock();
+        m_initActionPtrMap[str] = actionfunc;
+        m_metafunctionMapMutex.unlock();
+    };
+
+    void registerActionFunc(std::string str, actionPtr actionfunc)
     {
         m_metafunctionMapMutex.lock();
         m_actionPtrMap[str] = actionfunc;
         m_metafunctionMapMutex.unlock();
+    };
+
+    initCheckPtr getInitCheckFunc(std::string str)
+    {
+        if (m_initCheckPtrMap.find(str) == m_initCheckPtrMap.end())
+        {
+            return NULL;
+        }
+        return m_initCheckPtrMap[str];
     };
 
     checkPtr getCheckFunc(std::string str)
@@ -62,7 +118,7 @@ struct ExecutionEngineMeta
             return NULL;
         }
         return m_checkPtrMap[str];
-    }
+    };
 
     comparisonPtr getComparisonFunc(std::string str)
     {
@@ -71,7 +127,16 @@ struct ExecutionEngineMeta
             return NULL;
         }
         return m_comparisonPtrMap[str];
-    }
+    };
+
+    initActionPtr getInitActionPtr(std::string str)
+    {
+        if (m_initActionPtrMap.find(str) == m_initActionPtrMap.end())
+        {
+            return NULL;
+        }
+        return m_initActionPtrMap[str];
+    };
 
     actionPtr getActionPtr(std::string str)
     {
@@ -80,27 +145,22 @@ struct ExecutionEngineMeta
             return NULL;
         }
         return m_actionPtrMap[str];
-    }
+    };
 
     //generate the new data
     //the blocksummary may changed after the execution
     //this is executed by asynchrounous way by thread pool
 
-    ~ExecutionEngineMeta()
-    {
-        std::cout << "destroy ExecutionEngineMeta\n";
-        if (this->m_threadPool != NULL)
-        {
-            delete this->m_threadPool;
-        }
-    };
+    ~FunctionManagerMeta(){};
 
-    ArgoThreadPool *m_threadPool = NULL;
 
     //function map that maps the name of the function into the pointer of the function
     tl::mutex m_metafunctionMapMutex;
+
+    std::map<std::string, initCheckPtr> m_initCheckPtrMap;
     std::map<std::string, checkPtr> m_checkPtrMap;
     std::map<std::string, comparisonPtr> m_comparisonPtrMap;
+    std::map<std::string, initActionPtr> m_initActionPtrMap;
     std::map<std::string, actionPtr> m_actionPtrMap;
 };
 
@@ -109,10 +169,11 @@ struct ExecutionEngineMeta
 typedef void (*rawdatafunctionPointer)(const BlockSummary &bs, void *inputData);
 
 // the execution engine runs at the raw data server
-struct ExecutionEngineRaw
-{
+// TODO put this at the dynamic trigger
 
-    ExecutionEngineRaw()
+struct FunctionManagerRaw
+{
+    FunctionManagerRaw()
     {
         //register the default function
         this->m_functionMap["test"] = &test;
@@ -120,17 +181,19 @@ struct ExecutionEngineRaw
     };
 
     bool registerFunction(std::string functionName, rawdatafunctionPointer fp);
-
+    
+    //put the execution logic together with the storage part
     void execute(std::string fiunctionName, const BlockSummary &bs, void *inputData);
 
-    ~ExecutionEngineRaw()
+    ~FunctionManagerRaw()
     {
-        std::cout << "destroy ExecutionEngineRaw\n";
+        std::cout << "destroy FunctionManagerRaw\n";
     };
 
     //function map that maps the name of the function into the pointer of the function
     tl::mutex m_functionMapMutex;
     std::map<std::string, rawdatafunctionPointer> m_functionMap;
 };
+
 
 #endif

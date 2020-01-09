@@ -235,9 +235,7 @@ srun --mpi=pmix_v2 -n 4 ./example/isosurface 20 0.5
 
 ### TODO list
 
-consider to get the mesh information from the client, after the initDHT operation, the dht can be initialized
-
-add a exmple for put (ok for put, need test) get
+add the example of the dynamic trigger interface (stop the simulation running?)
 
 add the controller part (when express every parts of the controller, use two parts, just the name and the parameters list, that all for the user interface)
 

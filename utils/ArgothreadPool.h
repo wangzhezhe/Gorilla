@@ -4,6 +4,7 @@ namespace tl = thallium;
 
 struct ArgoThreadPool
 {
+    //the number of the es controls the number of the thread running in concurent way
     ArgoThreadPool(int esNumber): m_poolSize (esNumber)
     {
         //set the user thread number as 4 times of the system thread number
@@ -13,10 +14,11 @@ struct ArgoThreadPool
         m_threadNumer = m_poolSize*4;
         for (int i = 0; i < esNumber; i++)
         {
-            tl::managed<tl::xstream> es = tl::xstream::create(tl::scheduler::predef::deflt, *m_myPool);
+            tl::managed<tl::xstream> es = tl::xstream::create();
             m_ess.push_back(std::move(es));
         }
     };
+
     //put this separately, init this when using the pool
     //tl::abt scope;
     
@@ -30,7 +32,7 @@ struct ArgoThreadPool
     int m_currentUserThreadId = 0;
 
     //single producer and multiple consumer pattern https://xgitlab.cels.anl.gov/sds/thallium/blob/master/include/thallium/pool.hpp
-    tl::managed<tl::pool> m_myPool = tl::pool::create(tl::pool::access::spmc);
+    //tl::managed<tl::pool> m_myPool = tl::pool::create(tl::pool::access::spmc);
 
     std::vector<tl::managed<tl::xstream>> m_ess;
 
@@ -51,6 +53,14 @@ struct ArgoThreadPool
              m_ess[i]->join();
         }
         return;
+    }
+
+    ~ArgoThreadPool(){
+        essjoin();
+        for(auto& th : m_userThreadList) {
+            th->join();
+        }
+        m_userThreadList.clear();
     }
     
 

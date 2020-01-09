@@ -1,6 +1,8 @@
-cmake_minimum_required (VERSION 3.15)
+cmake_minimum_required (VERSION 3.14)
 project (gorilla C CXX)
 set (CMAKE_CXX_STANDARD 14)
+set (CMAKE_CXX_COMPILER g++)
+set (CMAKE_C_COMPILER gcc)
 
 option(ENABLE_TESTING "Enable Testing" ON)
 enable_testing()
@@ -71,20 +73,14 @@ find_package(VTK COMPONENTS
     FiltersSources
 )
 
-
-add_library(defaultfunc 
-${gorilla_SOURCE_DIR}/server/ExecutionEngine/defaultFunctions/defaultfuncraw.cpp
-${gorilla_SOURCE_DIR}/server/ExecutionEngine/defaultFunctions/defaultfuncmeta.cpp
-)
-target_link_libraries(defaultfunc ${VTK_LIBRARIES})
-
-add_library(exengine 
-${gorilla_SOURCE_DIR}/server/ExecutionEngine/executionengine.cpp)
-target_link_libraries(exengine rawdatamanager thallium defaultfunc)
-
+# there is reference between each other, so it is better to build them together
 add_library(trigger 
-${gorilla_SOURCE_DIR}/server/TriggerManager/dynamictrigger.cpp)
-target_link_libraries(trigger exengine thallium defaultfunc)
+${gorilla_SOURCE_DIR}/server/FunctionManager/defaultFunctions/defaultfuncraw.cpp
+${gorilla_SOURCE_DIR}/server/FunctionManager/defaultFunctions/defaultfuncmeta.cpp
+${gorilla_SOURCE_DIR}/server/FunctionManager/functionManager.cpp
+${gorilla_SOURCE_DIR}/server/TriggerManager/triggerManager.cpp
+)
+target_link_libraries(trigger thallium ${VTK_LIBRARIES})
 
 
 add_library (unimos_client 

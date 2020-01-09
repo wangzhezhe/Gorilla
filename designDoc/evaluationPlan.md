@@ -20,7 +20,7 @@ weak scale: fix the rate of \<number of simulation process\>/\<number of staging
 
 strong scale: fix the setting of the data producer (number of the process and the size of the data for each process), modify the number of the staging process.
  
-The metric for this evaluation is the task trigger time. In particular, it is the time period from the beginning of the data put at the simulation to the beginning of the notification operation in staging service. We also record how much time is consumed in data put and how much time is consumed in task execution in staging. 
+The metric for this evaluation is the **task trigger time**. In particular, it is the time period from the beginning of the data put at the simulation to the beginning of the analytics. We also record how much time is consumed in data put and how much time is consumed in task execution in staging. There are some benifits to put the data checking in staging service. since the data transfere will be dicreased in larger amount, the task trigger time will also be decreased. (just consider one iteration to avoid the influence of the simulation execution time)
 
 #### Resource utilization
 

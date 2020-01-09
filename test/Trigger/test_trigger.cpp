@@ -1,23 +1,55 @@
 
 
-#include "../server/ExecutionEngine/executionengine.h"
-#include "../server/ExecutionEngine/defaultFunctions/defaultfuncmeta.h"
+#include "../server/FunctionManager/defaultFunctions/defaultfuncmeta.h"
+#include "../server/FunctionManager/functionManager.h"
+#include "../commondata/metadata.h"
 #include "../server/TriggerManager/dynamictrigger.h"
+#include <unistd.h>
 
-
-void test_defaulttrigger()
+void test_steptrigger()
 {
+
+    std::cout << "------test_steptrigger------" << std::endl;
     tl::abt scope;
-    std::vector<std::string> parameters(5, "someparameters");
-    FuncDescriptor checkFunc("defaultCheck", parameters);
-    FuncDescriptor comparisonFunc("defaultComparison", parameters);
-    FuncDescriptor actionFunc("defaultAction", parameters);
-    DynamicTrigger dt(checkFunc, comparisonFunc, actionFunc);
-    ExecutionEngineMeta *exenginemeta = new ExecutionEngineMeta(5);
-    dt.start(exenginemeta);
+
+
+    std::string triggerName = "InitTrigger";
+    std::string triggerNameb = "defaultTrigger";
+
+
+    std::vector<std::string> comparisonParameters;
+    comparisonParameters.push_back("5");
+
+    std::vector<std::string> actionParameters;
+    actionParameters.push_back(triggerNameb);
+
+    FunctionManagerMeta *fmm = new FunctionManagerMeta();
+    DynamicTriggerManager *dtm = new DynamicTriggerManager(fmm, 5);
+
+
+    DynamicTriggerInfo tgInfo("defaultCheckGetStep", comparisonParameters, "defaultComparisonStep", comparisonParameters, "defaultActionSartDt", actionParameters);
+    
+
+    std::vector<std::string> parametersb;
+    parametersb.push_back("customized default parameters");
+    DynamicTriggerInfo tgInfob("defaultCheck", parametersb, "defaultComparison", parametersb, "defaultAction", parametersb);
+
+
+    //this is similar to the process of the subscribe
+    dtm->updateTrigger(triggerName, tgInfo);
+    dtm->updateTrigger(triggerNameb, tgInfob);
+
+    
+
+    RawDataEndpoint rde;
+    std::cout << "------test_steptrigger_step_0------" << std::endl;
+    dtm->initstart(triggerName, 0, "testVar", rde);
+    std::cout << "------test_steptrigger_step_5------" << std::endl;
+    dtm->initstart(triggerName, 6, "testVar", rde);
 }
 
 int main()
 {
-    test_defaulttrigger();
+
+    test_steptrigger();
 }

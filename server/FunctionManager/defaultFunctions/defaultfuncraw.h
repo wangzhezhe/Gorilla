@@ -2,8 +2,8 @@
 
 
 
-#ifndef DEFAULTFUNC_H
-#define DEFAULTFUNC_H
+#ifndef DEFAULTFUNCRAW_H
+#define DEFAULTFUNCRAW_H
 
 #include "../../../commondata/metadata.h"
 

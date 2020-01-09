@@ -1,14 +1,13 @@
 
-#include "../server/ExecutionEngine/executionengine.h"
-#include "../server/MetadataManager/metadataManager.h"
-#include "../server/ExecutionEngine/defaultFunctions/defaultfuncmeta.h"
+#include "../server/FunctionManager/functionManager.h"
+#include "../server/FunctionManager/defaultFunctions/defaultfuncraw.h"
 #include <thallium.hpp>
 #include <unistd.h>
 
 void test_exengineraw()
 {
     tl::abt scope;
-    ExecutionEngineRaw *exengine = new ExecutionEngineRaw();
+    FunctionManagerRaw *exengine = new FunctionManagerRaw();
     BlockSummary bs;
     std::string funcName = "test";
     exengine->execute(funcName, bs, NULL);
@@ -20,7 +19,7 @@ void test_exengineraw()
 void test_executeVTK_raw()
 {
     tl::abt scope;
-    ExecutionEngineRaw *exengine = new ExecutionEngineRaw();
+    FunctionManagerRaw *exengine = new FunctionManagerRaw();
 
     std::vector<double> rawdata;
 

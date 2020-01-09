@@ -1,4 +1,4 @@
-This is the example to show the N:M put and the get
+This is the example to show the N:M data put and get
 
 ### configuration of the Gorilla
 
@@ -39,7 +39,6 @@ srun --mpi=pmix_v2 -n 8 ./example/gray-scott ~/cworkspace/src/Gorilla/example/si
 ```
 
 ### run analytics to get and process the data
-
 
 only start one analytics to test the N:M put and get
 
