@@ -37,9 +37,8 @@ target_link_libraries(test_put_get thallium unimos_client)
 add_executable(test_threadpool ./Util/test_threadpool.cpp)
 target_link_libraries(test_threadpool thallium )
 
-
-
-
+add_executable(test_addtrigger ./Server/test_addtrigger.cpp)
+target_link_libraries(test_addtrigger trigger thallium unimos_client )
 
 
 add_executable(06_custom_server ./thalimtest/server.cpp)

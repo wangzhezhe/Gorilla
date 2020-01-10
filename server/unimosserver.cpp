@@ -24,6 +24,10 @@
 #include "../client/unimosclient.h"
 #include "RawdataManager/blockManager.h"
 #include "MetadataManager/metadataManager.h"
+#include "FunctionManager/functionManager.h"
+#include "TriggerManager/triggerManager.h"
+
+
 
 namespace tl = thallium;
 
@@ -55,6 +59,10 @@ BlockManager blockManager;
 
 //the meta data service
 MetaDataManager metaManager;
+
+//the trigger manager
+FunctionManagerMeta *fmm = new FunctionManagerMeta();
+DynamicTriggerManager *dtmanager = new DynamicTriggerManager(fmm, 5);
 
 void gatherIP(std::string engineName, std::string endpoint)
 {
@@ -215,8 +223,18 @@ void putmetadata(const tl::request &req, size_t &step, std::string &varName, Raw
     catch (...)
     {
         spdlog::debug("exception for meta data put step {} varname {}", step, varName);
-        rde.printInfo();
         req.respond(-1);
+    }
+
+    try
+    {
+        //execute init trigger
+        dtmanager->initstart("InitTrigger", step, varName, rde);
+    }
+    catch (std::exception &e)
+    {
+        spdlog::debug("exception for init trigger step {} varname {}: {}", step, varName, std::string(e.what()));
+        rde.printInfo();
     }
 }
 
@@ -280,7 +298,7 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
         //generate the empty container firstly, then get the data pointer
         int status = blockManager.putBlock(blockID, blockSummary, localContainer);
 
-        spdlog::debug("---put block {} on server {} map size {}",blockID,addrManager->nodeAddr,blockManager.DataBlockMap.size());
+        spdlog::debug("---put block {} on server {} map size {}", blockID, addrManager->nodeAddr, blockManager.DataBlockMap.size());
         if (status != 0)
         {
             blockSummary.printSummary();
@@ -339,13 +357,30 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
                 throw std::runtime_error("faild to update the metadata for id " + std::to_string(metaServerId));
             }
         }
-        
+
         free(BBXQuery);
         req.respond(0);
     }
     catch (...)
     {
         spdlog::debug("exception for data put");
+        req.respond(-1);
+    }
+}
+
+void putTriggerInfo(const tl::request &req, std::string triggerName, DynamicTriggerInfo &dti)
+{
+
+    try
+    {
+        dtmanager->updateTrigger(triggerName, dti);
+        spdlog::debug("add trigger {} for server id {}", triggerName, globalRank);
+        req.respond(0);
+    }
+    catch (...)
+    {
+        spdlog::debug("exception for putTriggerInfo with trigger name {}", triggerName);
+        dti.printInfo();
         req.respond(-1);
     }
 }
@@ -410,7 +445,7 @@ void getDataSubregion(const tl::request &req,
     {
         void *dataContainer = NULL;
 
-        spdlog::debug ("map size on server {} is {}",addrManager->nodeAddr, blockManager.DataBlockMap.size());        
+        spdlog::debug("map size on server {} is {}", addrManager->nodeAddr, blockManager.DataBlockMap.size());
         if (blockManager.checkDataExistance(blockID) == false)
         {
             throw std::runtime_error("failed to get block id " + blockID + " on server with rank id " + std::to_string(globalRank));
@@ -420,7 +455,6 @@ void getDataSubregion(const tl::request &req,
         BBXTOOL::BBX *bbx = new BBXTOOL::BBX(dims, subregionlb, subregionub);
         size_t allocSize = elemSize * bbx->getElemNum();
         spdlog::debug("alloc size at server {} is {}", globalRank, allocSize);
-
 
         blockManager.getBlockSubregion(blockID, dims, subregionlb, subregionub, dataContainer);
 
@@ -432,7 +466,7 @@ void getDataSubregion(const tl::request &req,
 
         tl::endpoint ep = req.get_endpoint();
         clientBulk.on(ep) << returnBulk;
-        
+
         free(bbx);
         req.respond(0);
     }
@@ -469,6 +503,9 @@ void runRerver(std::string networkingType)
     globalServerEnginePtr->define("getmetaServerList", getmetaServerList);
     globalServerEnginePtr->define("getRawDataEndpointList", getRawDataEndpointList);
     globalServerEnginePtr->define("getDataSubregion", getDataSubregion);
+    globalServerEnginePtr->define("putTriggerInfo", putTriggerInfo);
+
+    
 
     //for testing
     globalServerEnginePtr->define("hello", hello).disable_response();
@@ -582,9 +619,11 @@ int main(int argc, char **argv)
         globalBBX->BoundList.push_back(b);
     }
     dhtManager->initDHT(dataDims, gloablSettings.metaserverNum, globalBBX);
-    if(globalRank==0){
+    if (globalRank == 0)
+    {
         //print metaServerIDToBBX
-        for(auto it=dhtManager->metaServerIDToBBX.begin();it!=dhtManager->metaServerIDToBBX.end();it++){
+        for (auto it = dhtManager->metaServerIDToBBX.begin(); it != dhtManager->metaServerIDToBBX.end(); it++)
+        {
             std::cout << "init DHT, meta id " << it->first << std::endl;
             it->second->printBBXinfo();
         }

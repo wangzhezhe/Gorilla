@@ -228,7 +228,7 @@ struct DynamicTriggerInfo
     m_actionFuncPara = actionFuncPara;
   }
 
-  void printinfo()
+  void printInfo()
   {
     std::cout << "checkFunc " << m_checkFunc << std::endl;
     for (int i = 0; i < m_checkFuncPara.size(); i++)

@@ -68,6 +68,18 @@ struct UniClient
     size_t dims,
     std::array<int, 3> indexlb,
     std::array<int, 3> indexub);
+
+    int putTriggerInfo(
+    std::string serverAddr,
+    std::string triggerName,
+    DynamicTriggerInfo &dti);
+
+    void registerTrigger(
+    size_t dims,
+    std::array<int, 3> indexlb,
+    std::array<int, 3> indexub,
+    std::string triggerName,
+    DynamicTriggerInfo &dti);
 };
 
 #endif

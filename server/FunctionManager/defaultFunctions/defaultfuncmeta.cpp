@@ -28,7 +28,8 @@ bool defaultComparisonStep(std::string checkResults, std::vector<std::string> pa
         sstreamcheck >> steplb;
 
         std::cout << "step lb " << steplb << " current step " << currentstep << std::endl;
-        if (currentstep > steplb)
+        //only return true for specific step
+        if (currentstep == steplb)
         {
             return true;
         }

@@ -93,7 +93,11 @@ ${gorilla_SOURCE_DIR}/server/unimosserver.cpp
 ${gorilla_SOURCE_DIR}/server/addrManager.cpp
 ${gorilla_SOURCE_DIR}/server/settings.cpp
 )
-target_link_libraries (unimos_server thallium MPI::MPI_CXX unimos_client dhtmanager rawdatamanager metadatamanager ${UUID_LIBRARIES})
+target_link_libraries (unimos_server
+ thallium 
+ MPI::MPI_CXX 
+ unimos_client 
+ dhtmanager rawdatamanager metadatamanager trigger ${VTK_LIBRARIES} ${UUID_LIBRARIES})
 
 
 # add enable_testing

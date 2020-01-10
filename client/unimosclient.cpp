@@ -143,8 +143,9 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
     {
         std::string metaServerAddr = *it;
         std::vector<RawDataEndpoint> rweList = this->getrawDataEndpointList(metaServerAddr, step, varName, dims, indexlb, indexub);
-        std::cout << "metadata server " << metaServerAddr <<" size of rweList " << rweList.size() << std::endl;
-        if(rweList.size()==0){
+        std::cout << "metadata server " << metaServerAddr << " size of rweList " << rweList.size() << std::endl;
+        if (rweList.size() == 0)
+        {
             throw std::runtime_error("failed to get the overlap raw data endpoint for " + metaServerAddr);
         }
         for (auto itrwe = rweList.begin(); itrwe != rweList.end(); itrwe++)
@@ -165,11 +166,11 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
             //get the data by subregion api
 
             int status = this->getSubregionData(itrwe->m_rawDataServerAddr,
-                                                     itrwe->m_rawDataID,
-                                                     allocSize, dims,
-                                                     itrwe->m_indexlb,
-                                                     itrwe->m_indexub,
-                                                     subDataContainer);
+                                                itrwe->m_rawDataID,
+                                                allocSize, dims,
+                                                itrwe->m_indexlb,
+                                                itrwe->m_indexub,
+                                                subDataContainer);
 
             if (status != 0)
             {
@@ -210,7 +211,6 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
             it->m_data = NULL;
         }
     }
-    
 
     return mvassemble;
 }
@@ -227,3 +227,40 @@ int UniClient::getrawdata(std::string serverAddr, RawDataEndpoint &bs, void *dat
     //get a list of RawDataEndpoint
 }
 */
+
+//put trigger info into specific metadata server
+int UniClient::putTriggerInfo(
+    std::string serverAddr,
+    std::string triggerName,
+    DynamicTriggerInfo &dti)
+{
+    tl::remote_procedure remoteputTriggerInfo = this->m_clientEnginePtr->define("putTriggerInfo");
+    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(serverAddr);
+    int status = remoteputTriggerInfo.on(serverEndpoint)(triggerName, dti);
+    return status;
+}
+
+void UniClient::registerTrigger(
+    size_t dims,
+    std::array<int, 3> indexlb,
+    std::array<int, 3> indexub,
+    std::string triggerName,
+    DynamicTriggerInfo &dti)
+{
+
+    std::vector<std::string> metaList = this->getmetaServerList(dims, indexlb, indexub);
+
+    std::vector<MATRIXTOOL::MatrixView> matrixViewList;
+
+    for (auto it = metaList.begin(); it != metaList.end(); it++)
+    {
+        //send request to coresponding metadata server
+        //and add the trigger
+        std::string metaServerAddr = *it;
+        int status = putTriggerInfo(metaServerAddr, triggerName, dti);
+        if(status!=0){
+            throw std::runtime_error("failed to putTriggerInfo for metaServer " + metaServerAddr);
+        }
+    }
+    return;
+}

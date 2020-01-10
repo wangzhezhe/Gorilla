@@ -39,9 +39,10 @@ void test_steptrigger()
     dtm->updateTrigger(triggerName, tgInfo);
     dtm->updateTrigger(triggerNameb, tgInfob);
 
-    
 
     RawDataEndpoint rde;
+
+    //when there is the update of the metadata call Init   
     std::cout << "------test_steptrigger_step_0------" << std::endl;
     dtm->initstart(triggerName, 0, "testVar", rde);
     std::cout << "------test_steptrigger_step_5------" << std::endl;

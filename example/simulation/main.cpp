@@ -72,7 +72,8 @@ int main(int argc, char **argv)
     
 
     //Init the writer
-    tl::engine globalclientEngine("verbs", THALLIUM_CLIENT_MODE);
+    //tl::engine globalclientEngine("verbs", THALLIUM_CLIENT_MODE);
+    tl::engine globalclientEngine("tcp", THALLIUM_CLIENT_MODE);
     Writer dataWriter(&globalclientEngine);
 
 
