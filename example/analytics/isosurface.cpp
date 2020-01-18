@@ -13,6 +13,7 @@
 #include <vtkXMLDataSetWriter.h>
 
 #include "../simulation/timer.hpp"
+#include "../simulation/settings.h"
 #include "../../client/unimosclient.h"
 
 void writeImageData(std::string fileName,
@@ -89,26 +90,74 @@ int main(int argc, char *argv[])
 {
     MPI_Init(&argc, &argv);
 
-    int rank, procs;
-    
-    //assume only start one server here
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &procs);
+    int rank, procs, wrank;
 
-    MPI_Comm comm=MPI_COMM_WORLD;
+    MPI_Comm_rank(MPI_COMM_WORLD, &wrank);
 
-    if (argc < 3)
+    MPI_Comm comm = MPI_COMM_WORLD;
+
+    MPI_Comm_rank(comm, &rank);
+    MPI_Comm_size(comm, &procs);
+
+
+    if (argc != 4)
     {
         if (rank == 0)
         {
             std::cerr << "Too few arguments" << std::endl;
-            std::cout << "Usage: isosurface input output isovalue" << std::endl;
+            std::cout << "Usage: isosurface setting.json steps isovalue" << std::endl;
         }
         MPI_Abort(MPI_COMM_WORLD, -1);
     }
 
-    const double steps = std::stoi(argv[1]);
-    const double isovalue = std::stod(argv[2]);
+
+    int dims[3] = {0};
+    MPI_Dims_create(procs, 3, dims);
+    int npx = dims[0];
+    int npy = dims[1];
+    int npz = dims[2];
+
+    int coords[3] = {0};
+    int periods[3] = {0};
+    MPI_Comm cart_comm;
+    MPI_Cart_create(comm, 3, dims, periods, 0, &cart_comm);
+    MPI_Cart_coords(cart_comm, rank, 3, coords);
+    uint64_t px = coords[0];
+    uint64_t py = coords[1];
+    uint64_t pz = coords[2];
+
+    //TODO this info is loaded from the setting.json
+
+    Settings settings = Settings::from_json(argv[1]);
+    int dimValue = settings.L;
+
+    int shape[3] = {dimValue, dimValue, dimValue};
+
+    int size_x = (shape[0] + npx - 1) / npx;
+    int size_y = (shape[1] + npy - 1) / npy;
+    int size_z = (shape[2] + npz - 1) / npz;
+
+    int offset_x = size_x * px;
+    int offset_y = size_y * py;
+    int offset_z = size_z * pz;
+
+    if (px == npx - 1)
+    {
+        size_x -= size_x * npx - shape[0];
+    }
+    if (py == npy - 1)
+    {
+        size_y -= size_y * npy - shape[1];
+    }
+    if (pz == npz - 1)
+    {
+        size_z -= size_z * npz - shape[2];
+    }
+
+
+
+    const double steps = std::stoi(argv[2]);
+    const double isovalue = std::stod(argv[3]);
 
     std::vector<double> variableU;
     int step;
@@ -144,11 +193,13 @@ int main(int argc, char *argv[])
         //read data
 
         //get blockMeta, extract the shape, offset, variableName
-
         //get variable
+        /*
         std::array<int, 3> indexlb = {{15,15,15}};
         std::array<int, 3> indexub = {{47,47,47}};
-
+        */
+        std::array<int, 3> indexlb = {{offset_x,offset_y,offset_z}};
+        std::array<int, 3> indexub = {{offset_x + size_x - 1,offset_y + size_y - 1,offset_z + size_z - 1}};
         MATRIXTOOL::MatrixView dataView = uniclient->getArbitraryData(step, VarNameU, sizeof(double), 3, indexlb, indexub);
 
         /*
@@ -171,12 +222,12 @@ int main(int argc, char *argv[])
         //todo add the checking operation for the pdf
         //auto polyData = compute_isosurface(blockmeta.m_shape, blockmeta.m_offset, dataContainer, isovalue);
 
-        char countstr[50];
-        sprintf(countstr, "%03d_%04d", step, rank);
-        std::string fname = "./vtkdata/vtkiso_" + std::string(countstr) + ".vti";
-        writeImageData(fname, indexlb, indexub, dataView.m_data);
+        //char countstr[50];
+        //sprintf(countstr, "%03d_%04d", step, rank);
+        //std::string fname = "./vtkdata/vtkiso_" + std::string(countstr) + ".vti";
+        //writeImageData(fname, indexlb, indexub, dataView.m_data);
         //writePolyvtk(fname, polyData);
-        std::cout << "ok for ts " << step << std::endl;
+        //std::cout << "ok for ts " << step << std::endl;
     }
 
 #ifdef ENABLE_TIMERS

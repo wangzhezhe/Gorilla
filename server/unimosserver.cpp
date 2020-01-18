@@ -27,6 +27,11 @@
 #include "FunctionManager/functionManager.h"
 #include "TriggerManager/triggerManager.h"
 
+#include <time.h>
+#include <stdio.h>
+#include <unistd.h>
+#define BILLION 1000000000L
+
 
 
 namespace tl = thallium;
@@ -335,7 +340,10 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
         */
 
         //update the coresponding metaserverList
+        
+        req.respond(0);
 
+        //update the meta data by async way to improve the performance of the put operation
         for (auto it = metaserverList.begin(); it != metaserverList.end(); it++)
         {
             std::array<int, 3> indexlb = it->m_bbx->getIndexlb();
@@ -359,7 +367,7 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
         }
 
         free(BBXQuery);
-        req.respond(0);
+        
     }
     catch (...)
     {
@@ -618,7 +626,9 @@ int main(int argc, char **argv)
         Bound *b = new Bound(0, gloablSettings.maxDimValue);
         globalBBX->BoundList.push_back(b);
     }
+
     dhtManager->initDHT(dataDims, gloablSettings.metaserverNum, globalBBX);
+    
     if (globalRank == 0)
     {
         //print metaServerIDToBBX

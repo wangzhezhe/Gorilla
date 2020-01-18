@@ -20,5 +20,8 @@ add_executable(gray-scott
 
 target_link_libraries(gray-scott ${VTK_LIBRARIES} MPI::MPI_C unimos_client thallium )
 
-add_executable(isosurface analytics/isosurface.cpp)
+add_executable(isosurface 
+analytics/isosurface.cpp
+./simulation/settings.cpp)
+
 target_link_libraries(isosurface ${VTK_LIBRARIES} MPI::MPI_C unimos_client thallium)

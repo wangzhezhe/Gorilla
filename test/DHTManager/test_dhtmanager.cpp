@@ -1,6 +1,9 @@
-
-
 #include "../server/DHTManager/dhtmanager.h"
+#include "../utils/ArgothreadPool.h"
+#include <time.h>
+#include <stdio.h>
+#include <unistd.h>
+#define BILLION 1000000000L
 
 void testInit1d() {
   std::cout << "------init 1d------" << std::endl;
@@ -73,6 +76,21 @@ void testInit2dEgecase() {
   dhtm->printDTMInfo();
 }
 
+void testInit3dLarge(){
+  std::cout << "------init 3d large------" << std::endl;
+  DHTManager *dhtm = new DHTManager();
+  // the number of the dimention is supposed to be 2^n
+  // there are problems for other number
+  // TODO provide partition method that is not limit to the 2^n
+  Bound *a = new Bound(0, 511);
+  BBX *ra3d = new BBX(3);
+  ra3d->BoundList.push_back(a);
+  ra3d->BoundList.push_back(a);
+  ra3d->BoundList.push_back(a);
+  dhtm->initDHT(3, 4, ra3d);
+  dhtm->printDTMInfo();
+}
+
 void testInit3d() {
   std::cout << "------init 3d------" << std::endl;
   DHTManager *dhtm = new DHTManager();
@@ -84,7 +102,7 @@ void testInit3d() {
   ra3d->BoundList.push_back(a);
   ra3d->BoundList.push_back(a);
   ra3d->BoundList.push_back(a);
-  dhtm->initDHT(3, 8, ra3d);
+  dhtm->initDHT(3, 4, ra3d);
   dhtm->printDTMInfo();
 }
 
@@ -243,4 +261,14 @@ int main() {
   testInit3d();
 
   testgetMetaServerID();
+  
+   struct timespec start, end;
+   double diff;
+   clock_gettime(CLOCK_REALTIME, &start); /* mark start time */
+   testInit3dLarge();
+   //some functions here
+   clock_gettime(CLOCK_REALTIME, &end); /* mark end time */
+   diff = (end.tv_sec - start.tv_sec) * 1.0 + (end.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+   std::cout << "time is " << diff << "seconds\n";
+   return 0; 
 }

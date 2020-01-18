@@ -51,7 +51,6 @@ void Writer::writeImageData(const GrayScott &sim, std::string fileName)
 
 void Writer::write(const GrayScott &sim, size_t &step)
 {
-
     std::vector<double> u = sim.u_noghost();
 
     std::string VarNameU = "grascott_u";

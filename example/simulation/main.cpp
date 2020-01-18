@@ -72,8 +72,8 @@ int main(int argc, char **argv)
     
 
     //Init the writer
-    //tl::engine globalclientEngine("verbs", THALLIUM_CLIENT_MODE);
-    tl::engine globalclientEngine("tcp", THALLIUM_CLIENT_MODE);
+    tl::engine globalclientEngine("verbs", THALLIUM_CLIENT_MODE);
+    //tl::engine globalclientEngine("tcp", THALLIUM_CLIENT_MODE);
     Writer dataWriter(&globalclientEngine);
 
 
@@ -129,10 +129,10 @@ int main(int argc, char **argv)
         size_t step = i;
 
         dataWriter.write(sim, step);
-        char countstr[50];
-        sprintf(countstr, "%03d_%04d", step, rank);
-        std::string fname = "./vtkdataraw/vtkiso_" + std::string(countstr) + ".vti";
-        dataWriter.writeImageData(sim,fname);
+        //char countstr[50];
+        //sprintf(countstr, "%03d_%04d", step, rank);
+        //std::string fname = "./vtkdataraw/vtkiso_" + std::string(countstr) + ".vti";
+        //dataWriter.writeImageData(sim,fname);
 
 #ifdef ENABLE_TIMERS
         double time_write = timer_write.stop();

@@ -23,7 +23,7 @@ set the ` "L": 64` in the `./example/setting.json`.
 then to use the commands to start the server (on Amarel)
 
 ```
-srun --mpi=pmix_v2 --mem-per-cpu=1000 --time=00:05:00 -n 6 --ntasks-per-node=1 ./unimos_server ~/cworkspace/src/Gorilla/server/settings.json
+srun --mpi=pmix_v2 --mem-per-cpu=10000 --time=00:15:00 -n 4 --ntasks-per-node=1 --cpus-per-task=1 --constraint=hal,broadwell,edr ./unimos_server ~/cworkspace/src/Gorilla/server/settings.json
 ```
 
 ### run simulation to put data into the staging service
@@ -46,8 +46,10 @@ only start one analytics to test the N:M put and get
 mkdir vtkdata
 
 // this dir will store the vti data outputted by the analytics
+srun --mpi=pmix_v2 -n 1 ./example/isosurface ~/cworkspace/src/Gorilla/example/simulation/settings.json 5 0.5
 
-srun --mpi=pmix_v2 -n 1 ./example/isosurface 2 0.5
+//for performance testing, adjust the index at the isosurface, comment out the write vtk operation
+srun --mpi=pmix_v2 --mem-per-cpu=50000 --ntasks=2 ./example/isosurface ~/cworkspace/src/Gorilla/example/simulation/settings.json 5 0.5
 ```
 
 ### results

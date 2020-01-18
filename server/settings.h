@@ -22,10 +22,10 @@ struct Settings {
     std::cout<<"------settings------"<<std::endl;
     std::cout << "protocol:              " << this->protocol<< std::endl;
     std::cout << "masterInfo:            " << this->masterInfo << std::endl;
-    std::cout << "addTrigger:          " << this->addTrigger << std::endl;
+    std::cout << "addTrigger:            " << this->addTrigger << std::endl;
     std::cout << "dims:                  " << this->dims << std::endl;
     std::cout << "metaserverNum:         " << this->metaserverNum << std::endl;
-    std::cout << "maxDimValue:         " << this->maxDimValue << std::endl;
+    std::cout << "maxDimValue:           " << this->maxDimValue << std::endl;
     std::cout << "logLevel:              " << this->logLevel << std::endl;
     std::cout<<"--------------------"<<std::endl;
     }

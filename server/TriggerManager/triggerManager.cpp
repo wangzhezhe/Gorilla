@@ -1,7 +1,5 @@
-#include "dynamictrigger.h"
+#include "triggerManager.h"
 #include "../FunctionManager/functionManager.h"
-
-
 
 void DynamicTriggerManager::initstart(std::string triggerName, size_t step, std::string varName, RawDataEndpoint &rde)
 {

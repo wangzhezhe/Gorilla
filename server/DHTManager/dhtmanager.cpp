@@ -4,10 +4,12 @@
 #include <string>
 
 // n is the number of the elements
-int computeBits(int n) {
+int computeBits(int n)
+{
   int nr_bits = 0;
 
-  while (n) {
+  while (n)
+  {
     n = n >> 1;
     nr_bits++;
   }
@@ -15,39 +17,41 @@ int computeBits(int n) {
   return nr_bits;
 }
 
-int nextPowerOf2(int n)  
-{  
-    unsigned count = 0;  
-      
-    // First n in the below condition  
-    // is for the case where n is 0  
-    if (n && !(n & (n - 1)))  
-        return n;  
-      
-    while( n != 0)  
-    {  
-        n >>= 1;  
-        count += 1;  
-    }  
-      
-    return 1 << count;  
-}
+int nextPowerOf2(int n)
+{
+  unsigned count = 0;
 
+  // First n in the below condition
+  // is for the case where n is 0
+  if (n && !(n & (n - 1)))
+    return n;
+
+  while (n != 0)
+  {
+    n >>= 1;
+    count += 1;
+  }
+
+  return 1 << count;
+}
 
 // init the metaServerBBOXList according to the metaServerNum(partitionNum) and
 // the bbox of the global domain The hilbert DHT is only suitable for the cubic
-void DHTManager::initDHT(size_t ndim, size_t metaServerNum, BBX *globalBBX) {
-  
-  if(globalBBX->BoundList.size()!=ndim){
-      throw std::runtime_error("dim num should same with the number of bound in globalBBX");
+void DHTManager::initDHT(size_t ndim, size_t metaServerNum, BBX *globalBBX)
+{
+
+  if (globalBBX->BoundList.size() != ndim)
+  {
+    throw std::runtime_error("dim num should same with the number of bound in globalBBX");
   }
   // get max dim value
   int maxDimLen = INT_MIN;
-  for (int i = 0; i < ndim; i++) {
+  for (int i = 0; i < ndim; i++)
+  {
     // this is the number of the value, so plus one
     maxDimLen = std::max(maxDimLen, globalBBX->BoundList[i]->m_ub + 1);
   }
-  
+
   //the len of every dim in virtual box is virtualMaxDimLen
   //the real value is the maxDimLen
   int virtualMaxDimLen = nextPowerOf2(maxDimLen);
@@ -55,27 +59,39 @@ void DHTManager::initDHT(size_t ndim, size_t metaServerNum, BBX *globalBBX) {
   // caculate the total number of the elements
   // the value should be the 2^n that cover the current bbx
   int totalElems = virtualMaxDimLen;
-  for (int i = 0; i < ndim; i++) {
-    if (i > 0) {
+  for (int i = 0; i < ndim; i++)
+  {
+    if (i > 0)
+    {
       totalElems = totalElems * virtualMaxDimLen;
     }
   }
 
   int serverNumberForEachNode = 0;
   serverNumberForEachNode = totalElems / metaServerNum;
+  
+  //this is used to trim for when search the boundry
+  //only the points around the trim position can be the boundry
+  int span = virtualMaxDimLen/metaServerNum;
+  if(span == 0 || span == 1){
+    throw std::runtime_error("the span value should not be zero or one when init dht");
+  }
 
   int nBits = computeBits(virtualMaxDimLen);
-  
+
   std::cout << "debug totalElems " << totalElems << " elemtNumberForEachNode "
             << serverNumberForEachNode << " virtualMaxDimLen " << virtualMaxDimLen << " nbits " << nBits << std::endl;
-  
-  if (ndim == 1) {
-    for (int i = 0; i < maxDimLen; i++) {
+
+  if (ndim == 1)
+  {
+    for (int i = 0; i < maxDimLen; i++)
+    {
 
       int sfc_coord[1] = {i};
       bitmask_t index = hilbert_c2i(ndim, nBits, sfc_coord);
       int serverID = index / serverNumberForEachNode;
-      if ((index + 1) > serverNumberForEachNode * metaServerNum) {
+      if ((index + 1) > serverNumberForEachNode * metaServerNum)
+      {
         // put all the reminder into the last server
         serverID = metaServerNum - 1;
       }
@@ -84,7 +100,8 @@ void DHTManager::initDHT(size_t ndim, size_t metaServerNum, BBX *globalBBX) {
       //          << serverID << std::endl;
 
       auto iter = this->metaServerIDToBBX.find(serverID);
-      if (iter == metaServerIDToBBX.end()) {
+      if (iter == metaServerIDToBBX.end())
+      {
 
         Bound *b = new Bound();
         BBX *bbx = new BBX(1);
@@ -100,13 +117,18 @@ void DHTManager::initDHT(size_t ndim, size_t metaServerNum, BBX *globalBBX) {
           std::max(this->metaServerIDToBBX[serverID]->BoundList[0]->m_ub, i);
       // modify the ub if it is larger than real value
     }
-  } else if (ndim == 2) {
-    for (int i = 0; i < maxDimLen; i++) {
-      for (int j = 0; j < maxDimLen; j++) {
+  }
+  else if (ndim == 2)
+  {
+    for (int i = 0; i < maxDimLen; i++)
+    {
+      for (int j = 0; j < maxDimLen; j++)
+      {
         int sfc_coord[2] = {i, j};
         bitmask_t index = hilbert_c2i(ndim, nBits, sfc_coord);
         int serverID = index / serverNumberForEachNode;
-        if ((index + 1) > serverNumberForEachNode * metaServerNum) {
+        if ((index + 1) > serverNumberForEachNode * metaServerNum)
+        {
           // put all the reminder into the last server
           serverID = metaServerNum - 1;
         }
@@ -115,7 +137,8 @@ void DHTManager::initDHT(size_t ndim, size_t metaServerNum, BBX *globalBBX) {
         //          << " serverID " << serverID << std::endl;
 
         auto iter = this->metaServerIDToBBX.find(serverID);
-        if (iter == metaServerIDToBBX.end()) {
+        if (iter == metaServerIDToBBX.end())
+        {
 
           Bound *b1 = new Bound();
           Bound *b2 = new Bound();
@@ -137,14 +160,21 @@ void DHTManager::initDHT(size_t ndim, size_t metaServerNum, BBX *globalBBX) {
             std::max(this->metaServerIDToBBX[serverID]->BoundList[1]->m_ub, j);
       }
     }
-  } else if (ndim == 3) {
-    for (int i = 0; i < maxDimLen; i++) {
-      for (int j = 0; j < maxDimLen; j++) {
-        for (int k = 0; k < maxDimLen; k++) {
+  }
+  else if (ndim == 3)
+  {
+    for (int i = 0; i < maxDimLen;)
+    {
+      for (int j = 0; j < maxDimLen;)
+      {
+        for (int k = 0; k < maxDimLen;)
+        {
+
           int sfc_coord[3] = {i, j, k};
           bitmask_t index = hilbert_c2i(ndim, nBits, sfc_coord);
           int serverID = index / serverNumberForEachNode;
-          if ((index + 1) > serverNumberForEachNode * metaServerNum) {
+          if ((index + 1) > serverNumberForEachNode * metaServerNum)
+          {
             // put all the reminder into the last server
             serverID = metaServerNum - 1;
           }
@@ -153,7 +183,8 @@ void DHTManager::initDHT(size_t ndim, size_t metaServerNum, BBX *globalBBX) {
           //          << serverID << std::endl;
 
           auto iter = this->metaServerIDToBBX.find(serverID);
-          if (iter == metaServerIDToBBX.end()) {
+          if (iter == metaServerIDToBBX.end())
+          {
 
             Bound *b1 = new Bound();
             Bound *b2 = new Bound();
@@ -179,10 +210,37 @@ void DHTManager::initDHT(size_t ndim, size_t metaServerNum, BBX *globalBBX) {
               this->metaServerIDToBBX[serverID]->BoundList[1]->m_ub, j);
           this->metaServerIDToBBX[serverID]->BoundList[2]->m_ub = std::max(
               this->metaServerIDToBBX[serverID]->BoundList[2]->m_ub, k);
+
+          if (k % 2 == 0)
+          {
+            k = k+span-1;
+          }
+          else
+          {
+            k = k + 1;
+          }
+        }
+        if (j % 2 == 0)
+        {
+          j = j+span-1;
+        }
+        else
+        {
+          j = j + 1;
         }
       }
+      if (i % 2 == 0)
+      {
+        i = i+span-1;
+      }
+      else
+      {
+        i = i + 1;
+      }
     }
-  } else {
+  }
+  else
+  {
     throw std::runtime_error("unsupported ndim value " + std::to_string(ndim));
   }
 
@@ -191,15 +249,18 @@ void DHTManager::initDHT(size_t ndim, size_t metaServerNum, BBX *globalBBX) {
 
 // get the corresponding metaserver according to the input bbox
 
-std::vector<ResponsibleMetaServer> DHTManager::getMetaServerID(BBX *BBXQuery) {
+std::vector<ResponsibleMetaServer> DHTManager::getMetaServerID(BBX *BBXQuery)
+{
   // go through the metaServerIDToBBX
   // save the corresponding BBX
   std::vector<ResponsibleMetaServer> rmList;
   for (auto it = this->metaServerIDToBBX.begin();
-       it != this->metaServerIDToBBX.end(); ++it) {
+       it != this->metaServerIDToBBX.end(); ++it)
+  {
     // compare the BBXQuery with every item and store the overlapping part into
     BBX *overlapBBX = getOverlapBBX(BBXQuery, it->second);
-    if (overlapBBX != NULL) {
+    if (overlapBBX != NULL)
+    {
       ResponsibleMetaServer rbm(it->first, overlapBBX);
       rmList.push_back(rbm);
     }

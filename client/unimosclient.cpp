@@ -1,6 +1,9 @@
 
 #include "unimosclient.h"
-
+#include <time.h>
+#include <stdio.h>
+#include <unistd.h>
+#define BILLION 1000000000L
 /*
 
     tl::remote_procedure sum = myEngine.define("sum");
@@ -43,8 +46,21 @@ std::string UniClient::loadMasterAddr(std::string masterConfigFile)
     return content;
 }
 
+/*
+    struct timespec start, end;
+    double diff;
+    clock_gettime(CLOCK_REALTIME, &start); 
+    sleep(1.0);
+    //some functions here
+    clock_gettime(CLOCK_REALTIME, &end); 
+    diff = (end.tv_sec - start.tv_sec) * 1.0 + (end.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+*/
+
 int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSummary, void *dataContainer)
 {
+    struct timespec start, end1,end2;
+    double diff1, diff2;
+    clock_gettime(CLOCK_REALTIME, &start); 
     //get the server by round roubin
     std::string rrbServerAddr = this->getServerAddrByRRbin();
 
@@ -56,6 +72,9 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
     std::vector<std::pair<void *, std::size_t>> segments(1);
     segments[0].first = (void *)(dataContainer);
     segments[0].second = dataMallocSize;
+    clock_gettime(CLOCK_REALTIME, &end1);
+    diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+    spdlog::info("put stage 1: {}", diff1);
 
     tl::bulk dataBulk = this->m_clientEnginePtr->expose(segments, tl::bulk_mode::read_only);
 
@@ -63,6 +82,10 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
     //the data only could be updated when the previous i/o finish
     //auto request = dsput.on(globalServerEndpoint).async(datameta, blockID, myBulk);
     int status = remotePutRawData.on(serverEndpoint)(step, varName, dataSummary, dataBulk);
+
+    clock_gettime(CLOCK_REALTIME, &end2); 
+    diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
+    spdlog::info("put stage 2: {}", diff2);
 
     return status;
 }
@@ -124,6 +147,8 @@ int UniClient::getSubregionData(std::string serverAddr, std::string blockID, siz
     return status;
 }
 
+
+
 //this method is the wrapper for the getSubregionData and getrawDataEndpointList
 //return the assembled matrix
 MATRIXTOOL::MatrixView UniClient::getArbitraryData(
@@ -135,9 +160,14 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
     std::array<int, 3> indexub)
 {
 
+
+
+
     std::vector<std::string> metaList = this->getmetaServerList(dims, indexlb, indexub);
 
     std::vector<MATRIXTOOL::MatrixView> matrixViewList;
+
+
 
     for (auto it = metaList.begin(); it != metaList.end(); it++)
     {
@@ -178,13 +208,13 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
             }
 
             //check resutls
-            std::cout << "check subregion value " << std::endl;
-            double *temp = (double *)subDataContainer;
-            for (int i = 0; i < 5; i++)
-            {
-                double value = *(temp + i);
-                std::cout << "value " << value << std::endl;
-            }
+            //std::cout << "check subregion value " << std::endl;
+            //double *temp = (double *)subDataContainer;
+            //for (int i = 0; i < 5; i++)
+            //{
+            //    double value = *(temp + i);
+            //    std::cout << "value " << value << std::endl;
+            //}
 
             //put it into the Matrix View
             MATRIXTOOL::MatrixView mv(bbx, subDataContainer);
@@ -192,12 +222,14 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
         }
     }
 
+
     //assemble the matrix View
     BBX *intactbbx = new BBX(dims, indexlb, indexub);
     MATRIXTOOL::MatrixView mvassemble = MATRIXTOOL::matrixAssemble(elemSize, matrixViewList, intactbbx);
 
-    //free the element in matrixViewList
 
+
+    //free the element in matrixViewList
     for (auto it = matrixViewList.begin(); it != matrixViewList.end(); it++)
     {
         if (it->m_bbx != NULL)
@@ -211,6 +243,8 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
             it->m_data = NULL;
         }
     }
+
+
 
     return mvassemble;
 }

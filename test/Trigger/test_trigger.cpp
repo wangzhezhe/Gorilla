@@ -3,7 +3,7 @@
 #include "../server/FunctionManager/defaultFunctions/defaultfuncmeta.h"
 #include "../server/FunctionManager/functionManager.h"
 #include "../commondata/metadata.h"
-#include "../server/TriggerManager/dynamictrigger.h"
+#include "../server/TriggerManager/triggerManager.h"
 #include <unistd.h>
 
 void test_steptrigger()

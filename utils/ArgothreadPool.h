@@ -1,3 +1,6 @@
+#ifndef THREADPOOL_H
+#define THREADPOOL_H
+
 #include <thallium.hpp>
 
 namespace tl = thallium;
@@ -80,3 +83,5 @@ struct ArgoThreadPool
         }
 
 */
+
+#endif
