@@ -9,10 +9,7 @@
 #include "timer.hpp"
 #include "gray-scott.h"
 #include "writer.h"
-
-
-
-
+#include "../putgetMeta/metaclient.h"
 
 void print_settings(const Settings &s)
 {
@@ -65,17 +62,13 @@ int main(int argc, char **argv)
 
     Settings settings = Settings::from_json(argv[1]);
 
-
     GrayScott sim(settings, comm);
     sim.init();
-
-    
 
     //Init the writer
     tl::engine globalclientEngine("verbs", THALLIUM_CLIENT_MODE);
     //tl::engine globalclientEngine("tcp", THALLIUM_CLIENT_MODE);
     Writer dataWriter(&globalclientEngine);
-
 
     //writer_main.open(settings.output);
 
@@ -125,10 +118,20 @@ int main(int argc, char **argv)
                       << std::endl;
         }
 
-        size_t blockID = rank;
         size_t step = i;
 
-        dataWriter.write(sim, step);
+        //send record to the metadata server
+        if (rank == 0)
+        {
+            std::string recordKey = "Trigger_" + std::to_string(step);
+            MetaClient metaclient = getMetaClient();
+            std::string reply = metaclient.Recordtime(recordKey);
+            dataWriter.write(sim, step, recordKey);
+        }
+        else
+        {
+            dataWriter.write(sim, step);
+        }
         //char countstr[50];
         //sprintf(countstr, "%03d_%04d", step, rank);
         //std::string fname = "./vtkdataraw/vtkiso_" + std::string(countstr) + ".vti";

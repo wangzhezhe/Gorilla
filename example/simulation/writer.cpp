@@ -49,7 +49,7 @@ void Writer::writeImageData(const GrayScott &sim, std::string fileName)
 
 
 
-void Writer::write(const GrayScott &sim, size_t &step)
+void Writer::write(const GrayScott &sim, size_t &step, std::string recordInfo)
 {
     std::vector<double> u = sim.u_noghost();
 
@@ -66,8 +66,9 @@ void Writer::write(const GrayScott &sim, size_t &step)
                     DRIVERTYPE_RAWMEM,
                     3,
                     indexlb,
-                    indexub);
-
+                    indexub,
+                    recordInfo);
+    
     int status = m_uniclient->putrawdata(step, VarNameU, bs, u.data());
 
     if(status!=0){

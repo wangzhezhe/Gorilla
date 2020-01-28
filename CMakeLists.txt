@@ -5,13 +5,17 @@ set (CMAKE_CXX_COMPILER g++)
 set (CMAKE_C_COMPILER gcc)
 
 option(ENABLE_TESTING "Enable Testing" ON)
+option(USE_TIMERS "Use profiling timers" ON)
 enable_testing()
-
+add_definitions(-DENABLE_TIMERS)
 option(ENABLE_EXAMPLE "Enable Example" ON)
+option(USE_GRPC "Enable GRPC" ON)
+
 
 # add our cmake module directory to the path
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
      "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 
 # link shared lib with full rpath
 set (CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
@@ -40,23 +44,52 @@ find_package (thallium REQUIRED)
 # add uuid 
 pkg_search_module(UUID REQUIRED uuid)
 
-
 # add the depedency
 include_directories(
      ${gorilla_SOURCE_DIR}/dep
      ${UUID_INCLUDE_DIRS}
 )
 
+# add grpc env
+# GRPC and Protocol Buffers libraries location
+
+if (USE_GRPC)
+list(APPEND CMAKE_PREFIX_PATH "/home/zw241/cworkspace/install/install_grpc" "/home/zw241/cworkspace/install/install_protobuf")
+
+# Cmake find modules
+# list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+
+find_package(Protobuf REQUIRED)
+find_package(GRPC REQUIRED)
+
+set(PROTOS
+    ${CMAKE_CURRENT_LIST_DIR}/protos/metaserver.proto)
+
+set(PROTO_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR}/proto-src)
+file(MAKE_DIRECTORY ${PROTO_SRC_DIR})
+include_directories(${PROTO_SRC_DIR})
+
+protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_SRC_DIR} ${PROTOS})
+grpc_generate_cpp(GRPC_SRCS GRPC_HDRS ${PROTO_SRC_DIR} ${PROTOS})
+
+find_package(MPI REQUIRED) 
+
+add_library(metaclient
+  ./putgetMeta/metaclient.cpp
+  ${PROTO_SRCS} 
+  ${GRPC_SRCS})
+target_link_libraries(metaclient
+gRPC::grpc++_reflection protobuf::libprotobuf) 
+
+endif()
 
 add_library(dhtmanager 
 ${gorilla_SOURCE_DIR}/server/DHTManager/dhtmanager.cpp
 ${gorilla_SOURCE_DIR}/utils/hilbert/hilbert.c)
 
-
 add_library(metadatamanager 
 ${gorilla_SOURCE_DIR}/server/MetadataManager/metadataManager.cpp)
 target_link_libraries (metadatamanager thallium)
-
 
 add_library(rawdatamanager 
 ${gorilla_SOURCE_DIR}/server/RawdataManager/blockManager.cpp
@@ -87,18 +120,19 @@ add_library (unimos_client
 ${gorilla_SOURCE_DIR}/client/unimosclient.cpp)
 target_link_libraries (unimos_client thallium)
 
-
 add_executable (unimos_server 
 ${gorilla_SOURCE_DIR}/server/unimosserver.cpp
 ${gorilla_SOURCE_DIR}/server/addrManager.cpp
 ${gorilla_SOURCE_DIR}/server/settings.cpp
 )
+
 target_link_libraries (unimos_server
  thallium 
  MPI::MPI_CXX 
  unimos_client 
- dhtmanager rawdatamanager metadatamanager trigger ${VTK_LIBRARIES} ${UUID_LIBRARIES})
-
+ dhtmanager rawdatamanager metadatamanager 
+ trigger ${VTK_LIBRARIES} ${UUID_LIBRARIES}
+ metaclient)
 
 # add enable_testing
 if (ENABLE_TESTING)
@@ -106,6 +140,9 @@ if (ENABLE_TESTING)
 endif()
 
 
-if (ENABLE_EXAMPLE)
+# build the example
+# the grpc only works for one level cmake, not sure the reason
+
+if(ENABLE_EXAMPLE)
   add_subdirectory(example)
 endif()

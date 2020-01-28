@@ -12,7 +12,12 @@ Experimental Solution: Using in-staging dynamic task trigger to organize the wor
 
 Since we need a more efficient in-memory management thread management tool to support the in-staging data execution, our solution provides the middleware that uses a similar architecture with the DataSpaces based on the Mochi and Argobot RPC service. Besides, we also add the capability of the in-memory data task execution and the programmable dynamic task trigger interface.
 
-Before the evaluation, we first show that our middleware is similar with DataSpaces for the overhead of data put/get.
+Before the evaluation, we first show that our middleware is similar with DataSpaces for the overhead of data put/get. The configuration used for this part could keep same with the configuration in previous paper (https://link.springer.com/content/pdf/10.1007/s10586-011-0162-y.pdf) to show the scalability.
+
+(the configuration for the large case: 256GB
+the length of the setting is 3250
+srun --mpi=pmix_v2 -n 256 --time=05:00 --mem-per-cpu=10000 ./gray-scott ./settings.json
+)
 
 #### Performance and Scalability
 

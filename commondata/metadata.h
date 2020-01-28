@@ -84,15 +84,19 @@ struct BlockSummary
   std::array<int, 3> m_indexlb{{0, 0, 0}};
   //the origin can be caculated by offset
   std::array<int, 3> m_indexub{{0, 0, 0}};
-
+  //some extra information need to be sent from the data writer
+  std::string m_extraInfo;
+  
   BlockSummary(){};
   BlockSummary(size_t elemSize, size_t elemNum,
                std::string driverType,
                size_t dims,
                std::array<int, 3> indexlb,
-               std::array<int, 3> indexub)
+               std::array<int, 3> indexub,
+               std::string extraInfo="")
       : m_elemSize(elemSize), m_elemNum(elemNum),
-        m_drivertype(driverType), m_dims(dims), m_indexlb(indexlb), m_indexub(indexub){};
+        m_drivertype(driverType), m_dims(dims), 
+        m_indexlb(indexlb), m_indexub(indexub),m_extraInfo(extraInfo){};
 
   std::array<size_t, 3> getShape()
   {
@@ -152,7 +156,8 @@ struct BlockSummary
               << " m_elemNum " << m_elemNum << " m_drivertype " << m_drivertype << " m_dims " << m_dims
               << ", m_indexlb " << m_indexlb[0] << " " << m_indexlb[1] << " "
               << m_indexlb[2] << ", m_indexub " << m_indexub[0] << " "
-              << m_indexub[1] << " " << m_indexub[2] << std::endl;
+              << m_indexub[1] << " " << m_indexub[2] << "extra info: " << m_extraInfo << std::endl;
+
     return;
   }
 
@@ -167,6 +172,7 @@ struct BlockSummary
     ar &m_dims;
     ar &m_indexlb;
     ar &m_indexub;
+    ar &m_extraInfo;
   }
 };
 

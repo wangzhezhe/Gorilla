@@ -59,8 +59,6 @@ struct FunctionManagerMeta
         registerComparisonFunc("defaultComparisonStep",&defaultComparisonStep);
         registerInitActionFunc("defaultActionSartDt",&defaultActionSartDt);
 
-
-
         registerCheckFunc("defaultCheck", &defaultCheck);
         registerComparisonFunc("defaultComparison", &defaultComparison);
         registerActionFunc("defaultAction", &defaultAction);

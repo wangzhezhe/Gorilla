@@ -1,0 +1,80 @@
+// Copyright 2015 gRPC authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// error code for grpc refer to: https://github.com/grpc/grpc-go/blob/master/codes/codes.go
+
+syntax = "proto3";
+
+package metaserver;
+
+// The greeting service definition.
+service Meta {
+  // test using
+  rpc SayHello (HelloRequest) returns (HelloReply) {}
+  
+  rpc Putmeta (PutRequest) returns (PutReply) {}
+  rpc Getmeta (GetRequest) returns (GetReply) {}
+
+  rpc Putmetaspace (PutRequest) returns (PutReply) {}
+  rpc Getmetaspace (GetRequest) returns (GetReply) {}
+
+  rpc Recordtime (TimeRequest) returns (TimeReply) {}
+
+  rpc Recordtimestart (TimeRequest) returns (TimeReply) {}
+
+  rpc Recordtimetick (TimeRequest) returns (TimeReply) {}
+
+
+
+}
+
+// The request message containing the user's name.
+message HelloRequest {
+  string name = 1;
+}
+
+// The response message containing the greetings
+message HelloReply {
+  string message = 1;
+}
+
+message PutRequest {
+  //key is the variable name <the name of the interesting pattern>
+  string key = 1;
+  //value should be the json string <meta data describing the interesting pattern>
+  string value = 2;
+}
+
+message PutReply {
+  string message = 1;
+}
+
+message GetRequest {
+  string key = 1;
+}
+
+message GetReply {
+  //label the status of the reply
+  string message = 1;
+}
+
+message TimeRequest {
+  //record time with this key
+  string key = 1;
+}
+
+message TimeReply {
+  string message = 1;
+  string value = 2;
+}

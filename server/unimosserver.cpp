@@ -27,12 +27,13 @@
 #include "FunctionManager/functionManager.h"
 #include "TriggerManager/triggerManager.h"
 
+//timer information
+#include "../putgetMeta/metaclient.h"
+
 #include <time.h>
 #include <stdio.h>
 #include <unistd.h>
 #define BILLION 1000000000L
-
-
 
 namespace tl = thallium;
 
@@ -340,7 +341,7 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
         */
 
         //update the coresponding metaserverList
-        
+
         req.respond(0);
 
         //update the meta data by async way to improve the performance of the put operation
@@ -364,10 +365,16 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
             {
                 throw std::runtime_error("faild to update the metadata for id " + std::to_string(metaServerId));
             }
+            //TODO, add the timer operation here
+            std::string recordKey = blockSummary.m_extraInfo;
+            if (recordKey.compare("") != 0)
+            {
+                MetaClient metaclient = getMetaClient();
+                std::string reply = metaclient.Recordtime(recordKey);
+            }
         }
 
         free(BBXQuery);
-        
     }
     catch (...)
     {
@@ -513,8 +520,6 @@ void runRerver(std::string networkingType)
     globalServerEnginePtr->define("getDataSubregion", getDataSubregion);
     globalServerEnginePtr->define("putTriggerInfo", putTriggerInfo);
 
-    
-
     //for testing
     globalServerEnginePtr->define("hello", hello).disable_response();
 
@@ -628,7 +633,7 @@ int main(int argc, char **argv)
     }
 
     dhtManager->initDHT(dataDims, gloablSettings.metaserverNum, globalBBX);
-    
+
     if (globalRank == 0)
     {
         //print metaServerIDToBBX

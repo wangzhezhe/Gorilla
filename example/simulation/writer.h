@@ -6,7 +6,7 @@
 #include "gray-scott.h"
 #include "settings.h"
 #include <vector>
-#include "../../client/unimosclient.h"
+#include "../client/unimosclient.h"
 
 namespace tl = thallium;
 
@@ -19,7 +19,7 @@ public:
 
     void writeImageData(const GrayScott &sim, std::string fileName);
 
-    void write(const GrayScott &sim, size_t &step);
+    void write(const GrayScott &sim, size_t &step, std::string recordInfo = "");
     
     UniClient * m_uniclient = NULL;
 };

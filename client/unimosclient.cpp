@@ -63,7 +63,7 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
     clock_gettime(CLOCK_REALTIME, &start); 
     //get the server by round roubin
     std::string rrbServerAddr = this->getServerAddrByRRbin();
-
+    spdlog::info("put server addr: {}", rrbServerAddr);
     tl::remote_procedure remotePutRawData = this->m_clientEnginePtr->define("putrawdata");
     //tl::remote_procedure putMetaData = myEngine.define("putMetaData").disable_response();
     tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(rrbServerAddr);

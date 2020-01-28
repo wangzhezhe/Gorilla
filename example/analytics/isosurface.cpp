@@ -14,7 +14,8 @@
 
 #include "../simulation/timer.hpp"
 #include "../simulation/settings.h"
-#include "../../client/unimosclient.h"
+#include "../client/unimosclient.h"
+#include "../putgetMeta/metaclient.h"
 
 void writeImageData(std::string fileName,
                     std::array<int, 3> &indexlb,
@@ -217,6 +218,13 @@ int main(int argc, char *argv[])
         double time_read = timer_read.stop();
         log << step << "\t" << time_read << "\t" << std::endl;
 #endif
+
+        if (rank == 0)
+        {
+            std::string recordKey = "Trigger_" + std::to_string(step);
+            MetaClient metaclient = getMetaClient();
+            std::string reply = metaclient.Recordtime(recordKey);
+        }
 
 
         //todo add the checking operation for the pdf

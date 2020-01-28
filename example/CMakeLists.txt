@@ -1,27 +1,27 @@
-option(USE_TIMERS "Use profiling timers")
-#if(USE_TIMERS)
-  message(STATUS "Enabling profiling timers")
-  add_definitions(-DENABLE_TIMERS)
-#endif()
-
-find_package(VTK COMPONENTS
-    FiltersCore
-    IOImage
-    IOXML
-    IOLegacy
-)
 
 add_executable(gray-scott
   ./simulation/main.cpp
   ./simulation/gray-scott.cpp
-  ./simulation/settings.cpp
   ./simulation/writer.cpp
-  ./simulation/settings.cpp)
+  ./simulation/settings.cpp
+)
 
-target_link_libraries(gray-scott ${VTK_LIBRARIES} MPI::MPI_C unimos_client thallium )
+if (USE_GRPC)
+target_link_libraries(gray-scott MPI::MPI_C ${VTK_LIBRARIES}
+metaclient thallium unimos_client)
+else()
+target_link_libraries(gray-scott MPI::MPI_C ${VTK_LIBRARIES}
+thallium unimos_client)
+endif()
 
-add_executable(isosurface 
-analytics/isosurface.cpp
-./simulation/settings.cpp)
+add_executable(isosurface
+   ./analytics/isosurface.cpp
+   ./simulation/settings.cpp)
 
-target_link_libraries(isosurface ${VTK_LIBRARIES} MPI::MPI_C unimos_client thallium)
+if (USE_GRPC)
+target_link_libraries(isosurface MPI::MPI_C ${VTK_LIBRARIES}
+metaclient thallium unimos_client)
+else()
+target_link_libraries(isosurface MPI::MPI_C ${VTK_LIBRARIES}
+thallium unimos_client)
+endif()

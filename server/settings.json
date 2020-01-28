@@ -1,6 +1,6 @@
 {
     "dims": 3,
-    "metaserverNum": 4,
+    "metaserverNum": 8,
     "maxDimValue": 511,
     "protocol": "verbs",
     "masterInfo":"./unimos_server.conf",

@@ -11,6 +11,8 @@ std::string defaultCheckGetStep(size_t step, std::string varName, RawDataEndpoin
     return stepStr;
 }
 
+//get block summary
+
 bool defaultComparisonStep(std::string checkResults, std::vector<std::string> parameters)
 {
     std::cout << "defaultComparisonStep check results " << checkResults << std::endl;
