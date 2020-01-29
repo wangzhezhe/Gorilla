@@ -191,6 +191,8 @@ spack load -r abt-io
 cd /home/zw241/cworkspace/build/build_Gorilla
 cmake  ~/cworkspace/src/Gorilla -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DVTK_DIR=~/cworkspace/build/build_vtk
 
+//on cori, vtk dir is /global/homes/z/zw241/cworkspace/install/install_VTK/lib64/cmake/vtk-8.90/
+
 for testing use --cpus-per-task
 ```
 

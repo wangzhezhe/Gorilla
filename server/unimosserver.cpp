@@ -13,10 +13,13 @@
 #include <thallium.hpp>
 #include <spdlog/spdlog.h>
 #include "mpi.h"
-#include <uuid/uuid.h>
+
+//#include <uuid/uuid.h>
 
 #include "../utils/stringtool.h"
 #include "../utils/bbxtool.h"
+#include "../utils/uuid.h"
+
 #include "addrManager.h"
 #include "settings.h"
 #include "DHTManager/dhtmanager.h"
@@ -255,14 +258,7 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
     blockSummary.printSummary();
 
     //caculate the blockid by uuid
-
-    uuid_t uuid;
-    char strID[50];
-
-    uuid_generate(uuid);
-    uuid_unparse(uuid, strID);
-
-    std::string blockID(strID);
+    std::string blockID= UUIDTOOL::generateUUID();
 
     spdlog::debug("blockID is {} on server {} ", blockID, addrManager->nodeAddr);
 

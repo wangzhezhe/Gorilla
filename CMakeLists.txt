@@ -41,20 +41,19 @@ xpkg_import_module (abtio REQUIRED abt-io)
 find_package (thallium REQUIRED)
 
 
-# add uuid 
-pkg_search_module(UUID REQUIRED uuid)
+# add uuid <there is problem to use this on suse>
+# pkg_search_module(UUID REQUIRED uuid)
 
 # add the depedency
 include_directories(
      ${gorilla_SOURCE_DIR}/dep
-     ${UUID_INCLUDE_DIRS}
 )
 
 # add grpc env
 # GRPC and Protocol Buffers libraries location
 
 if (USE_GRPC)
-list(APPEND CMAKE_PREFIX_PATH "/home/zw241/cworkspace/install/install_grpc" "/home/zw241/cworkspace/install/install_protobuf")
+list(APPEND CMAKE_PREFIX_PATH "~/cworkspace/install/install_grpc" "~/cworkspace/install/install_protobuf")
 
 # Cmake find modules
 # list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
