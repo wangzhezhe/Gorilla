@@ -123,9 +123,9 @@ int main(int argc, char **argv)
         //send record to the metadata server
         if (rank == 0)
         {
+            MetaClient *metaclient = new MetaClient(&globalclientEngine);
             std::string recordKey = "Trigger_" + std::to_string(step);
-            MetaClient metaclient = getMetaClient();
-            std::string reply = metaclient.Recordtime(recordKey);
+            metaclient->Recordtime(recordKey);
             dataWriter.write(sim, step, recordKey);
         }
         else

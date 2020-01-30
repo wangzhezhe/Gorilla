@@ -222,8 +222,8 @@ int main(int argc, char *argv[])
         if (rank == 0)
         {
             std::string recordKey = "Trigger_" + std::to_string(step);
-            MetaClient metaclient = getMetaClient();
-            std::string reply = metaclient.Recordtime(recordKey);
+            MetaClient *metaclient = new MetaClient(&clientEngine);
+            metaclient->Recordtime(recordKey);
         }
 
 

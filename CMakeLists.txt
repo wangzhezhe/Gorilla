@@ -49,38 +49,7 @@ include_directories(
      ${gorilla_SOURCE_DIR}/dep
 )
 
-# add grpc env
-# GRPC and Protocol Buffers libraries location
 
-if (USE_GRPC)
-list(APPEND CMAKE_PREFIX_PATH "~/cworkspace/install/install_grpc" "~/cworkspace/install/install_protobuf")
-
-# Cmake find modules
-# list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-
-find_package(Protobuf REQUIRED)
-find_package(GRPC REQUIRED)
-
-set(PROTOS
-    ${CMAKE_CURRENT_LIST_DIR}/protos/metaserver.proto)
-
-set(PROTO_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR}/proto-src)
-file(MAKE_DIRECTORY ${PROTO_SRC_DIR})
-include_directories(${PROTO_SRC_DIR})
-
-protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_SRC_DIR} ${PROTOS})
-grpc_generate_cpp(GRPC_SRCS GRPC_HDRS ${PROTO_SRC_DIR} ${PROTOS})
-
-find_package(MPI REQUIRED) 
-
-add_library(metaclient
-  ./putgetMeta/metaclient.cpp
-  ${PROTO_SRCS} 
-  ${GRPC_SRCS})
-target_link_libraries(metaclient
-gRPC::grpc++_reflection protobuf::libprotobuf) 
-
-endif()
 
 add_library(dhtmanager 
 ${gorilla_SOURCE_DIR}/server/DHTManager/dhtmanager.cpp
@@ -114,6 +83,8 @@ ${gorilla_SOURCE_DIR}/server/TriggerManager/triggerManager.cpp
 )
 target_link_libraries(trigger thallium ${VTK_LIBRARIES})
 
+add_library(metaclient ./putgetMeta/metaclient.cpp)
+target_link_libraries(metaclient thallium)
 
 add_library (unimos_client 
 ${gorilla_SOURCE_DIR}/client/unimosclient.cpp)
@@ -130,7 +101,7 @@ target_link_libraries (unimos_server
  MPI::MPI_CXX 
  unimos_client 
  dhtmanager rawdatamanager metadatamanager 
- trigger ${VTK_LIBRARIES} ${UUID_LIBRARIES}
+ trigger ${VTK_LIBRARIES}
  metaclient)
 
 # add enable_testing

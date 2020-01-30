@@ -6,22 +6,15 @@ add_executable(gray-scott
   ./simulation/settings.cpp
 )
 
-if (USE_GRPC)
+
 target_link_libraries(gray-scott MPI::MPI_C ${VTK_LIBRARIES}
-metaclient thallium unimos_client)
-else()
-target_link_libraries(gray-scott MPI::MPI_C ${VTK_LIBRARIES}
-thallium unimos_client)
-endif()
+thallium unimos_client metaclient)
+
 
 add_executable(isosurface
    ./analytics/isosurface.cpp
    ./simulation/settings.cpp)
 
-if (USE_GRPC)
+
 target_link_libraries(isosurface MPI::MPI_C ${VTK_LIBRARIES}
-metaclient thallium unimos_client)
-else()
-target_link_libraries(isosurface MPI::MPI_C ${VTK_LIBRARIES}
-thallium unimos_client)
-endif()
+thallium unimos_client metaclient)

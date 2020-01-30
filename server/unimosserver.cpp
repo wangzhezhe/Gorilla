@@ -258,7 +258,7 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
     blockSummary.printSummary();
 
     //caculate the blockid by uuid
-    std::string blockID= UUIDTOOL::generateUUID();
+    std::string blockID = UUIDTOOL::generateUUID();
 
     spdlog::debug("blockID is {} on server {} ", blockID, addrManager->nodeAddr);
 
@@ -365,8 +365,8 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
             std::string recordKey = blockSummary.m_extraInfo;
             if (recordKey.compare("") != 0)
             {
-                MetaClient metaclient = getMetaClient();
-                std::string reply = metaclient.Recordtime(recordKey);
+                MetaClient *metaclient = new MetaClient(globalServerEnginePtr);
+                metaclient->Recordtime(recordKey);
             }
         }
 

@@ -1,62 +1,45 @@
+#ifndef __METACLIENT_H__
+#define __METACLIENT_H__
 
-
-#ifndef __METACLIENT__
-#define __METACLIENT__
-
-
+#include <vector>
 #include <iostream>
-#include <memory>
 #include <string>
+#include <array>
+#include <fstream>
+#include <string>
+#include "common.h"
+#include <thallium.hpp>
 
-#include <grpcpp/grpcpp.h>
+namespace tl = thallium;
 
-#include "unistd.h"
+//write server addr into this folder
+const std::string metaserverDir = "Metaserver_conf";
 
-#include "metaserver.grpc.pb.h"
-
-
-using grpc::Channel;
-using grpc::ClientContext;
-using grpc::Status;
-
-using metaserver::Meta;
-
-using metaserver::PutReply;
-using metaserver::PutRequest;
-
-using metaserver::GetReply;
-using metaserver::GetRequest;
-
-using metaserver::TimeReply;
-using metaserver::TimeRequest;
-
-
-class MetaClient
+struct MetaClient
 {
-public:
-    MetaClient(std::shared_ptr<Channel> channel)
-        : stub_(Meta::NewStub(channel)) {}
+    MetaClient(){};
+    //for server enginge, the client ptr is the pointer to the server engine
+    //for the client code, the client engine is the pointer to the engine with the client mode
+    MetaClient(tl::engine *clientEnginePtr)
+    {
+        m_clientEnginePtr = clientEnginePtr;
+        m_masterAddr = loadMasterAddr(metaserverDir);
+    };
+    std::string m_masterAddr;
+    tl::engine *m_clientEnginePtr = NULL;
+    ~MetaClient(){};
 
-    std::string Recordtime(const std::string &key);
+    void Recordtime(std::string recordkey);
 
-    std::string Recordtimestart(const std::string &key);
+    void Recordtimestart(std::string recordkey);
 
-    std::string Recordtimetick(const std::string &key);
+    void Recordtimetick(std::string recordkey);
 
-    std::string Getmeta(const std::string &key);
+    void hello();
 
-    std::string Putmeta(const std::string &key, const std::string &value);
+    std::string loadMasterAddr(std::string masterConfigFile);
 
-    std::string Getmetaspace(const std::string &key);
 
-    std::string Putmetaspace(const std::string &key, const std::string &value);
-
-private:
-    std::unique_ptr<Meta::Stub> stub_;
 };
-
-
-MetaClient getMetaClient();
-
 
 #endif
