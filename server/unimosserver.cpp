@@ -583,8 +583,8 @@ int main(int argc, char **argv)
     }
 
     //the copy operator is called here
-    Settings tempset = Settings::from_json(argv[1]);
-    gloablSettings = tempset;
+    Settings tempsetting = Settings::from_json(argv[1]);
+    gloablSettings = tempsetting;
     if (globalRank == 0)
     {
         gloablSettings.printsetting();
@@ -618,17 +618,46 @@ int main(int argc, char **argv)
     addrManager->m_serverNum = globalProc;
     addrManager->m_metaServerNum = gloablSettings.metaserverNum;
 
-    //TODO this info need to be initiated by the client
-    //config the dht manager
-    size_t dataDims = gloablSettings.dims;
-    BBX *globalBBX = new BBX(dataDims);
-    for (int i = 0; i < dataDims; i++)
-    {
-        Bound *b = new Bound(0, gloablSettings.maxDimValue);
-        globalBBX->BoundList.push_back(b);
+    if (gloablSettings.metaserverNum>globalProc){
+        throw std::runtime_error("number of metaserver should less than the number of process");
     }
+    int dataDims = gloablSettings.lenArray.size();
+    //config the dht manager
+    if (gloablSettings.partitionMethod.compare("SFC") == 0)
+    {
+        int maxLen = 0;
+        for (int i = 0; i < dataDims; i++)
+        {
+            maxLen = std::max(maxLen, gloablSettings.lenArray[i]);
+        }
 
-    dhtManager->initDHT(dataDims, gloablSettings.metaserverNum, globalBBX);
+        BBX *globalBBX = new BBX(dataDims);
+        for (int i = 0; i < dataDims; i++)
+        {
+            Bound *b = new Bound(0, maxLen - 1);
+            globalBBX->BoundList.push_back(b);
+        }
+        dhtManager->initDHTBySFC(dataDims, gloablSettings.metaserverNum, globalBBX);
+    }
+    else if (gloablSettings.partitionMethod.compare("manual") == 0)
+    {
+        //check the metaserverNum match with the partitionLayout
+        int totalPartition = 1;
+        for (int i = 0; i < gloablSettings.partitionLayout.size(); i++)
+        {
+            totalPartition = totalPartition * gloablSettings.partitionLayout[i];
+        }
+        if (totalPartition != gloablSettings.metaserverNum)
+        {
+            throw std::runtime_error("metaserverNum should equals to the product of partitionLayout[i]");
+        }
+
+        dhtManager->initDHTManually(gloablSettings.lenArray, gloablSettings.partitionLayout);
+    }
+    else
+    {
+        throw std::runtime_error("unsuported partition method " + gloablSettings.partitionMethod);
+    }
 
     if (globalRank == 0)
     {

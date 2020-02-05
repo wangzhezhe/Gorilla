@@ -22,8 +22,11 @@ struct DHTManager {
   DHTManager(){};
   // init the metaServerBBOXList according to the partitionNum and the bbox of
   // the global domain
-  void initDHT(size_t ndim, size_t metaServerNum, BBX* globalBBX);
-
+  void initDHTBySFC(size_t ndim, size_t metaServerNum, BBX* globalBBX);
+  
+  //init dht manually, the number of the partition at each dimention is specified by partitionLayout array
+  void initDHTManually(std::vector<int> &lenArray, std::vector<int> &partitionLayout);
+  
   // get the corresponding metaserver according to the input bbox
   std::vector<ResponsibleMetaServer> getMetaServerID(BBX *BBXQuery);
 

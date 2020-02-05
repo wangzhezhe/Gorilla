@@ -6,10 +6,10 @@
 void to_json(nlohmann::json &j, const Settings &s)
 {
     j = nlohmann::json{
-
-        {"dims", s.dims},
+        {"lenArray", s.lenArray},
+        {"partitionMethod", s.partitionMethod},
+        {"partitionLayout", s.partitionLayout},
         {"metaserverNum", s.metaserverNum},
-        {"maxDimValue", s.maxDimValue},
         {"protocol", s.protocol},
         {"masterInfo", s.masterInfo},
         {"addTrigger", s.addTrigger},
@@ -19,9 +19,10 @@ void to_json(nlohmann::json &j, const Settings &s)
 
 void from_json(const nlohmann::json &j, Settings &s)
 {
-    j.at("dims").get_to(s.dims);
+    j.at("lenArray").get_to(s.lenArray);
+    j.at("partitionMethod").get_to(s.partitionMethod);
+    j.at("partitionLayout").get_to(s.partitionLayout);
     j.at("metaserverNum").get_to(s.metaserverNum);
-    j.at("maxDimValue").get_to(s.maxDimValue);
     j.at("protocol").get_to(s.protocol);
     j.at("masterInfo").get_to(s.masterInfo);
     j.at("addTrigger").get_to(s.addTrigger);
@@ -30,9 +31,8 @@ void from_json(const nlohmann::json &j, Settings &s)
 
 Settings::Settings()
 {
-    size_t dims = 3;
+    std::string partitionMethod = "manual";
     size_t metaserverNum = 2;
-    size_t maxDimValue = 8;
     std::string protocol = "tcp";
     std::string masterInfo = "./unimos_server.conf";
     bool addTrigger = false;
@@ -45,6 +45,5 @@ Settings Settings::from_json(const std::string &fname)
     nlohmann::json j;
 
     ifs >> j;
-
     return j.get<Settings>();
 }

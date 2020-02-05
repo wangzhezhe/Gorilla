@@ -2,6 +2,7 @@
 #include "../utils/hilbert/hilbert.h"
 #include <algorithm>
 #include <string>
+#include <cmath>
 
 // n is the number of the elements
 int computeBits(int n)
@@ -37,7 +38,7 @@ int nextPowerOf2(int n)
 
 // init the metaServerBBOXList according to the metaServerNum(partitionNum) and
 // the bbox of the global domain The hilbert DHT is only suitable for the cubic
-void DHTManager::initDHT(size_t ndim, size_t metaServerNum, BBX *globalBBX)
+void DHTManager::initDHTBySFC(size_t ndim, size_t metaServerNum, BBX *globalBBX)
 {
 
   if (globalBBX->BoundList.size() != ndim)
@@ -69,11 +70,12 @@ void DHTManager::initDHT(size_t ndim, size_t metaServerNum, BBX *globalBBX)
 
   int serverNumberForEachNode = 0;
   serverNumberForEachNode = totalElems / metaServerNum;
-  
+
   //this is used to trim for when search the boundry
   //only the points around the trim position can be the boundry
-  int span = virtualMaxDimLen/metaServerNum;
-  if(span == 0 || span == 1){
+  int span = virtualMaxDimLen / metaServerNum;
+  if (span == 0 || span == 1)
+  {
     throw std::runtime_error("the span value should not be zero or one when init dht");
   }
 
@@ -213,7 +215,7 @@ void DHTManager::initDHT(size_t ndim, size_t metaServerNum, BBX *globalBBX)
 
           if (k % 2 == 0)
           {
-            k = k+span-1;
+            k = k + span - 1;
           }
           else
           {
@@ -222,7 +224,7 @@ void DHTManager::initDHT(size_t ndim, size_t metaServerNum, BBX *globalBBX)
         }
         if (j % 2 == 0)
         {
-          j = j+span-1;
+          j = j + span - 1;
         }
         else
         {
@@ -231,7 +233,7 @@ void DHTManager::initDHT(size_t ndim, size_t metaServerNum, BBX *globalBBX)
       }
       if (i % 2 == 0)
       {
-        i = i+span-1;
+        i = i + span - 1;
       }
       else
       {
@@ -242,6 +244,80 @@ void DHTManager::initDHT(size_t ndim, size_t metaServerNum, BBX *globalBBX)
   else
   {
     throw std::runtime_error("unsupported ndim value " + std::to_string(ndim));
+  }
+
+  return;
+}
+
+void DHTManager::initDHTManually(std::vector<int> &lenArray, std::vector<int> &partitionLayout)
+{
+
+  //detecting dimention
+  if (lenArray.size() != partitionLayout.size())
+  {
+    throw std::runtime_error("the dimention of the lenArray should match with the partitionLayout");
+  }
+
+  int partitionLayout3d[3] = {1, 1, 1};
+  int dims = partitionLayout.size();
+
+  int xSpan = 0;
+  int ySpan = 0;
+  int zSpan = 0;
+
+  if (dims >= 1)
+  {
+    xSpan = (int)std::ceil(lenArray[0] * 1.0 / partitionLayout[0]);
+  }
+  if (dims >= 2)
+  {
+    ySpan = (int)std::ceil(lenArray[1] * 1.0 / partitionLayout[1]);
+  }
+  if (dims >= 3)
+  {
+    zSpan = (int)std::ceil(lenArray[2] * 1.0 / partitionLayout[2]);
+  }
+
+  for (int i = 0; i < dims; i++)
+  {
+    partitionLayout3d[i] = partitionLayout[i];
+  }
+
+  for (int z = 0; z < partitionLayout3d[2]; z++)
+  {
+    for (int y = 0; y < partitionLayout3d[1]; y++)
+    {
+      for (int x = 0; x < partitionLayout3d[0]; x++)
+      {
+        int partitionID = z * partitionLayout3d[1] * partitionLayout3d[0] + y * partitionLayout3d[0] + x;
+        BBX *bbx = new BBX(dims);
+        this->metaServerIDToBBX[partitionID] = bbx;
+
+        if (dims >= 1)
+        {
+          Bound *b = new Bound();
+          bbx->BoundList.push_back(b);
+          this->metaServerIDToBBX[partitionID]->BoundList[0]->m_lb = x * xSpan;
+          this->metaServerIDToBBX[partitionID]->BoundList[0]->m_ub = std::min((x + 1) * xSpan - 1, lenArray[0] - 1);
+
+          if (dims >= 2)
+          {
+            Bound *b = new Bound();
+            bbx->BoundList.push_back(b);
+            this->metaServerIDToBBX[partitionID]->BoundList[1]->m_lb = y * ySpan;
+            this->metaServerIDToBBX[partitionID]->BoundList[1]->m_ub = std::min((y + 1) * ySpan - 1, lenArray[1] - 1);
+
+            if (dims >= 3)
+            {
+              Bound *b = new Bound();
+              bbx->BoundList.push_back(b);
+              this->metaServerIDToBBX[partitionID]->BoundList[2]->m_lb = z * zSpan;
+              this->metaServerIDToBBX[partitionID]->BoundList[2]->m_ub = std::min((z + 1) * zSpan - 1, lenArray[2] - 1);
+            }
+          }
+        }
+      }
+    }
   }
 
   return;

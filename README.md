@@ -238,7 +238,7 @@ srun --mpi=pmix_v2 -n 4 ./example/isosurface 20 0.5
 
 ### TODO list
 
-add configuration, if auto, use the hilbert, if manual, use the manual setting to split the partition for the metadata servers, the input data can be in different shape in this case
+add configuration, if auto, use the hilbert, if manual, use the manual setting to split the partition for the metadata servers, the input data can be in different shape in this case (set the partition of the metadata manually, specify the partition of staging service manually)
 
 add the example of the dynamic trigger interface (stop the simulation running?)
 

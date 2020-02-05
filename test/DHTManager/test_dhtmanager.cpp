@@ -11,7 +11,7 @@ void testInit1d() {
   Bound *a = new Bound(0, 15);
   BBX *ra1d = new BBX(1);
   ra1d->BoundList.push_back(a);
-  dhtm->initDHT(1, 4, ra1d);
+  dhtm->initDHTBySFC(1, 4, ra1d);
   dhtm->printDTMInfo();
 
   if (dhtm->metaServerIDToBBX[0]->BoundList[0]->m_lb != 0 ||
@@ -42,7 +42,7 @@ void testInit2d() {
   BBX *ra2d = new BBX(2);
   ra2d->BoundList.push_back(a);
   ra2d->BoundList.push_back(a);
-  dhtm->initDHT(2, 4, ra2d);
+  dhtm->initDHTBySFC(2, 4, ra2d);
   dhtm->printDTMInfo();
 
   if (dhtm->metaServerIDToBBX[0]->BoundList[0]->m_lb != 0 ||
@@ -72,7 +72,7 @@ void testInit2dEgecase() {
   BBX *ra2d = new BBX(2);
   ra2d->BoundList.push_back(a);
   ra2d->BoundList.push_back(a);
-  dhtm->initDHT(2, 4, ra2d);
+  dhtm->initDHTBySFC(2, 4, ra2d);
   dhtm->printDTMInfo();
 }
 
@@ -87,7 +87,7 @@ void testInit3dLarge(){
   ra3d->BoundList.push_back(a);
   ra3d->BoundList.push_back(a);
   ra3d->BoundList.push_back(a);
-  dhtm->initDHT(3, 4, ra3d);
+  dhtm->initDHTBySFC(3, 4, ra3d);
   dhtm->printDTMInfo();
 }
 
@@ -102,7 +102,7 @@ void testInit3d() {
   ra3d->BoundList.push_back(a);
   ra3d->BoundList.push_back(a);
   ra3d->BoundList.push_back(a);
-  dhtm->initDHT(3, 4, ra3d);
+  dhtm->initDHTBySFC(3, 4, ra3d);
   dhtm->printDTMInfo();
 }
 
@@ -116,7 +116,7 @@ void testgetMetaServerID() {
   globalDomain->BoundList.push_back(a);
   globalDomain->BoundList.push_back(a);
 
-  dhtm->initDHT(2, 4, globalDomain);
+  dhtm->initDHTBySFC(2, 4, globalDomain);
 
   Bound *b = new Bound(4, 10);
   BBX *queryDomain1 = new BBX(2);

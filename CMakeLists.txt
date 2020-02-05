@@ -1,16 +1,13 @@
 cmake_minimum_required (VERSION 3.14)
 project (gorilla C CXX)
 set (CMAKE_CXX_STANDARD 14)
-set (CMAKE_CXX_COMPILER g++)
-set (CMAKE_C_COMPILER gcc)
 
 option(ENABLE_TESTING "Enable Testing" ON)
 option(USE_TIMERS "Use profiling timers" ON)
 enable_testing()
 add_definitions(-DENABLE_TIMERS)
-option(ENABLE_EXAMPLE "Enable Example" ON)
-option(USE_GRPC "Enable GRPC" ON)
 
+find_package(MPI REQUIRED) 
 
 # add our cmake module directory to the path
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
@@ -50,7 +47,6 @@ include_directories(
 )
 
 
-
 add_library(dhtmanager 
 ${gorilla_SOURCE_DIR}/server/DHTManager/dhtmanager.cpp
 ${gorilla_SOURCE_DIR}/utils/hilbert/hilbert.c)
@@ -65,7 +61,8 @@ ${gorilla_SOURCE_DIR}/server/RawdataManager/rawmemobj/rawmemobj.cpp
 )
 target_link_libraries(rawdatamanager thallium abt-io)
 
-find_package(MPI REQUIRED) 
+
+
 find_package(VTK COMPONENTS
     FiltersCore
     IOImage
@@ -98,7 +95,7 @@ ${gorilla_SOURCE_DIR}/server/settings.cpp
 
 target_link_libraries (unimos_server
  thallium 
- MPI::MPI_CXX 
+ MPI::MPI_C 
  unimos_client 
  dhtmanager rawdatamanager metadatamanager 
  trigger ${VTK_LIBRARIES}

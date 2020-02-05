@@ -1,6 +1,9 @@
 add_executable(test_dhtmanager ./DHTManager/test_dhtmanager.cpp ../utils/hilbert/hilbert.c)
 target_link_libraries(test_dhtmanager dhtmanager)
 
+add_executable(test_dhtmanagerManual ./DHTManager/test_dhtmanagerManual.cpp)
+target_link_libraries(test_dhtmanagerManual dhtmanager)
+
 add_executable(test_metadatamanager ./MetaData/test_metadata.cpp)
 target_link_libraries(test_metadatamanager metadatamanager)
 
@@ -41,6 +44,12 @@ add_executable(test_addtrigger ./Server/test_addtrigger.cpp)
 target_link_libraries(test_addtrigger trigger thallium unimos_client )
 
 
+file(COPY ${gorilla_SOURCE_DIR}/server/settings.json
+     DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+add_executable(test_setting ./Setting/test_setting.cpp ${gorilla_SOURCE_DIR}/server/settings.cpp)
+target_link_libraries(test_setting)
+
+
 add_executable(06_custom_server ./thalimtest/server.cpp)
 target_link_libraries(06_custom_server thallium)
 add_executable(06_custom_client ./thalimtest/client.cpp)
@@ -48,6 +57,10 @@ target_link_libraries(06_custom_client thallium )
 
 add_executable(thalliumtest_threadpool ./thalimtest/thalliumtest_threadpool.cpp)
 target_link_libraries(thalliumtest_threadpool thallium)
+
+
+
+
 
 add_test( NAME test_dhtmanager COMMAND test_dhtmanager)
 
@@ -64,3 +77,5 @@ add_test( NAME test_funcmeta COMMAND test_funcmeta)
 add_test( NAME test_addrManager COMMAND test_addrManager)
 
 add_test( NAME test_trigger COMMAND test_trigger)
+
+add_test( NAME test_setting COMMAND test_setting)

@@ -1,7 +1,8 @@
 {
-    "dims": 3,
+    "lenArray":[512,512,512],
+    "partitionMethod":"manual",    
     "metaserverNum": 8,
-    "maxDimValue": 511,
+    "partitionLayout":[2,2,2],
     "protocol": "verbs",
     "masterInfo":"./unimos_server.conf",
     "addTrigger": false,
