@@ -70,7 +70,8 @@ void GrayScott::init_field()
     v.resize(V, 0.0);
     u2.resize(V, 0.0);
     v2.resize(V, 0.0);
-
+    
+    //this value controls the area of the initial space
     const int d = 6;
     for (int z = settings.L / 2 - d; z < settings.L / 2 + d; z++) {
         for (int y = settings.L / 2 - d; y < settings.L / 2 + d; y++) {
@@ -192,8 +193,10 @@ void GrayScott::exchange_xy(std::vector<double> &local_data) const
     MPI_Status st;
 
     // Send XY face z=size_z to north and receive z=0 from south
-    MPI_Sendrecv(&local_data[l2i(1, 0, size_z)], 1, xy_face_type, north, 1,
-                 &local_data[l2i(1, 0, 0)], 1, xy_face_type, south, 1,
+    MPI_Sendrecv(&local_data[l2i(1, 0, size_z)], 1, xy_face_type, 
+                 north, 1,
+                 &local_data[l2i(1, 0, 0)], 1, xy_face_type, 
+                 south, 1,
                  cart_comm, &st);
     // Send XY face z=1 to south and receive z=size_z+1 from north
     MPI_Sendrecv(&local_data[l2i(1, 0, 1)], 1, xy_face_type, south, 1,

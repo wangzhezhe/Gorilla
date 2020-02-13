@@ -38,6 +38,19 @@ xpkg_import_module (abtio REQUIRED abt-io)
 find_package (thallium REQUIRED)
 
 
+option(USE_GNI "use cray gni" OFF)
+set (DRC_LIBRARIES "")
+
+if(USE_GNI)
+  add_definitions(-DUSE_GNI)
+  find_package(DRC REQUIRED)
+  include_directories(${DRC_INCLUDE_DIRS})
+  message ("use cray DRC")
+  message ("include drc" ${DRC_INCLUDE_DIRS})
+  message ("link drc lib" ${DRC_LIBRARIES})
+endif()
+
+
 # add uuid <there is problem to use this on suse>
 # pkg_search_module(UUID REQUIRED uuid)
 
@@ -60,9 +73,7 @@ ${gorilla_SOURCE_DIR}/server/RawdataManager/blockManager.cpp
 ${gorilla_SOURCE_DIR}/server/RawdataManager/rawmemobj/rawmemobj.cpp
 )
 target_link_libraries(rawdatamanager thallium abt-io)
-
-
-
+∂
 find_package(VTK COMPONENTS
     FiltersCore
     IOImage
@@ -94,6 +105,7 @@ ${gorilla_SOURCE_DIR}/server/settings.cpp
 )
 
 target_link_libraries (unimos_server
+ ${DRC_LIBRARIES}
  thallium 
  MPI::MPI_C 
  unimos_client 

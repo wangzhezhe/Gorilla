@@ -97,6 +97,7 @@ protected:
 
         return true;
     }
+    // global coor -> local coor no ghost -> local coor ghost -> local index
     // Convert global coordinate to local index
     inline int g2i(int gx, int gy, int gz) const
     {
