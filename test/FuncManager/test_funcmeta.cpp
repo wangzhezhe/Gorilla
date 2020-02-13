@@ -3,5 +3,5 @@
 
 int main(){
     tl::abt scope;
-    FunctionManagerMeta* fm = new FunctionManagerMeta();
+    FunctionManagerMeta* fm = new FunctionManagerMeta(NULL);
 }

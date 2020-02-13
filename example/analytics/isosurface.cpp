@@ -17,10 +17,30 @@
 #include "../client/unimosclient.h"
 #include "../putgetMeta/metaclient.h"
 
+#ifdef USE_GNI
+extern "C"
+{
+#include <rdmacred.h>
+}
+#include <mercury.h>
+#include <margo.h>
+#define DIE_IF(cond_expr, err_fmt, ...)                                                                           \
+    do                                                                                                            \
+    {                                                                                                             \
+        if (cond_expr)                                                                                            \
+        {                                                                                                         \
+            fprintf(stderr, "ERROR at %s:%d (" #cond_expr "): " err_fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__); \
+            exit(1);                                                                                              \
+        }                                                                                                         \
+    } while (0)
+#endif
+
+const std::string serverCred = "Gorila_cred_conf";
+
 void writeImageData(std::string fileName,
                     std::array<int, 3> &indexlb,
                     std::array<int, 3> &indexub,
-                    void* fielddata)
+                    void *fielddata)
 {
     auto importer = vtkSmartPointer<vtkImageImport>::New();
     importer->SetDataSpacing(1, 1, 1);
@@ -50,18 +70,18 @@ void writeImageData(std::string fileName,
 }
 
 vtkSmartPointer<vtkPolyData>
-    compute_isosurface(std::array<size_t, 3> &shape,
-                       std::array<size_t, 3> &offset,
-                       const std::vector<double> &field, double isovalue)
+compute_isosurface(std::array<size_t, 3> &shape,
+                   std::array<size_t, 3> &offset,
+                   const std::vector<double> &field, double isovalue)
 {
     // Convert field values to vtkImageData
     auto importer = vtkSmartPointer<vtkImageImport>::New();
     importer->SetDataSpacing(1, 1, 1);
     importer->SetDataOrigin(1.0 * offset[2], 1.0 * offset[1],
                             1.0 * offset[0]);
-    importer->SetWholeExtent(0, shape[2] , 0,
-                             shape[1] , 0,
-                             shape[0] );
+    importer->SetWholeExtent(0, shape[2], 0,
+                             shape[1], 0,
+                             shape[0]);
     importer->SetDataExtentToWholeExtent();
     importer->SetDataScalarTypeToDouble();
     importer->SetNumberOfScalarComponents(1);
@@ -79,7 +99,7 @@ vtkSmartPointer<vtkPolyData>
 }
 
 void writePolyvtk(const std::string &fname,
-               const vtkSmartPointer<vtkPolyData> polyData)
+                  const vtkSmartPointer<vtkPolyData> polyData)
 {
     auto writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
     writer->SetFileName(fname.c_str());
@@ -100,17 +120,15 @@ int main(int argc, char *argv[])
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &procs);
 
-
-    if (argc != 4)
+    if (argc != 5)
     {
         if (rank == 0)
         {
             std::cerr << "Too few arguments" << std::endl;
-            std::cout << "Usage: isosurface setting.json steps isovalue" << std::endl;
+            std::cout << "Usage: isosurface setting.json steps isovalue protocol" << std::endl;
         }
         MPI_Abort(MPI_COMM_WORLD, -1);
     }
-
 
     int dims[3] = {0};
     MPI_Dims_create(procs, 3, dims);
@@ -155,41 +173,53 @@ int main(int argc, char *argv[])
         size_z -= size_z * npz - shape[2];
     }
 
-
-
     const double steps = std::stoi(argv[2]);
     const double isovalue = std::stod(argv[3]);
+    std::string protocol = argv[4];
 
     std::vector<double> variableU;
     int step;
 
-#ifdef ENABLE_TIMERS
-    Timer timer_total;
-    Timer timer_read;
+#ifdef USE_GNI
+    //get the drc id from the shared file
+    std::ifstream infile(serverCred);
+    std::string cred_id;
+    std::getline(infile, cred_id);
+    if(rank==0){
+        std::cout << "load cred_id: " << cred_id << std::endl;
+    }
 
-    std::ostringstream log_fname;
-    log_fname << "isosurface_pe_" << rank << ".log";
+    struct hg_init_info hii;
+    memset(&hii, 0, sizeof(hii));
+    char drc_key_str[256] = {0};
+    uint32_t drc_cookie;
+    uint32_t drc_credential_id;
+    drc_info_handle_t drc_credential_info;
+    int ret;
+    drc_credential_id = (uint32_t)atoi(cred_id.c_str());
 
-    std::ofstream log(log_fname.str());
-    log << "step\tread_iso" << std::endl;
+    ret = drc_access(drc_credential_id, 0, &drc_credential_info);
+    DIE_IF(ret != DRC_SUCCESS, "drc_access %u", drc_credential_id);
+    drc_cookie = drc_get_first_cookie(drc_credential_info);
+
+    sprintf(drc_key_str, "%u", drc_cookie);
+    hii.na_init_info.auth_key = drc_key_str;
+    //printf("use the drc_key_str %s\n", drc_key_str);
+
+    margo_instance_id mid;
+    mid = margo_init_opt("gni", MARGO_CLIENT_MODE, &hii, 0, -1);
+    tl::engine clientEngine(mid);
+#else
+    tl::engine clientEngine(protocol, THALLIUM_CLIENT_MODE);
 #endif
 
-    tl::engine clientEngine("verbs", THALLIUM_CLIENT_MODE);
     UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf");
-
 
     std::string VarNameU = "grascott_u";
 
     //gray scott simulation start from 1
     for (int step = 1; step <= steps; step++)
     {
-
-#ifdef ENABLE_TIMERS
-
-        MPI_Barrier(comm);
-        timer_total.start();
-        timer_read.start();
-#endif
 
         //read data
 
@@ -199,33 +229,43 @@ int main(int argc, char *argv[])
         std::array<int, 3> indexlb = {{15,15,15}};
         std::array<int, 3> indexub = {{47,47,47}};
         */
-        std::array<int, 3> indexlb = {{offset_x,offset_y,offset_z}};
-        std::array<int, 3> indexub = {{offset_x + size_x - 1,offset_y + size_y - 1,offset_z + size_z - 1}};
-        MATRIXTOOL::MatrixView dataView = uniclient->getArbitraryData(step, VarNameU, sizeof(double), 3, indexlb, indexub);
-
-        /*
-    size_t step,
-    std::string varName,
-    size_t elemSize,
-    size_t dims,
-    std::array<int, 3> indexlb,
-    std::array<int, 3> indexub)
-        */
-
-
+        std::array<int, 3> indexlb = {{offset_x, offset_y, offset_z}};
+        std::array<int, 3> indexub = {{offset_x + size_x - 1, offset_y + size_y - 1, offset_z + size_z - 1}};
 
 #ifdef ENABLE_TIMERS
-        double time_read = timer_read.stop();
-        log << step << "\t" << time_read << "\t" << std::endl;
+        MPI_Barrier(comm);
+        //timer_total.start();
+        //timer_read.start();
+
+        struct timespec start, end;
+        double diff;
+        clock_gettime(CLOCK_REALTIME, &start); /* mark start time */
+#endif
+
+        MATRIXTOOL::MatrixView dataView = uniclient->getArbitraryData(step, VarNameU, sizeof(double), 3, indexlb, indexub);
+
+#ifdef ENABLE_TIMERS
+        //double time_read = timer_read.stop();
+        MPI_Barrier(comm);
+        //some functions here
+        clock_gettime(CLOCK_REALTIME, &end); /* mark end time */
+        diff = (end.tv_sec - start.tv_sec) * 1.0 + (end.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+
+        //caculate the avg
+        double time_sum_read;
+        MPI_Reduce(&diff, &time_sum_read, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+        if (rank == 0)
+        {
+            std::cout << "step " << step << " avg read " << time_sum_read / procs << std::endl;
+        }
 #endif
 
         if (rank == 0)
         {
-            std::string recordKey = "Trigger_" + std::to_string(step);
-            MetaClient *metaclient = new MetaClient(&clientEngine);
-            metaclient->Recordtime(recordKey);
+            //std::string recordKey = "Trigger_" + std::to_string(step);
+            //MetaClient *metaclient = new MetaClient(&clientEngine);
+            //metaclient->Recordtime(recordKey);
         }
-
 
         //todo add the checking operation for the pdf
         //auto polyData = compute_isosurface(blockmeta.m_shape, blockmeta.m_offset, dataContainer, isovalue);
@@ -237,13 +277,6 @@ int main(int argc, char *argv[])
         //writePolyvtk(fname, polyData);
         //std::cout << "ok for ts " << step << std::endl;
     }
-
-#ifdef ENABLE_TIMERS
-    //log << "total\t" << timer_total.elapsed() << "\t" << timer_read.elapsed()
-    //   << "\t" << timer_compute.elapsed() << std::endl;
-
-    log.close();
-#endif
 
     MPI_Finalize();
 

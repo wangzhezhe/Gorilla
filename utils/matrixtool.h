@@ -26,8 +26,8 @@ namespace MATRIXTOOL
 // the sequence of the bound is x,y,z
 // assume the elem number of the matrix match with the globalUb
 inline void *getSubMatrix(size_t elemSize, std::array<size_t, DEFAULT_MAX_DIM> subLb,
-                   std::array<size_t, DEFAULT_MAX_DIM> subUb, std::array<size_t, DEFAULT_MAX_DIM> gloablUb,
-                   void *globalMatrix)
+                          std::array<size_t, DEFAULT_MAX_DIM> subUb, std::array<size_t, DEFAULT_MAX_DIM> gloablUb,
+                          void *globalMatrix)
 {
 
   // check subdomain is valid
@@ -57,9 +57,9 @@ inline void *getSubMatrix(size_t elemSize, std::array<size_t, DEFAULT_MAX_DIM> s
     globalLen[i] = gloablUb[i] - 0 + 1;
     subelemNum = subelemNum * subLen[i];
     globalelemNum = globalelemNum * globalLen[i];
-    std::cout << "debug dim " << i << std::endl;
-    std::cout << subLen[i] << " " << globalLen[i] << " " << subelemNum << " "
-              << globalelemNum << std::endl;
+    //std::cout << "debug dim " << i << std::endl;
+    //std::cout << subLen[i] << " " << globalLen[i] << " " << subelemNum << " "
+    //          << globalelemNum << std::endl;
   }
 
   void *subMrx = (void *)malloc(elemSize * subelemNum);
@@ -117,21 +117,24 @@ struct MatrixView
   BBX *m_bbx = NULL;
   void *m_data = NULL;
   ~MatrixView(){
-     //This is just a view, it will not release the data
+      //This is just a view, it will not release the data
   };
 };
 
 // assemble separate matrixView into the intact matrixView
 // assume the offset is decreased from the matrix
 inline MatrixView matrixAssemble(size_t elemSize, std::vector<MatrixView> &matrixViewList,
-                          BBX *intactBBX)
+                                 BBX *intactBBX)
 {
 
-    struct timespec start, end1,end2;
-    double diff;
-    clock_gettime(CLOCK_REALTIME, &start); 
-
+  //struct timespec start, end1,end2;
+  //double diff1,diff2;
+  //clock_gettime(CLOCK_REALTIME, &start);
+  
+  
   size_t intactElemNum = intactBBX->getElemNum();
+
+  /* do the check when it is necessary
   //the flag to detect if there is value for each position and
   //if there is overlap between different matrix
   std::vector<bool> flag(intactElemNum, false);
@@ -150,6 +153,7 @@ inline MatrixView matrixAssemble(size_t elemSize, std::vector<MatrixView> &matri
 
     //for every bbx, go through every elements
     //the part can be accelerated by using multiple thread
+    // this is time consuming operation add this when it is necessary
     for (int z = sublb[2]; z <= subub[2]; z++)
     {
       for (int y = sublb[1]; y <= subub[1]; y++)
@@ -174,6 +178,7 @@ inline MatrixView matrixAssemble(size_t elemSize, std::vector<MatrixView> &matri
       }
     }
   }
+  
 
   for (int i = 0; i < intactElemNum; i++)
   {
@@ -182,13 +187,14 @@ inline MatrixView matrixAssemble(size_t elemSize, std::vector<MatrixView> &matri
       throw std::runtime_error("the element in intact matrix is not covered");
     }
   }
-  
+  */
+
   //this part is used to check if there is overlapping between each nodes
   //which can be deleted for performance testing
 
-  //clock_gettime(CLOCK_REALTIME, &end1); 
-  //diff = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
-  //std::cout << "debug assemble stage 1 " << diff << std::endl;
+  //clock_gettime(CLOCK_REALTIME, &end1);
+  //diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+  //std::cout << "debug assemble stage 1 " << diff1 << std::endl;
   //std::cout << "ok to check the data cover for matrix assembly" << std::endl;
 
   //start to copy the element from the subdomain into the intact domain
@@ -216,34 +222,31 @@ inline MatrixView matrixAssemble(size_t elemSize, std::vector<MatrixView> &matri
     {
       for (int y = sublb[1]; y <= subub[1]; y++)
       {
-        
+
         //copy one continuous line at one time
         int xlb = sublb[0];
         int xub = subub[0];
 
-          //std::cout << "coordinates " << x << "," << y << "," << z << std::endl;
-          //caculate intactIndex
-          //caculate the subdomainIndex
-          //copy from the subdomain position into the position with the intact position
-          //mv is the view of the subdomain and the intactView is the view of the whole domain
-          size_t subIndex = mv.m_bbx->getPhysicalIndex(dim, {{xlb, y, z}});
-          size_t globalIndex = intactView.m_bbx->getPhysicalIndex(dim, {{xlb, y, z}});
+        //std::cout << "coordinates " << x << "," << y << "," << z << std::endl;
+        //caculate intactIndex
+        //caculate the subdomainIndex
+        //copy from the subdomain position into the position with the intact position
+        //mv is the view of the subdomain and the intactView is the view of the whole domain
+        size_t subIndex = mv.m_bbx->getPhysicalIndex(dim, {{xlb, y, z}});
+        size_t globalIndex = intactView.m_bbx->getPhysicalIndex(dim, {{xlb, y, z}});
 
-          //std::cout << "subIndex " << subIndex << " globalIndex " << globalIndex << std::endl;
+        //std::cout << "subIndex " << subIndex << " globalIndex " << globalIndex << std::endl;
 
-          //data one data for one time
-          memcpy((char *)intactView.m_data + globalIndex * elemSize,
-                 (char *)mv.m_data + subIndex * elemSize, elemSize*(xub-xlb+1));
-        
+        //data one data for one time
+        memcpy((char *)intactView.m_data + globalIndex * elemSize,
+               (char *)mv.m_data + subIndex * elemSize, elemSize * (xub - xlb + 1));
       }
     }
   }
 
-
-  //clock_gettime(CLOCK_REALTIME, &end2); 
-  //diff = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
-  //std::cout << "debug assemble stage 2 " << diff << std::endl;
-
+  //clock_gettime(CLOCK_REALTIME, &end2);
+  //diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
+  //std::cout << "debug assemble stage 2 " << diff2 << std::endl;
 
   return intactView;
 }

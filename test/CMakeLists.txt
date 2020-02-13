@@ -19,14 +19,17 @@ target_link_libraries(test_matrixassemble)
 add_executable(test_rawdatamanager ./RawData/test_rawdatamanager.cpp)
 target_link_libraries(test_rawdatamanager rawdatamanager)
 
-add_executable(test_rawexengine ./FuncManager/test_rawexengine.cpp)
-target_link_libraries(test_rawexengine trigger thallium ${VTK_LIBRARIES})
+add_executable(test_funcraw_vtk ./FuncManager/test_funcraw_vtk.cpp)
+target_link_libraries(test_funcraw_vtk trigger thallium ${VTK_LIBRARIES})
+
+add_executable(test_funcraw_basic ./FuncManager/test_funcraw_basic.cpp)
+target_link_libraries(test_funcraw_basic trigger thallium )
 
 add_executable(test_funcmeta ./FuncManager/test_funcmeta.cpp)
-target_link_libraries(test_funcmeta trigger thallium ${VTK_LIBRARIES})
+target_link_libraries(test_funcmeta trigger unimos_client thallium ${VTK_LIBRARIES})
 
 add_executable(test_trigger ./Trigger/test_trigger.cpp)
-target_link_libraries(test_trigger trigger thallium ${VTK_LIBRARIES})
+target_link_libraries(test_trigger trigger unimos_client thallium ${VTK_LIBRARIES})
 
 add_executable(test_addrManager ./Server/test_addrManager.cpp ${gorilla_SOURCE_DIR}/server/addrManager.cpp)
 target_link_libraries(test_addrManager ${UUID_LIBRARIES} thallium unimos_client)
@@ -59,9 +62,6 @@ add_executable(thalliumtest_threadpool ./thalimtest/thalliumtest_threadpool.cpp)
 target_link_libraries(thalliumtest_threadpool thallium)
 
 
-
-
-
 add_test( NAME test_dhtmanager COMMAND test_dhtmanager)
 
 add_test( NAME test_metadatamanager COMMAND test_metadatamanager)
@@ -70,7 +70,9 @@ add_test( NAME test_bbx COMMAND test_bbx)
 
 add_test( NAME test_rawdatamanager COMMAND test_rawdatamanager)
 
-add_test( NAME test_rawexengine COMMAND test_rawexengine)
+add_test( NAME test_rawexengine_vtk COMMAND test_rawexengine_vtk)
+
+add_test( NAME test_rawexengine_basic COMMAND test_rawexengine_basic)
 
 add_test( NAME test_funcmeta COMMAND test_funcmeta)
 

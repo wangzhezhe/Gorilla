@@ -23,16 +23,20 @@ void test_steptrigger()
     std::vector<std::string> actionParameters;
     actionParameters.push_back(triggerNameb);
 
-    FunctionManagerMeta *fmm = new FunctionManagerMeta();
+    FunctionManagerMeta *fmm = new FunctionManagerMeta(NULL);
     DynamicTriggerManager *dtm = new DynamicTriggerManager(fmm, 5);
 
 
-    DynamicTriggerInfo tgInfo("defaultCheckGetStep", comparisonParameters, "defaultComparisonStep", comparisonParameters, "defaultActionSartDt", actionParameters);
+    DynamicTriggerInfo tgInfo("defaultCheckGetStep", comparisonParameters, 
+    "defaultComparisonStep", comparisonParameters, 
+    "defaultActionSartDt", actionParameters);
     
 
     std::vector<std::string> parametersb;
     parametersb.push_back("customized default parameters");
-    DynamicTriggerInfo tgInfob("defaultCheck", parametersb, "defaultComparison", parametersb, "defaultAction", parametersb);
+    DynamicTriggerInfo tgInfob("defaultCheck", parametersb, 
+    "defaultComparison", parametersb, 
+    "defaultAction", parametersb);
 
 
     //this is similar to the process of the subscribe
@@ -51,6 +55,5 @@ void test_steptrigger()
 
 int main()
 {
-
     test_steptrigger();
 }

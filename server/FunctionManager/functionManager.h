@@ -4,6 +4,7 @@
 #include "../../commondata/metadata.h"
 #include "defaultFunctions/defaultfuncraw.h"
 #include "defaultFunctions/defaultfuncmeta.h"
+#include "../../client/unimosclient.h"
 
 
 #include <thallium.hpp>
@@ -48,7 +49,7 @@ typedef void (*actionPtr)(
 // the execution engine runs at the meta server
 struct FunctionManagerMeta
 {
-    FunctionManagerMeta()
+    FunctionManagerMeta(UniClient* uniclient):m_uniclient(uniclient)
     {
         registerFunc();
     };
@@ -86,7 +87,7 @@ struct FunctionManagerMeta
         m_metafunctionMapMutex.unlock();
     };
 
-        void registerInitActionFunc(std::string str, initActionPtr actionfunc)
+    void registerInitActionFunc(std::string str, initActionPtr actionfunc)
     {
         m_metafunctionMapMutex.lock();
         m_initActionPtrMap[str] = actionfunc;
@@ -151,7 +152,6 @@ struct FunctionManagerMeta
 
     ~FunctionManagerMeta(){};
 
-
     //function map that maps the name of the function into the pointer of the function
     tl::mutex m_metafunctionMapMutex;
 
@@ -160,14 +160,23 @@ struct FunctionManagerMeta
     std::map<std::string, comparisonPtr> m_comparisonPtrMap;
     std::map<std::string, initActionPtr> m_initActionPtrMap;
     std::map<std::string, actionPtr> m_actionPtrMap;
+
+    //the function manager may need to send request to specific server
+    //it needs to hold a pointer to the client
+    UniClient* m_uniclient = nullptr;
 };
 
 //the function pointer that execute at the raw data server
 
-typedef void (*rawdatafunctionPointer)(const BlockSummary &bs, void *inputData);
+
 
 // the execution engine runs at the raw data server
 // TODO put this at the dynamic trigger
+
+typedef std::string (*rawdatafunctionPointer)(
+const BlockSummary &bs, 
+void *inputData, 
+const std::vector<std::string>& parameters);
 
 struct FunctionManagerRaw
 {
@@ -176,12 +185,17 @@ struct FunctionManagerRaw
         //register the default function
         this->m_functionMap["test"] = &test;
         this->m_functionMap["testvtk"] = &testvtk;
+        this->m_functionMap["valueRange"] = &valueRange;
     };
 
     bool registerFunction(std::string functionName, rawdatafunctionPointer fp);
     
     //put the execution logic together with the storage part
-    void execute(std::string fiunctionName, const BlockSummary &bs, void *inputData);
+    std::string execute(
+    const BlockSummary &bs, 
+    void *inputData,
+    std::string fiunctionName,
+    const std::vector<std::string>& parameters);
 
     ~FunctionManagerRaw()
     {

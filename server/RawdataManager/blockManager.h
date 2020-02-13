@@ -39,6 +39,8 @@ struct DataBlockInterface
       std::array<int, 3> subregionub,
       void *&dataContainer) = 0;
 
+  virtual void* getrawMemPtr()=0;
+
   // TODO generate RawDataEndpointFromBlockSummary
 
   ~DataBlockInterface(){};
@@ -76,6 +78,9 @@ public:
   // add thread pool here, after the data put, get a thread from the thread pool
   // to check filtered data there is a filter List for every block
   bool checkDataExistance(std::string blockID);
+
+  //void* getBlockPointer(std::string blockID);
+
   ~BlockManager() {}
 
 //private:

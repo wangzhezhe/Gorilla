@@ -7,6 +7,7 @@
 #include <string>
 #include <thallium/serialization/stl/array.hpp>
 #include <thallium/serialization/stl/string.hpp>
+#include <thallium/serialization/stl/vector.hpp>
 #include <tuple>
 #include <typeinfo>
 #include <vector>
@@ -15,6 +16,31 @@
 //enum DRIVERTYPE { RAWMEM, VTK };
 
 static std::string const DRIVERTYPE_RAWMEM = "RAWMEM";
+
+
+/*
+struct FunctionInfo
+{
+  FunctionInfo(){};
+  FunctionInfo(std::string functionName, 
+  std::vector<std::string> parameters):m_functionName(functionName),
+  m_parameters(parameters){};
+  
+  std::string m_functionName;
+  std::vector<std::string> m_parameters;
+  
+  ~FunctionInfo(){};
+
+
+  
+  template <typename A>
+  void serialize(A &ar)
+  {
+    ar &m_functionName;
+    ar &m_parameters;
+  }
+};
+*/
 
 struct FilterProfile
 {

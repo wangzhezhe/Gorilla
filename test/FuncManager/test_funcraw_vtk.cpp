@@ -10,7 +10,8 @@ void test_exengineraw()
     FunctionManagerRaw *exengine = new FunctionManagerRaw();
     BlockSummary bs;
     std::string funcName = "test";
-    exengine->execute(funcName, bs, NULL);
+    std::vector<std::string> parameters;
+    exengine->execute(bs, NULL, funcName, parameters);
     //make sure the delete operation is called
     //then the destructor will be called;
     delete exengine;
@@ -36,9 +37,10 @@ void test_executeVTK_raw()
                std::array<size_t, DRIVERTYPE_RAWMEM> indexub)
     */
 
-    BlockSummary bs(sizeof(double), len * len * len, DRIVERTYPE_RAWMEM, 3,  {{0, 0, 0}}, {{9, 9, 9}});
+    BlockSummary bs(sizeof(double), len * len * len, DRIVERTYPE_RAWMEM, 3, {{0, 0, 0}}, {{9, 9, 9}});
     std::string funcName = "testvtk";
-    exengine->execute(funcName, bs, rawdata.data());
+    std::vector<std::string> parameters;
+    exengine->execute(bs, rawdata.data(), funcName, parameters);
     //make sure the delete operation is called
     //then the destructor will be called;
     delete exengine;

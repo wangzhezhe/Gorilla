@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #define BILLION 1000000000L
+
 /*
 
     tl::remote_procedure sum = myEngine.define("sum");
@@ -17,7 +18,7 @@
 //this is called by server node, the address is already known
 int UniClient::updateDHT(std::string serverAddr, std::vector<MetaAddrWrapper> metaAddrWrapperList)
 {
-    std::cout << "debug updateDHT server addr " << serverAddr << std::endl;
+    //std::cout << "debug updateDHT server addr " << serverAddr << std::endl;
     tl::remote_procedure remoteupdateDHT = this->m_clientEnginePtr->define("updateDHT");
     tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(serverAddr);
     //the parameters here should be consistent with the defination at the server end
@@ -39,13 +40,19 @@ std::string UniClient::loadMasterAddr(std::string masterConfigFile)
 {
 
     std::ifstream infile(masterConfigFile);
-    std::string content;
+    std::string content = "";
     std::getline(infile, content);
-    spdlog::debug("load master server: {}", content);
-
+    //spdlog::debug("load master server conf {}, content -{}-", masterConfigFile,content);
+    if (content.compare("") == 0)
+    {
+        std::getline(infile, content);
+        if (content.compare("") == 0)
+        {
+            throw std::runtime_error("failed to load the master server\n");
+        }
+    }
     return content;
 }
-
 /*
     struct timespec start, end;
     double diff;
@@ -58,12 +65,12 @@ std::string UniClient::loadMasterAddr(std::string masterConfigFile)
 
 int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSummary, void *dataContainer)
 {
-    struct timespec start, end1,end2;
-    double diff1, diff2;
-    clock_gettime(CLOCK_REALTIME, &start); 
+    //struct timespec start, end1, end2;
+    //double diff1, diff2;
+    //clock_gettime(CLOCK_REALTIME, &start);
     //get the server by round roubin
     std::string rrbServerAddr = this->getServerAddrByRRbin();
-    spdlog::info("put server addr: {}", rrbServerAddr);
+    //spdlog::debug("put server addr: {}", rrbServerAddr);
     tl::remote_procedure remotePutRawData = this->m_clientEnginePtr->define("putrawdata");
     //tl::remote_procedure putMetaData = myEngine.define("putMetaData").disable_response();
     tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(rrbServerAddr);
@@ -72,21 +79,25 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
     std::vector<std::pair<void *, std::size_t>> segments(1);
     segments[0].first = (void *)(dataContainer);
     segments[0].second = dataMallocSize;
-    clock_gettime(CLOCK_REALTIME, &end1);
-    diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
-    spdlog::info("put stage 1: {}", diff1);
+    //clock_gettime(CLOCK_REALTIME, &end1);
+    //diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+    //spdlog::info("put stage 1: {}", diff1);
 
     tl::bulk dataBulk = this->m_clientEnginePtr->expose(segments, tl::bulk_mode::read_only);
 
     //TODO, use async I/O ? store the request to check if the i/o finish when sim finish
     //the data only could be updated when the previous i/o finish
     //auto request = dsput.on(globalServerEndpoint).async(datameta, blockID, myBulk);
-    int status = remotePutRawData.on(serverEndpoint)(step, varName, dataSummary, dataBulk);
+    //int status = remotePutRawData.on(serverEndpoint)(step, varName, dataSummary, dataBulk);
+    auto request = remotePutRawData.on(serverEndpoint).async(step, varName, dataSummary, dataBulk);
 
-    clock_gettime(CLOCK_REALTIME, &end2); 
-    diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
-    spdlog::info("put stage 2: {}", diff2);
-
+    //clock_gettime(CLOCK_REALTIME, &end2);
+    //diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
+    //spdlog::info("put stage 2: {}", diff2);
+    bool completed = request.received();
+    // ...
+    // actually wait on the request and get the result out of it
+    int status = request.wait();
     return status;
 }
 
@@ -147,8 +158,6 @@ int UniClient::getSubregionData(std::string serverAddr, std::string blockID, siz
     return status;
 }
 
-
-
 //this method is the wrapper for the getSubregionData and getrawDataEndpointList
 //return the assembled matrix
 MATRIXTOOL::MatrixView UniClient::getArbitraryData(
@@ -159,28 +168,28 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
     std::array<int, 3> indexlb,
     std::array<int, 3> indexub)
 {
+    struct timespec start, end1, end2;
+    double diff1, diff2;
+    clock_gettime(CLOCK_REALTIME, &start);
 
-
-
-
+    //spdlog::debug("index lb {} {} {}", indexlb[0], indexlb[1], indexlb[2]);
+    //spdlog::debug("index ub {} {} {}", indexlb[0], indexlb[1], indexlb[2]);
     std::vector<std::string> metaList = this->getmetaServerList(dims, indexlb, indexub);
 
     std::vector<MATRIXTOOL::MatrixView> matrixViewList;
-
-
 
     for (auto it = metaList.begin(); it != metaList.end(); it++)
     {
         std::string metaServerAddr = *it;
         std::vector<RawDataEndpoint> rweList = this->getrawDataEndpointList(metaServerAddr, step, varName, dims, indexlb, indexub);
-        std::cout << "metadata server " << metaServerAddr << " size of rweList " << rweList.size() << std::endl;
+        //std::cout << "metadata server " << metaServerAddr << " size of rweList " << rweList.size() << std::endl;
         if (rweList.size() == 0)
         {
             throw std::runtime_error("failed to get the overlap raw data endpoint for " + metaServerAddr);
         }
         for (auto itrwe = rweList.begin(); itrwe != rweList.end(); itrwe++)
         {
-            itrwe->printInfo();
+            //itrwe->printInfo();
 
             //get the subrigion according to the information at the list
             //it is better to use the multithread here
@@ -189,7 +198,7 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
             //allocate size (use differnet strategy is the vtk object is used)
             BBXTOOL::BBX *bbx = new BBXTOOL::BBX(dims, itrwe->m_indexlb, itrwe->m_indexub);
             size_t allocSize = sizeof(double) * bbx->getElemNum();
-            std::cout << "alloc size is " << allocSize << std::endl;
+            //std::cout << "alloc size is " << allocSize << std::endl;
 
             void *subDataContainer = (void *)malloc(allocSize);
 
@@ -222,12 +231,14 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
         }
     }
 
+    //stage 1
+    //clock_gettime(CLOCK_REALTIME, &end1);
+    //diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+    //std::cout<<"get data stage 1: " << diff1 << std::endl;
 
     //assemble the matrix View
     BBX *intactbbx = new BBX(dims, indexlb, indexub);
     MATRIXTOOL::MatrixView mvassemble = MATRIXTOOL::matrixAssemble(elemSize, matrixViewList, intactbbx);
-
-
 
     //free the element in matrixViewList
     for (auto it = matrixViewList.begin(); it != matrixViewList.end(); it++)
@@ -244,7 +255,10 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
         }
     }
 
-
+    //stage 2
+    //clock_gettime(CLOCK_REALTIME, &end2);
+    //diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
+    //std::cout<<"get data stage 2: " << diff2 << std::endl;
 
     return mvassemble;
 }
@@ -292,7 +306,8 @@ void UniClient::registerTrigger(
         //and add the trigger
         std::string metaServerAddr = *it;
         int status = putTriggerInfo(metaServerAddr, triggerName, dti);
-        if(status!=0){
+        if (status != 0)
+        {
             throw std::runtime_error("failed to putTriggerInfo for metaServer " + metaServerAddr);
         }
     }

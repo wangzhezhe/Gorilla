@@ -48,6 +48,18 @@ void test3d()
     dhtm->initDHTManually(lenArray, partitionLayout);
 
     dhtm->printDTMInfo();
+
+    std::cout << "---test3d dht manual B---" << std::endl;
+
+    lenArray = {512, 512, 512};
+
+    partitionLayout = {1, 1, 1};
+
+    DHTManager *dhtm2 = new DHTManager();
+
+    dhtm2->initDHTManually(lenArray, partitionLayout);
+
+    dhtm2->printDTMInfo();
 }
 
 int main()

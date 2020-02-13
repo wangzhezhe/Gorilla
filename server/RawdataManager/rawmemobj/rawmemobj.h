@@ -24,6 +24,10 @@ struct RawMemObj : public DataBlockInterface
       std::array<int, 3> subregionub,
       void *&dataContainer);
 
+  void* getrawMemPtr(){
+    return this->m_rawMemPtr;
+  };
+
   void *m_rawMemPtr = NULL;
 
   ~RawMemObj()

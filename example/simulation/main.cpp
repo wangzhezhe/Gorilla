@@ -9,7 +9,35 @@
 #include "timer.hpp"
 #include "gray-scott.h"
 #include "writer.h"
-#include "../putgetMeta/metaclient.h"
+
+#include <time.h>
+#include <stdio.h>
+#include <unistd.h>
+
+
+#define BILLION 1000000000L
+//#include "../putgetMeta/metaclient.h"
+
+#ifdef USE_GNI
+extern "C"
+{
+#include <rdmacred.h>
+}
+#include <mercury.h>
+#include <margo.h>
+#define DIE_IF(cond_expr, err_fmt, ...)                                                                           \
+    do                                                                                                            \
+    {                                                                                                             \
+        if (cond_expr)                                                                                            \
+        {                                                                                                         \
+            fprintf(stderr, "ERROR at %s:%d (" #cond_expr "): " err_fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__); \
+            exit(1);                                                                                              \
+        }                                                                                                         \
+    } while (0)
+#endif
+
+const std::string masterConfigFile = "unimos_server.conf";
+const std::string serverCred = "Gorila_cred_conf";
 
 void print_settings(const Settings &s)
 {
@@ -50,24 +78,80 @@ int main(int argc, char **argv)
     MPI_Comm_rank(comm, &rank);
     MPI_Comm_size(comm, &procs);
 
-    if (argc < 2)
+    if (argc < 3)
     {
         if (rank == 0)
         {
             std::cerr << "Too few arguments" << std::endl;
-            std::cerr << "Usage: gray-scott settings.json" << std::endl;
+            std::cerr << "Usage: gray-scott settings.json protocol" << std::endl;
         }
         MPI_Abort(MPI_COMM_WORLD, -1);
     }
 
     Settings settings = Settings::from_json(argv[1]);
+    std::string protocol = argv[2];
 
     GrayScott sim(settings, comm);
     sim.init();
 
-    //Init the writer
-    tl::engine globalclientEngine("verbs", THALLIUM_CLIENT_MODE);
-    //tl::engine globalclientEngine("tcp", THALLIUM_CLIENT_MODE);
+    //Init the engine according to the protocol
+    if(rank==0){
+        std::cout << "--use protocol: " << protocol << std::endl;
+    }
+
+#ifdef USE_GNI
+    //get the drc id from the shared file
+    std::ifstream infile(serverCred);
+    std::string cred_id;
+    std::getline(infile, cred_id);
+    if(rank==0){
+        std::cout << "load cred_id: " << cred_id << std::endl;
+    }
+
+    struct hg_init_info hii;
+    memset(&hii, 0, sizeof(hii));
+    char drc_key_str[256] = {0};
+    uint32_t drc_cookie;
+    uint32_t drc_credential_id;
+    drc_info_handle_t drc_credential_info;
+    int ret;
+    drc_credential_id = (uint32_t)atoi(cred_id.c_str());
+
+    ret = drc_access(drc_credential_id, 0, &drc_credential_info);
+    DIE_IF(ret != DRC_SUCCESS, "drc_access %u", drc_credential_id);
+    drc_cookie = drc_get_first_cookie(drc_credential_info);
+
+    sprintf(drc_key_str, "%u", drc_cookie);
+    hii.na_init_info.auth_key = drc_key_str;
+    //printf("use the drc_key_str %s\n", drc_key_str);
+
+    margo_instance_id mid;
+    mid = margo_init_opt("gni", MARGO_CLIENT_MODE, &hii, 0, 1);
+    tl::engine globalclientEngine(mid);
+#else
+    tl::engine globalclientEngine(protocol, THALLIUM_CLIENT_MODE);
+#endif
+
+    /*TODO broadcast
+    char tempAddr[200];
+    if (rank == 0)
+    {
+            std::string gorillaAddr;
+        std::ifstream infile(masterConfigFile);
+        std::getline(infile, gorillaAddr);
+        std::cout << "--load the master server of the staging service:"
+                  << gorillaAddr << std::endl;
+
+        memcpy(tempAddr, gorillaAddr.c_str(), strlen(gorillaAddr.c_str()));
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Bcast(
+        tempAddr,
+        200,
+        MPI_CHAR,
+        0,
+        MPI_COMM_WORLD)
+    */
     Writer dataWriter(&globalclientEngine);
 
     //writer_main.open(settings.output);
@@ -84,20 +168,18 @@ int main(int argc, char **argv)
     Timer timer_compute;
     Timer timer_write;
 
-    std::ostringstream log_fname;
-    log_fname << "gray_scott_pe_" << rank << ".log";
+    //std::ostringstream log_fname;
+    //log_fname << "gray_scott_pe_" << rank << ".log";
 
-    std::ofstream log(log_fname.str());
-    log << "step\ttotal_gs\tcompute_gs\twrite_gs" << std::endl;
+    //std::ofstream log(log_fname.str());
+    //log << "step\ttotal_gs\tcompute_gs\twrite_gs" << std::endl;
+
 #endif
 
     for (int i = 0; i < settings.steps;)
     {
-#ifdef ENABLE_TIMERS
-        MPI_Barrier(comm);
-        timer_total.start();
-        timer_compute.start();
-#endif
+
+        
 
         for (int j = 0; j < settings.plotgap; j++)
         {
@@ -106,9 +188,10 @@ int main(int argc, char **argv)
         }
 
 #ifdef ENABLE_TIMERS
-        double time_compute = timer_compute.stop();
         MPI_Barrier(comm);
-        timer_write.start();
+        struct timespec start, end;
+        double diff;
+        clock_gettime(CLOCK_REALTIME, &start); /* mark start time */
 #endif
 
         if (rank == 0)
@@ -121,41 +204,50 @@ int main(int argc, char **argv)
         size_t step = i;
 
         //send record to the metadata server
-        if (rank == 0)
-        {
-            MetaClient *metaclient = new MetaClient(&globalclientEngine);
-            std::string recordKey = "Trigger_" + std::to_string(step);
-            metaclient->Recordtime(recordKey);
-            dataWriter.write(sim, step, recordKey);
-        }
-        else
-        {
+        //if (rank == 0)
+        //{
+            //start meta server when use this
+            //MetaClient *metaclient = new MetaClient(&globalclientEngine);
+            //std::string recordKey = "Trigger_" + std::to_string(step);
+            //metaclient->Recordtime(recordKey);
+            //dataWriter.write(sim, step, recordKey);
+        //    dataWriter.write(sim, step);
+        //}
+        //else
+        //{
             dataWriter.write(sim, step);
-        }
+        //}
         //char countstr[50];
         //sprintf(countstr, "%03d_%04d", step, rank);
         //std::string fname = "./vtkdataraw/vtkiso_" + std::string(countstr) + ".vti";
         //dataWriter.writeImageData(sim,fname);
 
 #ifdef ENABLE_TIMERS
-        double time_write = timer_write.stop();
-        double time_total = timer_total.stop();
-        MPI_Barrier(comm);
 
-        log << i << "\t" << time_total << "\t" << time_compute << "\t"
-            << time_write << std::endl;
+        MPI_Barrier(comm);
+        clock_gettime(CLOCK_REALTIME, &end); /* mark end time */
+        diff = (end.tv_sec - start.tv_sec) * 1.0 + (end.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+        
+        //char tempstr[200];
+        //sprintf(tempstr,"step %d rank %d put %f\n",i,rank,diff);
+        
+        //std::cout << tempstr << std::endl;
+
+        //caculate the avg
+        double time_sum_write;
+        MPI_Reduce(&diff, &time_sum_write, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+
+        if (rank == 0)
+        {
+            std::cout << "step " << i << " avg write " << time_sum_write / procs << std::endl;
+        }
+
 #endif
 
         //if the inline engine is used, read data and generate the vtkm data here
         //the adis needed to be installed before using
     }
 
-#ifdef ENABLE_TIMERS
-    //log << "total\t" << timer_total.elapsed() << "\t" << timer_compute.elapsed()
-    //    << "\t" << timer_write.elapsed() << std::endl;
-
-    log.close();
-#endif
 
     MPI_Finalize();
 }

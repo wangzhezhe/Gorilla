@@ -1,17 +1,16 @@
 #ifndef __UNIMOSCLIENT_H__
 #define __UNIMOSCLIENT_H__
 
-#include "../commondata/metadata.h"
 #include "../utils/matrixtool.h"
+#include "../commondata/metadata.h"
 
 #include <vector>
 #include <iostream>
 #include <string>
 #include <array>
-#include <fstream>
 #include <string>
+#include <fstream>
 #include <thallium.hpp>
-#include <spdlog/spdlog.h>
 
 namespace tl = thallium;
 
@@ -25,6 +24,12 @@ struct UniClient
         m_clientEnginePtr = clientEnginePtr;
         m_masterAddr = loadMasterAddr(masterConfigFile);
     };
+    //set the m_masterAddr separately
+    UniClient(tl::engine *clientEnginePtr)
+    {
+        m_clientEnginePtr = clientEnginePtr;
+    };
+    
     std::string m_masterAddr;
     tl::engine *m_clientEnginePtr = NULL;
     ~UniClient(){};

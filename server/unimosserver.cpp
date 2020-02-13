@@ -10,7 +10,9 @@
 #include <iostream>
 #include <vector>
 #include <csignal>
+
 #include <thallium.hpp>
+
 #include <spdlog/spdlog.h>
 #include "mpi.h"
 
@@ -33,9 +35,11 @@
 //timer information
 #include "../putgetMeta/metaclient.h"
 
+
 #include <time.h>
 #include <stdio.h>
 #include <unistd.h>
+#define BILLION 1000000000L
 
 #ifdef USE_GNI
 extern "C"
@@ -55,16 +59,15 @@ extern "C"
     } while (0)
 #endif
 
-#define BILLION 1000000000L
-
 namespace tl = thallium;
 
 //global variables
-tl::abt scope;
 
 //The pointer to the enginge should be set as global element
 //this shoule be initilized after the initilization of the argobot
 tl::engine *globalServerEnginePtr = nullptr;
+//tl::engine *globalClientEnginePtr = nullptr;
+
 UniClient *globalClient = nullptr;
 
 //name of configure file, the write one line, the line is the rank0 addr
@@ -77,43 +80,49 @@ int globalRank = 0;
 int globalProc = 0;
 
 //the manager for all the server endpoints
-AddrManager *addrManager = new AddrManager();
+AddrManager *addrManager = nullptr;
 
 //the global manager for DHT
-DHTManager *dhtManager = new DHTManager();
+DHTManager *dhtManager = nullptr;
 
 //the global manager for raw data
-BlockManager blockManager;
+BlockManager *blockManager = nullptr;
 
 //the meta data service
-MetaDataManager metaManager;
+MetaDataManager *metaManager = nullptr;
 
 //the trigger manager
-FunctionManagerMeta *fmm = new FunctionManagerMeta();
-DynamicTriggerManager *dtmanager = new DynamicTriggerManager(fmm, 5);
+FunctionManagerMeta *fmetamanager = nullptr;
+FunctionManagerRaw *frawmanager = nullptr;
+DynamicTriggerManager *dtmanager = nullptr;
 
-void gatherIP(std::string engineName, std::string endpoint)
+const std::string serverCred = "Gorila_cred_conf";
+
+//the endpoint is the self addr for specific server
+void gatherIP(std::string endpoint)
 {
+    //spdlog::info ("current rank is: {}, current ip is: {}", globalRank, endpoint);
 
-    std::string ip = IPTOOL::getClientAdddr(engineName, endpoint);
-
+    if(addrManager==nullptr){
+        throw std::runtime_error("addrManager should not be null");
+    }
     if (globalRank == 0)
     {
         addrManager->ifMaster = true;
     }
 
-    addrManager->nodeAddr = ip;
+    addrManager->nodeAddr = endpoint;
+    
 
     //maybe it is ok that only write the masternode's ip and provide the interface
     //of getting ipList for other clients
 
-    std::cout << "current rank is " << globalRank << " current ip is: " << ip << std::endl;
 
     //attention: there number should be changed if the endpoint is not ip
     //padding to 20 only for ip
     //for the ip, the longest is 15 add the start label and the end label
     //this number should longer than the address
-    int msgPaddingLen = 50;
+    int msgPaddingLen = 200;
     if (endpoint.size() > msgPaddingLen)
     {
         throw std::runtime_error("current addr is longer than msgPaddingLen, reset the addr buffer to make it larger");
@@ -122,13 +131,14 @@ void gatherIP(std::string engineName, std::string endpoint)
     int sendLen = msgPaddingLen;
     int sendSize = sendLen * sizeof(char);
     char *sendipStr = (char *)malloc(sendSize);
-    sprintf(sendipStr, "H%sE", ip.c_str());
+    sprintf(sendipStr, "H%sE", endpoint.c_str());
 
-    //std::cout << "check send ip: "<<string(sendipStr) << std::endl;
+    std::cout << "check send ip: "<<std::string(sendipStr) << std::endl;
 
     int rcvLen = sendLen;
 
     char *rcvString = NULL;
+
 
     if (globalRank == 0)
     {
@@ -167,6 +177,7 @@ void gatherIP(std::string engineName, std::string endpoint)
     }
     //write to file for ip list json file if it is necessary
     //or expose the list by the rpc
+
     if (globalRank == 0)
     {
         //printf("check retuen value: ");
@@ -190,7 +201,7 @@ void gatherIP(std::string engineName, std::string endpoint)
             //only store the worker addr
             //if (epManager->nodeAddr.compare(ipList[i]) != 0)
             //{
-            spdlog::info("rank {} add raw data server {}", globalRank, ipList[i]);
+            //spdlog::debug("rank {} add raw data server {}", globalRank, ipList[i]);
             addrManager->m_endPointsLists.push_back(ipList[i]);
 
             //}
@@ -201,6 +212,11 @@ void gatherIP(std::string engineName, std::string endpoint)
 }
 
 void hello(const tl::request &req)
+{
+    std::cout << "Hello World!" << std::endl;
+}
+
+void hello2(const tl::request &req)
 {
     std::cout << "Hello World!" << std::endl;
 }
@@ -217,7 +233,7 @@ void updateDHT(const tl::request &req, std::vector<MetaAddrWrapper> &datawrapper
     for (int i = 0; i < size; i++)
     {
         //TODO init dht
-        spdlog::info("rank {} add meta server, index {} and addr {}", globalRank, datawrapperList[i].m_index, datawrapperList[i].m_addr);
+        spdlog::debug("rank {} add meta server, index {} and addr {}", globalRank, datawrapperList[i].m_index, datawrapperList[i].m_addr);
         //TODO add lock here
         dhtManager->metaServerIDToAddr[datawrapperList[i].m_index] = datawrapperList[i].m_addr;
     }
@@ -243,9 +259,9 @@ void putmetadata(const tl::request &req, size_t &step, std::string &varName, Raw
 {
     try
     {
-        spdlog::info("server {} put meta", addrManager->nodeAddr);
-        rde.printInfo();
-        metaManager.updateMetaData(step, varName, rde);
+        spdlog::debug("server {} put meta", addrManager->nodeAddr);
+        //rde.printInfo();
+        metaManager->updateMetaData(step, varName, rde);
         req.respond(0);
     }
     catch (...)
@@ -257,7 +273,11 @@ void putmetadata(const tl::request &req, size_t &step, std::string &varName, Raw
     try
     {
         //execute init trigger
-        dtmanager->initstart("InitTrigger", step, varName, rde);
+        //if the trigger is true
+        if (gloablSettings.addTrigger)
+        {
+            dtmanager->initstart("InitTrigger", step, varName, rde);
+        }
     }
     catch (std::exception &e)
     {
@@ -269,12 +289,17 @@ void putmetadata(const tl::request &req, size_t &step, std::string &varName, Raw
 //put the raw data into the raw data manager
 void putrawdata(const tl::request &req, size_t &step, std::string &varName, BlockSummary &blockSummary, tl::bulk &dataBulk)
 {
+    struct timespec start, end1, end2;
+    double diff1, diff2;
+    clock_gettime(CLOCK_REALTIME, &start);
 
     //assume data is different when every rawdataput is called
     //generate the unique id for new data
 
     spdlog::debug("execute raw data put for server id {} :", globalRank);
-    blockSummary.printSummary();
+    if(gloablSettings.logLevel>0){
+        blockSummary.printSummary();  
+    }
 
     //caculate the blockid by uuid
     std::string blockID = UUIDTOOL::generateUUID();
@@ -294,6 +319,9 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
         if (localContainer == NULL)
         {
             req.respond(-1);
+            blockSummary.printSummary();
+            spdlog::info ("failed to malloc data");
+            return;
         }
         //it is mandatory to use this expression
         std::vector<std::pair<void *, std::size_t>> segments(1);
@@ -304,11 +332,14 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
         tl::bulk local = globalServerEnginePtr->expose(segments, tl::bulk_mode::write_only);
         //pull the data onto the server
         dataBulk.on(ep) >> local;
+
+        clock_gettime(CLOCK_REALTIME, &end1);
+        diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+        spdlog::debug("server put stage 1: {}", diff1);
+
         //spdlog::debug("Server received bulk, check the contents: ");
-
         //check the bulk
-
-        double *rawdata = (double *)localContainer;
+        //double *rawdata = (double *)localContainer;
         /*check the data contents at server end
         for (int i = 0; i < 10; i++)
         {
@@ -317,9 +348,10 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
         }
         */
         //generate the empty container firstly, then get the data pointer
-        int status = blockManager.putBlock(blockID, blockSummary, localContainer);
+        //decreaset the data transfer, just keep the pointer instead of memcopy
+        int status = blockManager->putBlock(blockID, blockSummary, localContainer);
 
-        spdlog::debug("---put block {} on server {} map size {}", blockID, addrManager->nodeAddr, blockManager.DataBlockMap.size());
+        spdlog::debug("---put block {} on server {} map size {}", blockID, addrManager->nodeAddr, blockManager->DataBlockMap.size());
         if (status != 0)
         {
             blockSummary.printSummary();
@@ -336,7 +368,7 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
         //update the coresponding metadata server, send information to corespond meta
         if (gloablSettings.logLevel > 0)
         {
-            spdlog::info("step {} for var {}", step, varName);
+            spdlog::debug("step {} for var {} size of metaserverList {}", step, varName, metaserverList.size());
             for (int i = 0; i < metaserverList.size(); i++)
             {
                 std::cout << "metaserver index " << metaserverList[i].m_metaServerID << std::endl;
@@ -356,8 +388,10 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
         */
 
         //update the coresponding metaserverList
+        clock_gettime(CLOCK_REALTIME, &end2);
+        diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
+        spdlog::debug("server put stage 2: {}", diff2);
 
-        req.respond(0);
 
         //update the meta data by async way to improve the performance of the put operation
         for (auto it = metaserverList.begin(); it != metaserverList.end(); it++)
@@ -390,10 +424,12 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
         }
 
         free(BBXQuery);
+        req.respond(0);
+
     }
     catch (...)
     {
-        spdlog::debug("exception for data put");
+        spdlog::info("exception for data put");
         req.respond(-1);
     }
 }
@@ -452,7 +488,7 @@ void getRawDataEndpointList(const tl::request &req,
     try
     {
         BBXTOOL::BBX *BBXQuery = new BBXTOOL::BBX(dims, indexlb, indexub);
-        rawDataEndpointList = metaManager.getOverlapEndpoints(step, varName, BBXQuery);
+        rawDataEndpointList = metaManager->getOverlapEndpoints(step, varName, BBXQuery);
         free(BBXQuery);
         req.respond(rawDataEndpointList);
     }
@@ -461,6 +497,29 @@ void getRawDataEndpointList(const tl::request &req,
         spdlog::debug("exception for getRawDataEndpointList: {}", std::string(e.what()));
         req.respond(rawDataEndpointList);
     }
+}
+
+void executeRawFunc(const tl::request &req, std::string &blockID, 
+std::string& functionName,
+std::vector<std::string>& funcParameters)
+{
+
+    //get block summary
+    BlockSummary bs = blockManager->getBlockSummary(blockID);
+
+    //check data existance
+    if (blockManager->DataBlockMap.find(blockID) == blockManager->DataBlockMap.end())
+    {
+        req.respond(std::string("NOTEXIST"));
+        return;
+    }
+
+    DataBlockInterface *dbi = blockManager->DataBlockMap[blockID];
+    void* rawDataPtr= dbi->getrawMemPtr();
+    std::string  exeResults = frawmanager->execute(bs,rawDataPtr,
+    functionName, funcParameters);
+    req.respond(exeResults);
+    return;
 }
 
 void getDataSubregion(const tl::request &req,
@@ -475,18 +534,18 @@ void getDataSubregion(const tl::request &req,
     {
         void *dataContainer = NULL;
 
-        spdlog::debug("map size on server {} is {}", addrManager->nodeAddr, blockManager.DataBlockMap.size());
-        if (blockManager.checkDataExistance(blockID) == false)
+        spdlog::debug("map size on server {} is {}", addrManager->nodeAddr, blockManager->DataBlockMap.size());
+        if (blockManager->checkDataExistance(blockID) == false)
         {
             throw std::runtime_error("failed to get block id " + blockID + " on server with rank id " + std::to_string(globalRank));
         }
-        BlockSummary bs = blockManager.getBlockSummary(blockID);
+        BlockSummary bs = blockManager->getBlockSummary(blockID);
         size_t elemSize = bs.m_elemSize;
         BBXTOOL::BBX *bbx = new BBXTOOL::BBX(dims, subregionlb, subregionub);
         size_t allocSize = elemSize * bbx->getElemNum();
         spdlog::debug("alloc size at server {} is {}", globalRank, allocSize);
 
-        blockManager.getBlockSubregion(blockID, dims, subregionlb, subregionub, dataContainer);
+        blockManager->getBlockSubregion(blockID, dims, subregionlb, subregionub, dataContainer);
 
         std::vector<std::pair<void *, std::size_t>> segments(1);
         segments[0].first = (void *)(dataContainer);
@@ -502,18 +561,49 @@ void getDataSubregion(const tl::request &req,
     }
     catch (std::exception &e)
     {
-        spdlog::info("exception for getDataSubregion block id {} lb {},{},{} ub {},{},{}", blockID,
-                     subregionlb[0], subregionlb[1], subregionlb[2],
-                     subregionub[0], subregionub[1], subregionub[2]);
-        spdlog::info("exception for getDataSubregion: {}", std::string(e.what()));
+        spdlog::debug("exception for getDataSubregion block id {} lb {},{},{} ub {},{},{}", blockID,
+                      subregionlb[0], subregionlb[1], subregionlb[2],
+                      subregionub[0], subregionub[1], subregionub[2]);
+        spdlog::debug("exception for getDataSubregion: {}", std::string(e.what()));
         req.respond(-1);
     }
 }
 
-//TODO if rank is zero, store id
-//other wise, load the id from the server
-margo_instance_id getGniServerId()
+void initManager()
 {
+    //init global managers
+    addrManager = new AddrManager();
+
+    //config the address manager
+    addrManager->m_serverNum = globalProc;
+    addrManager->m_metaServerNum = gloablSettings.metaserverNum;
+
+    //the global manager for raw data
+    blockManager = new BlockManager();
+
+    //the meta data service
+    metaManager = new MetaDataManager();
+
+    //dynamic trigger manager
+    if (globalClient != NULL)
+    {
+        fmetamanager = new FunctionManagerMeta(globalClient);
+        dtmanager = new DynamicTriggerManager(fmetamanager, 5);
+    }
+    else
+    {
+        spdlog::info("global client need to be initilized before function manager");
+        exit(0);
+    }
+
+    frawmanager = new FunctionManagerRaw();
+
+}
+
+void runRerver(std::string networkingType)
+{
+
+#ifdef USE_GNI
     uint32_t drc_credential_id = 0;
     drc_info_handle_t drc_credential_info;
     uint32_t drc_cookie;
@@ -537,16 +627,29 @@ margo_instance_id getGniServerId()
         ret = drc_grant(drc_credential_id, drc_get_wlm_id(), DRC_FLAGS_TARGET_WLM);
         DIE_IF(ret != DRC_SUCCESS, "drc_grant");
 
-        spdlog::info("grant the drc_credential_id: {}", drc_credential_id);
-        spdlog::info("use the drc_key_str {}", std::string(drc_key_str));
-        MPI_Send(&drc_credential_id, 1, MPI_UINT32_T, 1, 0, MPI_COMM_WORLD);
+        spdlog::debug("grant the drc_credential_id: {}", drc_credential_id);
+        spdlog::debug("use the drc_key_str {}", std::string(drc_key_str));
+        for (int dest = 1; dest < globalProc; dest++)
+        {
+            //dest tag communicator
+            MPI_Send(&drc_credential_id, 1, MPI_UINT32_T, dest, 0, MPI_COMM_WORLD);
+        }
+
+        //write this cred_id into file that can be shared by clients
+        //output the credential id into the config files
+        std::ofstream credFile;
+        credFile.open(serverCred);
+        credFile << drc_credential_id << "\n";
+        credFile.close();
     }
     else
     {
+        //send rcv is the block call
         //gather the id from the rank 0
+        //source tag communicator
         MPI_Recv(&drc_credential_id, 1, MPI_UINT32_T, 0, 0, MPI_COMM_WORLD,
                  MPI_STATUS_IGNORE);
-        spdlog::info("rank {} recieve cred key", drc_credential_id);
+        spdlog::debug("rank {} recieve cred key {}", globalRank, drc_credential_id);
 
         if (drc_credential_id == 0)
         {
@@ -561,31 +664,19 @@ margo_instance_id getGniServerId()
     }
 
     margo_instance_id mid;
-    mid = margo_init_opt("gni", MARGO_SERVER_MODE, &hii, 0, -1);
-    return mid;
-}
+    //the number here should same with the number of cores used in test scripts
+    mid = margo_init_opt("gni", MARGO_SERVER_MODE, &hii, 0, 8);
+    tl::engine serverEnginge(mid);
+    globalServerEnginePtr = &serverEnginge;
 
-void runRerver(std::string networkingType)
-{
-    if (networkingType.compare("gni") == 0)
-    {
-#ifdef USE_GNI
-        margo_instance_id mid = getGniServerId();
-        tl::engine serverEnginge(mid);
-        globalServerEnginePtr = &serverEnginge;
 #else
-        std::cout << "USE_GNI should be setted when gni is used" << std::endl;
-        exit(0);
-#endif
-    }
-    else
+    if (globalRank == 0)
     {
-        tl::engine serverEnginge(networkingType, THALLIUM_SERVER_MODE);
-        globalServerEnginePtr = &serverEnginge;
+        spdlog::debug("use the protocol other than gni: {}", networkingType);
     }
-
-    //the server engine can also be the client engine, only one engine can be declared here
-    globalClient = new UniClient(globalServerEnginePtr, gloablSettings.masterInfo);
+    tl::engine serverEnginge(networkingType, THALLIUM_SERVER_MODE);
+    globalServerEnginePtr = &serverEnginge;
+#endif
 
     globalServerEnginePtr->define("updateDHT", updateDHT);
     globalServerEnginePtr->define("getaddrbyrrb", getaddrbyrrb);
@@ -595,35 +686,51 @@ void runRerver(std::string networkingType)
     globalServerEnginePtr->define("getRawDataEndpointList", getRawDataEndpointList);
     globalServerEnginePtr->define("getDataSubregion", getDataSubregion);
     globalServerEnginePtr->define("putTriggerInfo", putTriggerInfo);
+    globalServerEnginePtr->define("executeRawFunc", executeRawFunc);
 
     //for testing
     globalServerEnginePtr->define("hello", hello).disable_response();
 
-    //globalClientEnginePointer->define("putDoubleVector", putDoubleVector).disable_response();
-    //globalClientEnginePointer->define("putMetaData", putMetaData).disable_response();
-    /*
-    globalClientEnginePointer->define("dsput", dsput);
-    globalClientEnginePointer->define("dsget", dsget);
-    globalClientEnginePointer->define("dsgetBlockMeta", dsgetBlockMeta);
-    globalClientEnginePointer->define("subscribeProfile", subscribeProfile);
-    */
 
-    std::string addr = serverEnginge.self();
+    std::string rawAddr = globalServerEnginePtr->self();
+    std::string selfAddr = IPTOOL::getClientAdddr(networkingType, rawAddr);
+    char tempAddr[200];
+    std::string masterAddr;
 
     if (globalRank == 0)
     {
-        spdlog::info("Start the unimos server with addr for master: {}", addr);
+        spdlog::debug("Start the unimos server with addr for master: {}", selfAddr);
 
         //globalClientEnginePointer->define("getaddr", getaddr);
-        std::string masterAddr = IPTOOL::getClientAdddr(networkingType, addr);
-        std::ofstream confFile;
-        confFile.open(gloablSettings.masterInfo);
-        confFile << masterAddr << "\n";
-        confFile.close();
+        masterAddr = selfAddr;
+        //broadcast the master addr to all the servers
+        std::copy(selfAddr.begin(), selfAddr.end(), tempAddr);
+        tempAddr[selfAddr.size()] = '\0';
     }
 
-    //write the addr out here
-    gatherIP(networkingType, addr);
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Bcast(
+        tempAddr,
+        200,
+        MPI_CHAR,
+        0,
+        MPI_COMM_WORLD);
+    if (globalRank != 0)
+    {
+        masterAddr = std::string(tempAddr);
+        spdlog::info("rank {} load master addr {}", globalRank, masterAddr);
+    }
+
+
+    //the server engine can also be the client engine, only one engine can be declared here
+    globalClient = new UniClient(globalServerEnginePtr);
+    globalClient->m_masterAddr = masterAddr;
+
+    //the functionManager need the client, it need to be declared after the init of the globalClient
+    initManager();
+
+    //this will use the addManager
+    gatherIP(selfAddr);
 
     //bradcaster the ip to all the worker nodes use the thallium api
     if (addrManager->ifMaster)
@@ -631,6 +738,21 @@ void runRerver(std::string networkingType)
         //there is gathered address information only for the master node
         addrManager->broadcastMetaServer(globalClient);
     }
+
+    //write master server to file, server init ok
+    if (globalRank == 0)
+    {
+        std::ofstream confFile;
+        confFile.open(gloablSettings.masterInfo);
+        confFile << masterAddr << "\n";
+        confFile.close();
+    }
+
+#ifdef USE_GNI
+    //destructor will not be called if send mid to engine
+    spdlog::debug("call margo wait for rank {}", globalRank);
+    margo_wait_for_finalize(mid);
+#endif
 
     //the destructor of the engine will be called when the variable is out of the scope
     return;
@@ -661,6 +783,12 @@ int main(int argc, char **argv)
         std::cerr << "Usage: unimos_server <path of setting.json>" << std::endl;
         exit(0);
     }
+
+    tl::abt scope;
+    //this manager should be init at the beginning
+    //other managers are inited by intiManager after the init of the engine
+    //the trigger manager
+    dhtManager = new DHTManager();
 
     //the copy operator is called here
     Settings tempsetting = Settings::from_json(argv[1]);
@@ -693,10 +821,6 @@ int main(int argc, char **argv)
     {
         std::cout << "total process num: " << globalProc << std::endl;
     }
-
-    //config the address manager
-    addrManager->m_serverNum = globalProc;
-    addrManager->m_metaServerNum = gloablSettings.metaserverNum;
 
     if (gloablSettings.metaserverNum > globalProc)
     {
@@ -764,7 +888,7 @@ int main(int argc, char **argv)
     }
     catch (const std::exception &e)
     {
-        std::cout << "exception for server" << e.what() << std::endl;
+        std::cout << "exception for server: " << e.what() << std::endl;
         //release the resource
         return 1;
     }

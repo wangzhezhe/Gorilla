@@ -2,18 +2,24 @@
 #include <spdlog/spdlog.h>
 
 
-void FunctionManagerRaw::execute(std::string fiunctionName, const BlockSummary &bs, void *inputData)
+std::string FunctionManagerRaw::execute(
+const BlockSummary &bs, 
+void *inputData,
+std::string fiunctionName,
+const std::vector<std::string>& parameters)
 {
 
     if (this->m_functionMap.find(fiunctionName) == this->m_functionMap.end())
     {
         spdlog::info("the function {} is not registered into the map", fiunctionName);
-        return;
+        return "";
     }
-
+    //since it calles functionPointer
+    //this functionPointer is beyond the scope of the class
+    //it is better to make it as a static function???
     rawdatafunctionPointer fp = this->m_functionMap[fiunctionName];
-    fp(bs, inputData);
-    return;
+    std::string results = fp(bs, inputData, parameters);
+    return results;
 }
 
 bool FunctionManagerRaw::registerFunction(std::string functionName, rawdatafunctionPointer fp)
