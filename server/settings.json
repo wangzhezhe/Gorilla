@@ -1,5 +1,5 @@
 {
-    "lenArray":[1024,1024,1024],
+    "lenArray":[1288,1288,1288],
     "partitionMethod":"manual",    
     "metaserverNum": 8,
     "partitionLayout":[2,2,2],
