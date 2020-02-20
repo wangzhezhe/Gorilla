@@ -238,6 +238,37 @@ struct RawDataEndpoint
   }
 };
 
+
+struct MetaDataWrapper{
+
+  MetaDataWrapper(){};
+  MetaDataWrapper(std::string destAddr,size_t step, std::string varName ,RawDataEndpoint rde):
+  m_destAddr(destAddr),m_step(step),m_varName(varName),m_rde(rde){};
+  std::string m_destAddr="";
+  size_t m_step=0;
+  std::string m_varName="";
+  RawDataEndpoint m_rde;
+
+  ~MetaDataWrapper(){};
+
+  void printInfo()
+  {
+    std::cout << "m_destAddr " << m_destAddr << " m_step "
+              << m_step << " m_varName " << m_varName << std::endl;
+    m_rde.printInfo();
+  }
+
+  template <typename A>
+  void serialize(A &ar)
+  {
+    ar &m_destAddr;
+    ar &m_step;
+    ar &m_varName;
+    ar &m_rde;
+  }
+};
+
+
 struct DynamicTriggerInfo
 {
   DynamicTriggerInfo(){};

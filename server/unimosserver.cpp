@@ -257,14 +257,18 @@ void putmetadata(const tl::request &req, size_t &step, std::string &varName, Raw
     try
     {
         spdlog::debug("server {} put meta", addrManager->nodeAddr);
-        rde.printInfo();
+        if(gloablSettings.logLevel>0){
+            rde.printInfo();
+        }
         metaManager->updateMetaData(step, varName, rde);
         req.respond(0);
+        return;
     }
     catch (const std::exception &e)
     {
         spdlog::info("exception for meta data put step {} varname {} server {}", step, varName, addrManager->nodeAddr);
         req.respond(-1);
+        return;
     }
 
     try
@@ -317,9 +321,11 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
         void *localContainer = (void *)malloc(mallocSize);
         if (localContainer == NULL)
         {
-            req.respond(-1);
             blockSummary.printSummary();
             spdlog::info("failed to malloc data");
+            MetaDataWrapper mdw;
+            req.respond(mdw);
+
             return;
         }
         //it is mandatory to use this expression
@@ -374,10 +380,10 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
                 metaserverList[i].m_bbx->printBBXinfo();
             }
         }
-        if(BBXQuery!=NULL){
+        if (BBXQuery != NULL)
+        {
             free(BBXQuery);
         }
-
 
         //TODO, update the metaManager
         //update the metadata according to the address in tht metamap
@@ -399,6 +405,9 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
             if (dhtManager->metaServerIDToAddr.find(metaServerId) == dhtManager->metaServerIDToAddr.end())
             {
                 throw std::runtime_error("faild to get the coresponding server id in dhtManager");
+                MetaDataWrapper mdw;
+                req.respond(mdw);
+                return;
             }
             RawDataEndpoint rde(
                 addrManager->nodeAddr,
@@ -409,31 +418,30 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
             if (destAddr.compare(addrManager->nodeAddr) == 0)
             {
                 metaManager->updateMetaData(step, varName, rde);
+                MetaDataWrapper mdw;
+                req.respond(mdw);
+                return;
             }
             else
             {
-                //else put
-                status = globalClient->putmetadata(destAddr, step, varName, rde);
-                if (status != 0)
-                {
-                    throw std::runtime_error("faild to update the metadata for id " + std::to_string(metaServerId));
-                }
-                //TODO, add the timer operation here
-                std::string recordKey = blockSummary.m_extraInfo;
-                if (recordKey.compare("") != 0)
-                {
-                    MetaClient *metaclient = new MetaClient(globalServerEnginePtr);
-                    metaclient->Recordtime(recordKey);
-                }
-            }
-        }
 
-        req.respond(0);
+                MetaDataWrapper mdw(destAddr, step, varName, rde);
+                req.respond(mdw);
+                return;
+            }
+
+            //if (recordKey.compare("") != 0)
+            //{
+            //    MetaClient *metaclient = new MetaClient(globalServerEnginePtr);
+            //    metaclient->Recordtime(recordKey);
+            //}
+        }
     }
     catch (const std::exception &e)
     {
         spdlog::info("exception for data put and update metadata server");
-        req.respond(-1);
+        MetaDataWrapper mdw;
+        req.respond(mdw);
         return;
     }
 }
@@ -568,8 +576,8 @@ void getDataSubregion(const tl::request &req,
     catch (std::exception &e)
     {
         spdlog::info("exception for getDataSubregion block id {} lb {},{},{} ub {},{},{}", blockID,
-                      subregionlb[0], subregionlb[1], subregionlb[2],
-                      subregionub[0], subregionub[1], subregionub[2]);
+                     subregionlb[0], subregionlb[1], subregionlb[2],
+                     subregionub[0], subregionub[1], subregionub[2]);
         spdlog::info("exception for getDataSubregion: {}", std::string(e.what()));
         req.respond(-1);
     }
@@ -674,10 +682,9 @@ void runRerver(std::string networkingType)
     tl::engine serverEnginge(mid);
     globalServerEnginePtr = &serverEnginge;
 
-    margo_instance_id client_mid;
-    client_mid = margo_init_opt("gni", MARGO_CLIENT_MODE, &hii, 0, 8);
-    tl::engine clientEnginge(client_mid);
-    globalClientEnginePtr = &clientEnginge;
+    //margo_instance_id client_mid;
+    //client_mid = margo_init_opt("gni", MARGO_CLIENT_MODE, &hii, 0, 8);
+    //tl::engine clientEnginge(client_mid);
 
 #else
     if (globalRank == 0)
@@ -686,6 +693,7 @@ void runRerver(std::string networkingType)
     }
     tl::engine serverEnginge(networkingType, THALLIUM_SERVER_MODE);
     globalServerEnginePtr = &serverEnginge;
+
 #endif
 
     globalServerEnginePtr->define("updateDHT", updateDHT);
@@ -710,7 +718,6 @@ void runRerver(std::string networkingType)
     {
         spdlog::debug("Start the unimos server with addr for master: {}", selfAddr);
 
-        //globalClientEnginePointer->define("getaddr", getaddr);
         masterAddr = selfAddr;
         //broadcast the master addr to all the servers
         std::copy(selfAddr.begin(), selfAddr.end(), tempAddr);
@@ -731,6 +738,7 @@ void runRerver(std::string networkingType)
     }
 
     //the server engine can also be the client engine, only one engine can be declared here
+    globalClientEnginePtr = &serverEnginge;
     globalClient = new UniClient(globalClientEnginePtr);
     globalClient->m_masterAddr = masterAddr;
 
@@ -740,6 +748,22 @@ void runRerver(std::string networkingType)
     //this will use the addManager
     gatherIP(selfAddr);
 
+    //write master server to file, server init ok
+    if (globalRank == 0)
+    {
+        std::ofstream confFile;
+        spdlog::debug("master info file: {}", gloablSettings.masterInfo);
+        confFile.open(gloablSettings.masterInfo);
+
+        if (!confFile.is_open())
+        {
+            spdlog::info("Could not open file: {}", gloablSettings.masterInfo);
+            exit(-1);
+        }
+        confFile << masterAddr << "\n";
+        confFile.close();
+    }
+
     //bradcaster the ip to all the worker nodes use the thallium api
     if (addrManager->ifMaster)
     {
@@ -747,18 +771,10 @@ void runRerver(std::string networkingType)
         addrManager->broadcastMetaServer(globalClient);
     }
 
-    //write master server to file, server init ok
-    if (globalRank == 0)
-    {
-        std::ofstream confFile;
-        confFile.open(gloablSettings.masterInfo);
-        confFile << masterAddr << "\n";
-        confFile.close();
-    }
+    spdlog::info("init server ok, call margo wait for rank {}", globalRank);
 
 #ifdef USE_GNI
     //destructor will not be called if send mid to engine
-    spdlog::debug("call margo wait for rank {}", globalRank);
     margo_wait_for_finalize(mid);
 #endif
 

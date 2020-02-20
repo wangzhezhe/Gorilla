@@ -23,6 +23,7 @@ struct UniClient
     {
         m_clientEnginePtr = clientEnginePtr;
         m_masterAddr = loadMasterAddr(masterConfigFile);
+        std::cout << "load master Addr: " << m_masterAddr << std::endl;
     };
     //set the m_masterAddr separately
     UniClient(tl::engine *clientEnginePtr)

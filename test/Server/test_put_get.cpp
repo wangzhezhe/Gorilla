@@ -8,6 +8,8 @@
 
 namespace tl = thallium;
 
+//use the two dimentions in the setting files for testing!!!!
+
 void test_get_meta()
 {
 

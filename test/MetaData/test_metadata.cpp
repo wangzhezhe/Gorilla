@@ -107,7 +107,7 @@ void testMetaData()
     }
     it++;
   }
-  
+
   /*
   TODO, need to delete the data stored at the raw data server after shrink the metadata map
   if (metam.m_metaDataMap.size() != 10)
@@ -122,9 +122,20 @@ void testMetaData()
   */
 }
 
+void testMetadataWrapper()
+{
+  MetaDataWrapper mdw;
+  mdw.printInfo();
+  if(mdw.m_destAddr.compare("")!=0){
+      throw std::runtime_error("failed to test null wrapper");
+  }
+}
+
 int main()
 {
 
   testMetaData();
   testMetaDataOverlap();
+
+  testMetadataWrapper();
 }

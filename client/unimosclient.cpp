@@ -53,6 +53,18 @@ std::string UniClient::loadMasterAddr(std::string masterConfigFile)
     }
     return content;
 }
+
+//this is called by the server node, the adress is already known
+int UniClient::putmetadata(std::string serverAddr, size_t step, std::string varName, RawDataEndpoint &rde)
+{
+
+    tl::remote_procedure remotePutMetaData = this->m_clientEnginePtr->define("putmetadata");
+    //tl::remote_procedure putMetaData = myEngine.define("putMetaData").disable_response();
+    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(serverAddr);
+    int status = remotePutMetaData.on(serverEndpoint)(step, varName, rde);
+
+    return status;
+}
 /*
     struct timespec start, end;
     double diff;
@@ -87,8 +99,7 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
 
     //TODO, use async I/O ? store the request to check if the i/o finish when sim finish
     //the data only could be updated when the previous i/o finish
-    //auto request = dsput.on(globalServerEndpoint).async(datameta, blockID, myBulk);
-    //int status = remotePutRawData.on(serverEndpoint)(step, varName, dataSummary, dataBulk);
+    //MetaDataWrapper mdw = remotePutRawData.on(serverEndpoint)(step, varName, dataSummary, dataBulk);
     auto request = remotePutRawData.on(serverEndpoint).async(step, varName, dataSummary, dataBulk);
 
     //clock_gettime(CLOCK_REALTIME, &end2);
@@ -97,20 +108,19 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
     bool completed = request.received();
     // ...
     // actually wait on the request and get the result out of it
-    int status = request.wait();
+    MetaDataWrapper mdw = request.wait();
+
+    //has been updated (data server and metadata server are same)
+    //mdw.printInfo();
+    if (mdw.m_destAddr.compare("") == 0)
+    {
+        return 0;
+    }
+
+    int status = this->putmetadata(mdw.m_destAddr, mdw.m_step, mdw.m_varName, mdw.m_rde);
     return status;
 }
 
-//this is called by the server node, the adress is already known
-int UniClient::putmetadata(std::string serverAddr, size_t step, std::string varName, RawDataEndpoint &rde)
-{
-
-    tl::remote_procedure remotePutMetaData = this->m_clientEnginePtr->define("putmetadata");
-    //tl::remote_procedure putMetaData = myEngine.define("putMetaData").disable_response();
-    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(serverAddr);
-    int status = remotePutMetaData.on(serverEndpoint)(step, varName, rde);
-    return status;
-}
 
 //get MetaAddrWrapper List this contains the coresponding server that overlap with current querybox
 //this can be called once for multiple get in different time step, since partition is fixed
@@ -182,7 +192,7 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
     {
         std::string metaServerAddr = *it;
         std::vector<RawDataEndpoint> rweList = this->getrawDataEndpointList(metaServerAddr, step, varName, dims, indexlb, indexub);
-        //std::cout << "metadata server " << metaServerAddr << " size of rweList " << rweList.size() << std::endl;
+        std::cout << "metadata server " << metaServerAddr << " size of rweList " << rweList.size() << std::endl;
         if (rweList.size() == 0)
         {
             throw std::runtime_error("failed to get the overlap raw data endpoint for " + metaServerAddr);
