@@ -1,8 +1,9 @@
 {
-    "lenArray": [512,512,512],
+    "lenArray": [1288,1288,1288],
     "steps": 6,
     "plotgap": 1,
     "calcutime": 0.0001,
     "output": "gs.bp",
-    "processLayout":[4,4,2]
+    "processLayout":[8,8,8],
+    "anaLayout":[4,4,4]
 }

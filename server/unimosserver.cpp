@@ -1,4 +1,3 @@
-
 //the unified in memory server that contains both metadata manager and raw data manager
 #include <iostream>
 #include <fstream>
@@ -216,6 +215,40 @@ void updateDHT(const tl::request &req, std::vector<MetaAddrWrapper> &datawrapper
     return;
 }
 
+void getAllServerAddr(const tl::request &req)
+{
+
+    std::vector<MetaAddrWrapper> adrList;
+
+    for (auto it = uniServer->m_dhtManager->metaServerIDToAddr.begin();
+         it != uniServer->m_dhtManager->metaServerIDToAddr.end(); it++)
+    {
+        MetaAddrWrapper mar(it->first, it->second);
+        adrList.push_back(mar);
+    }
+
+    req.respond(adrList);
+    return;
+}
+
+void getServerNum(const tl::request &req)
+{
+    //return number of the servers to the client
+    int serNum = uniServer->m_addrManager->m_endPointsLists.size();
+    req.respond(serNum);
+}
+
+void getaddrbyID(const tl::request &req, int serverID)
+{
+    std::string serverAddr = "";
+    if (uniServer->m_dhtManager->metaServerIDToAddr.find(serverID) == uniServer->m_dhtManager->metaServerIDToAddr.end())
+    {
+        req.respond(serverAddr);
+    }
+    serverAddr = uniServer->m_dhtManager->metaServerIDToAddr[serverID];
+    req.respond(serverAddr);
+}
+
 //get server address by round roubin
 void getaddrbyrrb(const tl::request &req)
 {
@@ -317,7 +350,7 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
 
         clock_gettime(CLOCK_REALTIME, &end1);
         diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
-        spdlog::debug("server put stage 1: {}", diff1);
+        spdlog::info("server put stage 1: {}", diff1);
 
         //spdlog::debug("Server received bulk, check the contents: ");
         //check the bulk
@@ -370,9 +403,6 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
         //send request to metaDataServer
 
         //update the coresponding metaserverList
-        clock_gettime(CLOCK_REALTIME, &end2);
-        diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
-        spdlog::debug("server put stage 2: {}", diff2);
 
         //update the meta data by async way to improve the performance of the put operation
         for (auto it = metaserverList.begin(); it != metaserverList.end(); it++)
@@ -421,6 +451,10 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
         req.respond(metadataWrapperList);
         return;
     }
+
+    clock_gettime(CLOCK_REALTIME, &end2);
+    diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
+    spdlog::info("server put stage 2: {}", diff2);
 }
 
 void putTriggerInfo(const tl::request &req, std::string triggerName, DynamicTriggerInfo &dti)
@@ -508,7 +542,7 @@ void executeRawFunc(const tl::request &req, std::string &blockID,
     DataBlockInterface *dbi = uniServer->m_blockManager->DataBlockMap[blockID];
     void *rawDataPtr = dbi->getrawMemPtr();
     std::string exeResults = uniServer->m_frawmanager->execute(bs, rawDataPtr,
-                                                  functionName, funcParameters);
+                                                               functionName, funcParameters);
     req.respond(exeResults);
     return;
 }
@@ -559,7 +593,6 @@ void getDataSubregion(const tl::request &req,
         req.respond(-1);
     }
 }
-
 
 void initDHT()
 {
@@ -612,7 +645,6 @@ void initDHT()
     }
     return;
 }
-
 
 void runRerver(std::string networkingType)
 {
@@ -698,6 +730,9 @@ void runRerver(std::string networkingType)
 #endif
 
     globalServerEnginePtr->define("updateDHT", updateDHT);
+    globalServerEnginePtr->define("getAllServerAddr", getAllServerAddr);
+    //globalServerEnginePtr->define("getServerNum", getServerNum);
+    //globalServerEnginePtr->define("getaddrbyID", getaddrbyID);
     globalServerEnginePtr->define("getaddrbyrrb", getaddrbyrrb);
     globalServerEnginePtr->define("putrawdata", putrawdata);
     globalServerEnginePtr->define("putmetadata", putmetadata);
@@ -740,18 +775,23 @@ void runRerver(std::string networkingType)
 
     //the server engine can also be the client engine, only one engine can be declared here
     globalClientEnginePtr = &serverEnginge;
-    uniClient = new UniClient(globalClientEnginePtr);
+    uniClient = new UniClient(globalClientEnginePtr, globalRank);
     uniClient->m_masterAddr = masterAddr;
-
+    //get the total number of the server
+    //init the client Cache
+    uniClient->m_totalServerNum = gloablSettings.metaserverNum;
     //init all the important manager of the server
     uniServer = new UniServer();
     uniServer->initManager(globalProc, gloablSettings.metaserverNum, uniClient, true);
-    
+
     //init the DHT
     initDHT();
 
     //gather IP to the rank0 and broadcaster the IP to all the services
     gatherIP(selfAddr);
+
+    //for the server, the map in uniclientCache is already known
+    //init the uniclientCache
 
     //write master server to file, server init ok
     if (globalRank == 0)
@@ -794,8 +834,6 @@ void signalHandler(int signal_num)
     globalServerEnginePtr->finalize();
     exit(signal_num);
 }
-
-
 
 int main(int argc, char **argv)
 {

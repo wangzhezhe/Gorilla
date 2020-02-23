@@ -185,7 +185,8 @@ int main(int argc, char *argv[])
     std::ifstream infile(serverCred);
     std::string cred_id;
     std::getline(infile, cred_id);
-    if(rank==0){
+    if (rank == 0)
+    {
         std::cout << "load cred_id: " << cred_id << std::endl;
     }
 
@@ -213,10 +214,14 @@ int main(int argc, char *argv[])
     tl::engine clientEngine(protocol, THALLIUM_CLIENT_MODE);
 #endif
 
-    UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf");
+    UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf", rank);
+    UniClientCache *uniCache = new UniClientCache();
+    uniclient->m_uniCache = uniCache;
+    uniclient->getAllServerAddr();
+    uniclient->m_totalServerNum = uniCache->m_serverIDToAddr.size();
 
+    
     std::string VarNameU = "grascott_u";
-
     //gray scott simulation start from 1
     for (int step = 1; step <= steps; step++)
     {

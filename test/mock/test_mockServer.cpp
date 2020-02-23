@@ -342,7 +342,7 @@ MATRIXTOOL::MatrixView mockClientGetArbitratyData(
         std::vector<RawDataEndpoint> rweList =
             mockServergetrawDataEndpointList(destuniServer, step, varName, dims, indexlb, indexub);
 
-        std::cout << "metadata server id" << metaServerID << " size of rweList " << rweList.size() << std::endl;
+        //std::cout << "metadata server id" << metaServerID << " size of rweList " << rweList.size() << std::endl;
         if (rweList.size() == 0)
         {
             throw std::runtime_error("failed to get the overlap raw data endpoint for " + std::to_string(metaServerID));
@@ -510,6 +510,7 @@ int main(int argc, char **argv)
     int globalCount = 0;
     for (size_t t = 0; t < (size_t)simSettings.steps; t++)
     {
+        std::cout << "sim iterate step " << t << std::endl;
         for (int pz = 0; pz < npz; pz++)
         {
             for (int py = 0; py < npy; py++)
@@ -519,12 +520,15 @@ int main(int argc, char **argv)
                     int id = pz * npy * npx + py * npx + px;
                     SingleSim *simInstance = simList[id];
                     simInstance->iterate(simSettings.calcutime);
-                    std::cout << " iterate step " << t << " rank " << id << std::endl;
+                    if (id % 100 == 0)
+                    {
+                        std::cout << " rank " << id << std::endl;
+                    }
 
                     //get the id of the server
                     int serverID = globalCount % totalServerNum;
                     globalCount++;
-                    std::cout << "serverID " << serverID << std::endl;
+                    //std::cout << "serverID " << serverID << std::endl;
                     UniServer *tempUniServer = serverList[serverID];
 
                     //write the data into the server    std::vector<double> u = sim.u_noghost();
@@ -550,6 +554,58 @@ int main(int argc, char **argv)
                                          VarNameU,
                                          bs,
                                          u.data());
+                }
+            }
+        }
+    }
+
+    npx = simSettings.processLayout[0];
+    npy = simSettings.processLayout[1];
+    npz = simSettings.processLayout[2];
+
+    // simulate the process of the reader to get the data
+    globalCount = 0;
+    for (size_t t = 0; t < (size_t)simSettings.steps; t++)
+    {
+        std::cout << " ana iterate step " << t << std::endl;
+        for (int pz = 0; pz < npz; pz++)
+        {
+            for (int py = 0; py < npy; py++)
+            {
+                for (int px = 0; px < npx; px++)
+                {
+                    int id = pz * npy * npx + py * npx + px;
+
+                    int size_x = (simSettings.lenArray[0] + npx - 1) / npx;
+                    int size_y = (simSettings.lenArray[1] + npy - 1) / npy;
+                    int size_z = (simSettings.lenArray[2] + npz - 1) / npz;
+
+                    int offset_x = size_x * px;
+                    int offset_y = size_y * py;
+                    int offset_z = size_z * pz;
+
+                    if (px == npx - 1)
+                    {
+                        size_x -= size_x * npx - simSettings.lenArray[0];
+                    }
+                    if (py == npy - 1)
+                    {
+                        size_y -= size_y * npy - simSettings.lenArray[1];
+                    }
+                    if (pz == npz - 1)
+                    {
+                        size_z -= size_z * npz - simSettings.lenArray[2];
+                    }
+
+                    std::array<int, 3> indexlb = {{offset_x, offset_y, offset_z}};
+                    std::array<int, 3> indexub = {{offset_x + size_x - 1, offset_y + size_y - 1, offset_z + size_z - 1}};
+
+                    int serverID = globalCount % totalServerNum;
+                    globalCount++;
+                    UniServer *tempUniServer = serverList[serverID];
+                    //caculate the bbx
+                    std::string VarNameU = "grascott_u";
+                    MATRIXTOOL::MatrixView mvassemble = mockClientGetArbitratyData(tempUniServer, t, VarNameU, sizeof(double), 3, indexlb, indexub);
                 }
             }
         }

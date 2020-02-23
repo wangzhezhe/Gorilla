@@ -152,7 +152,7 @@ int main(int argc, char **argv)
         0,
         MPI_COMM_WORLD)
     */
-    Writer dataWriter(&globalclientEngine);
+    Writer dataWriter(&globalclientEngine, rank);
 
     //writer_main.open(settings.output);
 

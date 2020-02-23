@@ -11,7 +11,6 @@
     std::cout << "output:           " << s.output << std::endl;
 */
 
-
 void to_json(nlohmann::json &j, const SingleSettings &s)
 {
     j = nlohmann::json{{"lenArray", s.lenArray},
@@ -19,7 +18,8 @@ void to_json(nlohmann::json &j, const SingleSettings &s)
                        {"plotgap", s.plotgap},
                        {"calcutime", s.calcutime},
                        {"output", s.output},
-                       {"processLayout", s.processLayout}};
+                       {"processLayout", s.processLayout},
+                       {"anaLayout", s.anaLayout}};
 }
 
 void from_json(const nlohmann::json &j, SingleSettings &s)
@@ -30,8 +30,7 @@ void from_json(const nlohmann::json &j, SingleSettings &s)
     j.at("calcutime").get_to(s.calcutime);
     j.at("output").get_to(s.output);
     j.at("processLayout").get_to(s.processLayout);
-
-
+    j.at("anaLayout").get_to(s.anaLayout);
 }
 
 SingleSettings::SingleSettings()

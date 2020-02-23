@@ -10,7 +10,7 @@ void add_basictrigger()
 {
     //client engine
     tl::engine clientEngine("tcp", THALLIUM_CLIENT_MODE);
-    UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf");
+    UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf",0);
 
     std::string triggerNameInit = "InitTrigger";
     std::string triggerNameCustomized = "customizedTrigger";
@@ -23,7 +23,9 @@ void add_basictrigger()
 
     //start the trigger when the condition is satisfied
     actionParameters.push_back(triggerNameCustomized);
-    DynamicTriggerInfo tgInfo("defaultCheckGetStep", checkParameters, "defaultComparisonStep", comparisonParameters, "defaultActionSartDt", actionParameters);
+    DynamicTriggerInfo tgInfo("defaultCheckGetStep", checkParameters, 
+    "defaultComparisonStep", comparisonParameters, 
+    "defaultActionSartDt", actionParameters);
 
     //register the trigger
     std::array<int, 3> indexlb = {{0, 0, 0}};

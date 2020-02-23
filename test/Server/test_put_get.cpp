@@ -15,7 +15,7 @@ void test_get_meta()
 
     //client engine
     tl::engine clientEngine("verbs", THALLIUM_CLIENT_MODE);
-    UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf");
+    UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf", 0);
 
     //although we use same config here, if the max length at the metaserver is different
     //the number of returned metaserver is different
@@ -50,7 +50,7 @@ void test_put()
 
     //client engine
     tl::engine clientEngine("verbs", THALLIUM_CLIENT_MODE);
-    UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf");
+    UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf",0);
 
     //there is data screw if the length of the data is not the 2^n
     //there is data screw if the input data is not in the shape of the cubic
@@ -100,7 +100,7 @@ void test_get_2drawDatList()
 
     //init client engine
     tl::engine clientEngine("verbs", THALLIUM_CLIENT_MODE);
-    UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf");
+    UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf",0);
 
     //although we use same config here, if the max length at the metaserver is different
     //the number of returned metaserver is different

@@ -11,7 +11,7 @@ struct SingleSettings {
     double calcutime;
     std::string output;
     std::vector<int> processLayout;
-
+    std::vector<int> anaLayout;
 
     SingleSettings();
     static SingleSettings from_json(const std::string &fname);

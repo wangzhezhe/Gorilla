@@ -13,8 +13,44 @@
     int ret = sum.on(server)(42,63);
 */
 
-//TODO add the namespace here
+int UniClient::getAllServerAddr()
+{
+    if (this->m_uniCache == nullptr)
+    {
+        throw std::runtime_error("the cache shouled not be nullptr when call getAllServerAddr");
+    }
+    tl::remote_procedure remotegetAllServerAddr = this->m_clientEnginePtr->define("getAllServerAddr");
+    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(this->m_masterAddr);
+    //the parameters here should be consistent with the defination at the server end
+    std::vector<MetaAddrWrapper> adrList = remotegetAllServerAddr.on(serverEndpoint)();
+    if (adrList.size() == 0)
+    {
+        throw std::runtime_error("failed to get server list");
+        return -1;
+    }
 
+    for (auto it = adrList.begin(); it != adrList.end(); it++)
+    {
+        this->m_uniCache->addAddr(it->m_index, it->m_addr);
+    }
+    return 0;
+}
+
+int UniClient::getServerNum()
+{
+    if (this->m_masterAddr.compare("") == 0)
+    {
+        throw std::runtime_error("the master addr should be initilized before getServerNum");
+        return 0;
+    }
+
+    //std::cout << "debug updateDHT server addr " << serverAddr << std::endl;
+    tl::remote_procedure remotegetServerNum = this->m_clientEnginePtr->define("getServerNum");
+    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(this->m_masterAddr);
+    //the parameters here should be consistent with the defination at the server end
+    int serverNum = remotegetServerNum.on(serverEndpoint)();
+    return serverNum;
+}
 //this is called by server node, the address is already known
 int UniClient::updateDHT(std::string serverAddr, std::vector<MetaAddrWrapper> metaAddrWrapperList)
 {
@@ -29,10 +65,29 @@ int UniClient::updateDHT(std::string serverAddr, std::vector<MetaAddrWrapper> me
 std::string UniClient::getServerAddrByRRbin()
 {
 
-    tl::remote_procedure remoteGetServerRRB = this->m_clientEnginePtr->define("getaddrbyrrb");
+    //check the cache, return if exist
+    int serverId = this->getIDByRRB();
+    //std::cout << "use server ID " << serverId << std::endl;
+    if (this->m_uniCache != nullptr)
+    {
+        if (this->m_uniCache->ifAddrIDExist(serverId))
+        {
+            return this->m_uniCache->m_serverIDToAddr[serverId];
+        }
+    }
+
+    //if not exist, get the addr from the server according to specific id
+    tl::remote_procedure remoteGetAddrByID = this->m_clientEnginePtr->define("getaddrbyID");
     tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(this->m_masterAddr);
     //the parameters here should be consistent with the defination at the server end
-    std::string serverAddr = remoteGetServerRRB.on(serverEndpoint)();
+    std::string serverAddr = remoteGetAddrByID.on(serverEndpoint)(serverId);
+    std::cout << "get server addr by explicit call: " << serverAddr << std::endl;
+    //store the data into the cache
+    if (this->m_uniCache != nullptr)
+    {
+        this->m_uniCache->addAddr(serverId, serverAddr);
+    }
+
     return serverAddr;
 }
 
@@ -77,9 +132,9 @@ int UniClient::putmetadata(std::string serverAddr, size_t step, std::string varN
 
 int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSummary, void *dataContainer)
 {
-    //struct timespec start, end1, end2;
-    //double diff1, diff2;
-    //clock_gettime(CLOCK_REALTIME, &start);
+    struct timespec start, end1, end2;
+    double diff1, diff2;
+    clock_gettime(CLOCK_REALTIME, &start);
     //get the server by round roubin
     //TODO, save current server addr
     //if this server addr is different one, add into pool
@@ -96,24 +151,22 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
     std::vector<std::pair<void *, std::size_t>> segments(1);
     segments[0].first = (void *)(dataContainer);
     segments[0].second = dataMallocSize;
-    //clock_gettime(CLOCK_REALTIME, &end1);
-    //diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
-    //spdlog::info("put stage 1: {}", diff1);
 
     tl::bulk dataBulk = this->m_clientEnginePtr->expose(segments, tl::bulk_mode::read_only);
 
     //TODO, use async I/O ? store the request to check if the i/o finish when sim finish
     //the data only could be updated when the previous i/o finish
-    std::vector<MetaDataWrapper> mdwList = remotePutRawData.on(serverEndpoint)(step, varName, dataSummary, dataBulk);
-    //auto request = remotePutRawData.on(serverEndpoint).async(step, varName, dataSummary, dataBulk);
+    //std::vector<MetaDataWrapper> mdwList = remotePutRawData.on(serverEndpoint)(step, varName, dataSummary, dataBulk);
+    auto request = remotePutRawData.on(serverEndpoint).async(step, varName, dataSummary, dataBulk);
 
-    //clock_gettime(CLOCK_REALTIME, &end2);
-    //diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
-    //spdlog::info("put stage 2: {}", diff2);
-    //bool completed = request.received();
+    bool completed = request.received();
     // ...
     // actually wait on the request and get the result out of it
-    //std::vector<MetaDataWrapper> mdwList = request.wait();
+    std::vector<MetaDataWrapper> mdwList = request.wait();
+
+    clock_gettime(CLOCK_REALTIME, &end1);
+    diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+    std::cout <<"put stage 1: " << diff1 << std::endl;
 
     //has been updated (data server and metadata server are same)
     //mdw.printInfo();
@@ -138,6 +191,10 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
             return -1;
         }
     }
+
+    clock_gettime(CLOCK_REALTIME, &end2);
+    diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
+    std::cout << "put stage 2: " << diff2 << std::endl;
 
     return 0;
 }

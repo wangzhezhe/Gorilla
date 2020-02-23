@@ -13,8 +13,14 @@ namespace tl = thallium;
 class Writer
 {
 public:
-    Writer( tl::engine* clientEnginePtr){
-        m_uniclient = new UniClient(clientEnginePtr,"unimos_server.conf");
+    Writer( tl::engine* clientEnginePtr, int rank){
+        m_uniclient = new UniClient(clientEnginePtr,"unimos_server.conf", rank);
+        UniClientCache* uniCache = new UniClientCache();
+        //the cache should be attached with the client firstly
+        m_uniclient->m_uniCache = uniCache;
+        m_uniclient->getAllServerAddr();
+        m_uniclient->m_totalServerNum = uniCache->m_serverIDToAddr.size();
+        
     };
 
     void writeImageData(const GrayScott &sim, std::string fileName);

@@ -12,7 +12,7 @@ void test_put_1d()
 
     //client engine
     tl::engine clientEngine("tcp", THALLIUM_CLIENT_MODE);
-    UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf");
+    UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf",0);
     
     //there is data screw if the length of the data is not the 2^n
     //there is data screw if the input data is not in the shape of the cubic
@@ -57,7 +57,7 @@ void test_put_2d()
 
     //client engine
     tl::engine clientEngine("tcp", THALLIUM_CLIENT_MODE);
-    UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf");
+    UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf",0);
     
     //there is data screw if the length of the data is not the 2^n
     //there is data screw if the input data is not in the shape of the cubic
@@ -103,7 +103,7 @@ void test_put_3d()
 
     //client engine
     tl::engine clientEngine("tcp", THALLIUM_CLIENT_MODE);
-    UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf");
+    UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf",0);
     
     //there is data screw if the length of the data is not the 2^n
     //there is data screw if the input data is not in the shape of the cubic
