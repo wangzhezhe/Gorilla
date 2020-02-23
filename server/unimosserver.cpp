@@ -1,6 +1,5 @@
 
 //the unified in memory server that contains both metadata manager and raw data manager
-
 #include <iostream>
 #include <fstream>
 #include <thread>
@@ -22,18 +21,14 @@
 #include "../utils/bbxtool.h"
 #include "../utils/uuid.h"
 
-#include "addrManager.h"
 #include "settings.h"
-#include "DHTManager/dhtmanager.h"
 #include "../commondata/metadata.h"
 #include "../client/unimosclient.h"
-#include "RawdataManager/blockManager.h"
-#include "MetadataManager/metadataManager.h"
-#include "FunctionManager/functionManager.h"
-#include "TriggerManager/triggerManager.h"
+
+#include "unimosserver.hpp"
 
 //timer information
-#include "../putgetMeta/metaclient.h"
+//#include "../putgetMeta/metaclient.h"
 
 #include <time.h>
 #include <stdio.h>
@@ -66,34 +61,16 @@ namespace tl = thallium;
 //this shoule be initilized after the initilization of the argobot
 tl::engine *globalServerEnginePtr = nullptr;
 tl::engine *globalClientEnginePtr = nullptr;
-
-UniClient *globalClient = nullptr;
+UniClient *uniClient = nullptr;
+UniServer *uniServer = nullptr;
 
 //name of configure file, the write one line, the line is the rank0 addr
 //std::string masterConfigFile = "./unimos_server.conf";
 Settings gloablSettings;
 
-std::string MasterIP = "";
 //rank & proc number for current MPI process
 int globalRank = 0;
 int globalProc = 0;
-
-//the manager for all the server endpoints
-AddrManager *addrManager = nullptr;
-
-//the global manager for DHT
-DHTManager *dhtManager = nullptr;
-
-//the global manager for raw data
-BlockManager *blockManager = nullptr;
-
-//the meta data service
-MetaDataManager *metaManager = nullptr;
-
-//the trigger manager
-FunctionManagerMeta *fmetamanager = nullptr;
-FunctionManagerRaw *frawmanager = nullptr;
-DynamicTriggerManager *dtmanager = nullptr;
 
 const std::string serverCred = "Gorila_cred_conf";
 
@@ -102,16 +79,16 @@ void gatherIP(std::string endpoint)
 {
     //spdlog::info ("current rank is: {}, current ip is: {}", globalRank, endpoint);
 
-    if (addrManager == nullptr)
+    if (uniServer->m_addrManager == nullptr)
     {
         throw std::runtime_error("addrManager should not be null");
     }
     if (globalRank == 0)
     {
-        addrManager->ifMaster = true;
+        uniServer->m_addrManager->ifMaster = true;
     }
 
-    addrManager->nodeAddr = endpoint;
+    uniServer->m_addrManager->nodeAddr = endpoint;
 
     //maybe it is ok that only write the masternode's ip and provide the interface
     //of getting ipList for other clients
@@ -199,7 +176,7 @@ void gatherIP(std::string endpoint)
             //if (epManager->nodeAddr.compare(ipList[i]) != 0)
             //{
             //spdlog::debug("rank {} add raw data server {}", globalRank, ipList[i]);
-            addrManager->m_endPointsLists.push_back(ipList[i]);
+            uniServer->m_addrManager->m_endPointsLists.push_back(ipList[i]);
 
             //}
         }
@@ -232,7 +209,7 @@ void updateDHT(const tl::request &req, std::vector<MetaAddrWrapper> &datawrapper
         //TODO init dht
         spdlog::debug("rank {} add meta server, index {} and addr {}", globalRank, datawrapperList[i].m_index, datawrapperList[i].m_addr);
         //TODO add lock here
-        dhtManager->metaServerIDToAddr[datawrapperList[i].m_index] = datawrapperList[i].m_addr;
+        uniServer->m_dhtManager->metaServerIDToAddr[datawrapperList[i].m_index] = datawrapperList[i].m_addr;
     }
 
     req.respond(0);
@@ -243,12 +220,12 @@ void updateDHT(const tl::request &req, std::vector<MetaAddrWrapper> &datawrapper
 void getaddrbyrrb(const tl::request &req)
 {
 
-    if (addrManager->ifMaster == false)
+    if (uniServer->m_addrManager->ifMaster == false)
     {
         req.respond(std::string("NOTMASTER"));
     }
 
-    std::string serverAddr = addrManager->getByRRobin();
+    std::string serverAddr = uniServer->m_addrManager->getByRRobin();
     req.respond(serverAddr);
 }
 
@@ -256,17 +233,18 @@ void putmetadata(const tl::request &req, size_t &step, std::string &varName, Raw
 {
     try
     {
-        spdlog::debug("server {} put meta", addrManager->nodeAddr);
-        if(gloablSettings.logLevel>0){
+        spdlog::debug("server {} put meta", uniServer->m_addrManager->nodeAddr);
+        if (gloablSettings.logLevel > 0)
+        {
             rde.printInfo();
         }
-        metaManager->updateMetaData(step, varName, rde);
+        uniServer->m_metaManager->updateMetaData(step, varName, rde);
         req.respond(0);
         return;
     }
     catch (const std::exception &e)
     {
-        spdlog::info("exception for meta data put step {} varname {} server {}", step, varName, addrManager->nodeAddr);
+        spdlog::info("exception for meta data put step {} varname {} server {}", step, varName, uniServer->m_addrManager->nodeAddr);
         req.respond(-1);
         return;
     }
@@ -277,7 +255,7 @@ void putmetadata(const tl::request &req, size_t &step, std::string &varName, Raw
         //if the trigger is true
         if (gloablSettings.addTrigger)
         {
-            dtmanager->initstart("InitTrigger", step, varName, rde);
+            uniServer->m_dtmanager->initstart("InitTrigger", step, varName, rde);
         }
     }
     catch (std::exception &e)
@@ -298,6 +276,7 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
     //assume data is different when every rawdataput is called
     //generate the unique id for new data
 
+    std::vector<MetaDataWrapper> metadataWrapperList;
     spdlog::debug("execute raw data put for server id {} :", globalRank);
     if (gloablSettings.logLevel > 0)
     {
@@ -307,7 +286,7 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
     //caculate the blockid by uuid
     std::string blockID = UUIDTOOL::generateUUID();
 
-    spdlog::debug("blockID is {} on server {} ", blockID, addrManager->nodeAddr);
+    spdlog::debug("blockID is {} on server {} ", blockID, uniServer->m_addrManager->nodeAddr);
 
     tl::endpoint ep = req.get_endpoint();
 
@@ -323,9 +302,7 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
         {
             blockSummary.printSummary();
             spdlog::info("failed to malloc data");
-            MetaDataWrapper mdw;
-            req.respond(mdw);
-
+            req.respond(metadataWrapperList);
             return;
         }
         //it is mandatory to use this expression
@@ -354,13 +331,15 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
         */
         //generate the empty container firstly, then get the data pointer
         //decreaset the data transfer, just keep the pointer instead of memcopy
-        int status = blockManager->putBlock(blockID, blockSummary, localContainer);
+        int status = uniServer->m_blockManager->putBlock(blockID, blockSummary, localContainer);
 
-        spdlog::debug("---put block {} on server {} map size {}", blockID, addrManager->nodeAddr, blockManager->DataBlockMap.size());
+        spdlog::debug("---put block {} on server {} map size {}", blockID, uniServer->m_addrManager->nodeAddr, uniServer->m_blockManager->DataBlockMap.size());
         if (status != 0)
         {
             blockSummary.printSummary();
+            req.respond(metadataWrapperList);
             throw std::runtime_error("failed to put the raw data");
+            return;
         }
 
         //put into the Block Manager
@@ -368,7 +347,7 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
         //get the meta server according to bbx
         BBXTOOL::BBX *BBXQuery = new BBXTOOL::BBX(blockSummary.m_dims, blockSummary.m_indexlb, blockSummary.m_indexub);
 
-        std::vector<ResponsibleMetaServer> metaserverList = dhtManager->getMetaServerID(BBXQuery);
+        std::vector<ResponsibleMetaServer> metaserverList = uniServer->m_dhtManager->getMetaServerID(BBXQuery);
 
         //update the coresponding metadata server, send information to corespond meta
         if (gloablSettings.logLevel > 0)
@@ -402,31 +381,30 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
             std::array<int, 3> indexub = it->m_bbx->getIndexub();
 
             int metaServerId = it->m_metaServerID;
-            if (dhtManager->metaServerIDToAddr.find(metaServerId) == dhtManager->metaServerIDToAddr.end())
+            if (uniServer->m_dhtManager->metaServerIDToAddr.find(metaServerId) == uniServer->m_dhtManager->metaServerIDToAddr.end())
             {
+                req.respond(metadataWrapperList);
                 throw std::runtime_error("faild to get the coresponding server id in dhtManager");
-                MetaDataWrapper mdw;
-                req.respond(mdw);
                 return;
             }
             RawDataEndpoint rde(
-                addrManager->nodeAddr,
+                uniServer->m_addrManager->nodeAddr,
                 blockID,
                 blockSummary.m_dims, indexlb, indexub);
             //if dest of server is current one
-            std::string destAddr = dhtManager->metaServerIDToAddr[metaServerId];
-            if (destAddr.compare(addrManager->nodeAddr) == 0)
+            std::string destAddr = uniServer->m_dhtManager->metaServerIDToAddr[metaServerId];
+            if (destAddr.compare(uniServer->m_addrManager->nodeAddr) == 0)
             {
-                metaManager->updateMetaData(step, varName, rde);
-                MetaDataWrapper mdw;
-                req.respond(mdw);
+                uniServer->m_metaManager->updateMetaData(step, varName, rde);
+                req.respond(metadataWrapperList);
                 return;
             }
             else
             {
 
                 MetaDataWrapper mdw(destAddr, step, varName, rde);
-                req.respond(mdw);
+                metadataWrapperList.push_back(mdw);
+                req.respond(metadataWrapperList);
                 return;
             }
 
@@ -440,8 +418,7 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
     catch (const std::exception &e)
     {
         spdlog::info("exception for data put and update metadata server");
-        MetaDataWrapper mdw;
-        req.respond(mdw);
+        req.respond(metadataWrapperList);
         return;
     }
 }
@@ -451,7 +428,7 @@ void putTriggerInfo(const tl::request &req, std::string triggerName, DynamicTrig
 
     try
     {
-        dtmanager->updateTrigger(triggerName, dti);
+        uniServer->m_dtmanager->updateTrigger(triggerName, dti);
         spdlog::debug("add trigger {} for server id {}", triggerName, globalRank);
         req.respond(0);
         return;
@@ -471,15 +448,15 @@ void getmetaServerList(const tl::request &req, size_t &dims, std::array<int, 3> 
     try
     {
         BBXTOOL::BBX *BBXQuery = new BBXTOOL::BBX(dims, indexlb, indexub);
-        std::vector<ResponsibleMetaServer> metaserverList = dhtManager->getMetaServerID(BBXQuery);
+        std::vector<ResponsibleMetaServer> metaserverList = uniServer->m_dhtManager->getMetaServerID(BBXQuery);
         for (auto it = metaserverList.begin(); it != metaserverList.end(); it++)
         {
             int metaServerId = it->m_metaServerID;
-            if (dhtManager->metaServerIDToAddr.find(metaServerId) == dhtManager->metaServerIDToAddr.end())
+            if (uniServer->m_dhtManager->metaServerIDToAddr.find(metaServerId) == uniServer->m_dhtManager->metaServerIDToAddr.end())
             {
                 throw std::runtime_error("faild to get the coresponding server id in dhtManager for getmetaServerList");
             }
-            metaServerAddr.push_back(dhtManager->metaServerIDToAddr[metaServerId]);
+            metaServerAddr.push_back(uniServer->m_dhtManager->metaServerIDToAddr[metaServerId]);
         }
         free(BBXQuery);
         req.respond(metaServerAddr);
@@ -502,7 +479,7 @@ void getRawDataEndpointList(const tl::request &req,
     try
     {
         BBXTOOL::BBX *BBXQuery = new BBXTOOL::BBX(dims, indexlb, indexub);
-        rawDataEndpointList = metaManager->getOverlapEndpoints(step, varName, BBXQuery);
+        rawDataEndpointList = uniServer->m_metaManager->getOverlapEndpoints(step, varName, BBXQuery);
         free(BBXQuery);
         req.respond(rawDataEndpointList);
     }
@@ -519,18 +496,18 @@ void executeRawFunc(const tl::request &req, std::string &blockID,
 {
 
     //get block summary
-    BlockSummary bs = blockManager->getBlockSummary(blockID);
+    BlockSummary bs = uniServer->m_blockManager->getBlockSummary(blockID);
 
     //check data existance
-    if (blockManager->DataBlockMap.find(blockID) == blockManager->DataBlockMap.end())
+    if (uniServer->m_blockManager->DataBlockMap.find(blockID) == uniServer->m_blockManager->DataBlockMap.end())
     {
         req.respond(std::string("NOTEXIST"));
         return;
     }
 
-    DataBlockInterface *dbi = blockManager->DataBlockMap[blockID];
+    DataBlockInterface *dbi = uniServer->m_blockManager->DataBlockMap[blockID];
     void *rawDataPtr = dbi->getrawMemPtr();
-    std::string exeResults = frawmanager->execute(bs, rawDataPtr,
+    std::string exeResults = uniServer->m_frawmanager->execute(bs, rawDataPtr,
                                                   functionName, funcParameters);
     req.respond(exeResults);
     return;
@@ -548,18 +525,18 @@ void getDataSubregion(const tl::request &req,
     {
         void *dataContainer = NULL;
 
-        spdlog::debug("map size on server {} is {}", addrManager->nodeAddr, blockManager->DataBlockMap.size());
-        if (blockManager->checkDataExistance(blockID) == false)
+        spdlog::debug("map size on server {} is {}", uniServer->m_addrManager->nodeAddr, uniServer->m_blockManager->DataBlockMap.size());
+        if (uniServer->m_blockManager->checkDataExistance(blockID) == false)
         {
             throw std::runtime_error("failed to get block id " + blockID + " on server with rank id " + std::to_string(globalRank));
         }
-        BlockSummary bs = blockManager->getBlockSummary(blockID);
+        BlockSummary bs = uniServer->m_blockManager->getBlockSummary(blockID);
         size_t elemSize = bs.m_elemSize;
         BBXTOOL::BBX *bbx = new BBXTOOL::BBX(dims, subregionlb, subregionub);
         size_t allocSize = elemSize * bbx->getElemNum();
         spdlog::debug("alloc size at server {} is {}", globalRank, allocSize);
 
-        blockManager->getBlockSubregion(blockID, dims, subregionlb, subregionub, dataContainer);
+        uniServer->m_blockManager->getBlockSubregion(blockID, dims, subregionlb, subregionub, dataContainer);
 
         std::vector<std::pair<void *, std::size_t>> segments(1);
         segments[0].first = (void *)(dataContainer);
@@ -583,35 +560,59 @@ void getDataSubregion(const tl::request &req,
     }
 }
 
-void initManager()
+
+void initDHT()
 {
-    //init global managers
-    addrManager = new AddrManager();
-
-    //config the address manager
-    addrManager->m_serverNum = globalProc;
-    addrManager->m_metaServerNum = gloablSettings.metaserverNum;
-
-    //the global manager for raw data
-    blockManager = new BlockManager();
-
-    //the meta data service
-    metaManager = new MetaDataManager();
-
-    //dynamic trigger manager
-    if (globalClient != NULL)
+    int dataDims = gloablSettings.lenArray.size();
+    //config the dht manager
+    if (gloablSettings.partitionMethod.compare("SFC") == 0)
     {
-        fmetamanager = new FunctionManagerMeta(globalClient);
-        dtmanager = new DynamicTriggerManager(fmetamanager, 5);
+        int maxLen = 0;
+        for (int i = 0; i < dataDims; i++)
+        {
+            maxLen = std::max(maxLen, gloablSettings.lenArray[i]);
+        }
+
+        BBX *globalBBX = new BBX(dataDims);
+        for (int i = 0; i < dataDims; i++)
+        {
+            Bound *b = new Bound(0, maxLen - 1);
+            globalBBX->BoundList.push_back(b);
+        }
+        uniServer->m_dhtManager->initDHTBySFC(dataDims, gloablSettings.metaserverNum, globalBBX);
+    }
+    else if (gloablSettings.partitionMethod.compare("manual") == 0)
+    {
+        //check the metaserverNum match with the partitionLayout
+        int totalPartition = 1;
+        for (int i = 0; i < gloablSettings.partitionLayout.size(); i++)
+        {
+            totalPartition = totalPartition * gloablSettings.partitionLayout[i];
+        }
+        if (totalPartition != gloablSettings.metaserverNum)
+        {
+            throw std::runtime_error("metaserverNum should equals to the product of partitionLayout[i]");
+        }
+
+        uniServer->m_dhtManager->initDHTManually(gloablSettings.lenArray, gloablSettings.partitionLayout);
     }
     else
     {
-        spdlog::info("global client need to be initilized before function manager");
-        exit(0);
+        throw std::runtime_error("unsuported partition method " + gloablSettings.partitionMethod);
     }
 
-    frawmanager = new FunctionManagerRaw();
+    if (globalRank == 0)
+    {
+        //print metaServerIDToBBX
+        for (auto it = uniServer->m_dhtManager->metaServerIDToBBX.begin(); it != uniServer->m_dhtManager->metaServerIDToBBX.end(); it++)
+        {
+            std::cout << "init DHT, meta id " << it->first << std::endl;
+            it->second->printBBXinfo();
+        }
+    }
+    return;
 }
+
 
 void runRerver(std::string networkingType)
 {
@@ -739,13 +740,17 @@ void runRerver(std::string networkingType)
 
     //the server engine can also be the client engine, only one engine can be declared here
     globalClientEnginePtr = &serverEnginge;
-    globalClient = new UniClient(globalClientEnginePtr);
-    globalClient->m_masterAddr = masterAddr;
+    uniClient = new UniClient(globalClientEnginePtr);
+    uniClient->m_masterAddr = masterAddr;
 
-    //the functionManager need the client, it need to be declared after the init of the globalClient
-    initManager();
+    //init all the important manager of the server
+    uniServer = new UniServer();
+    uniServer->initManager(globalProc, gloablSettings.metaserverNum, uniClient, true);
+    
+    //init the DHT
+    initDHT();
 
-    //this will use the addManager
+    //gather IP to the rank0 and broadcaster the IP to all the services
     gatherIP(selfAddr);
 
     //write master server to file, server init ok
@@ -765,10 +770,10 @@ void runRerver(std::string networkingType)
     }
 
     //bradcaster the ip to all the worker nodes use the thallium api
-    if (addrManager->ifMaster)
+    if (uniServer->m_addrManager->ifMaster)
     {
         //there is gathered address information only for the master node
-        addrManager->broadcastMetaServer(globalClient);
+        uniServer->m_addrManager->broadcastMetaServer(uniClient);
     }
 
     spdlog::info("init server ok, call margo wait for rank {}", globalRank);
@@ -790,6 +795,8 @@ void signalHandler(int signal_num)
     exit(signal_num);
 }
 
+
+
 int main(int argc, char **argv)
 {
 
@@ -809,10 +816,6 @@ int main(int argc, char **argv)
     }
 
     tl::abt scope;
-    //this manager should be init at the beginning
-    //other managers are inited by intiManager after the init of the engine
-    //the trigger manager
-    dhtManager = new DHTManager();
 
     //the copy operator is called here
     Settings tempsetting = Settings::from_json(argv[1]);
@@ -850,64 +853,9 @@ int main(int argc, char **argv)
     {
         throw std::runtime_error("number of metaserver should less than the number of process");
     }
-    int dataDims = gloablSettings.lenArray.size();
-    //config the dht manager
-    if (gloablSettings.partitionMethod.compare("SFC") == 0)
-    {
-        int maxLen = 0;
-        for (int i = 0; i < dataDims; i++)
-        {
-            maxLen = std::max(maxLen, gloablSettings.lenArray[i]);
-        }
 
-        BBX *globalBBX = new BBX(dataDims);
-        for (int i = 0; i < dataDims; i++)
-        {
-            Bound *b = new Bound(0, maxLen - 1);
-            globalBBX->BoundList.push_back(b);
-        }
-        dhtManager->initDHTBySFC(dataDims, gloablSettings.metaserverNum, globalBBX);
-    }
-    else if (gloablSettings.partitionMethod.compare("manual") == 0)
-    {
-        //check the metaserverNum match with the partitionLayout
-        int totalPartition = 1;
-        for (int i = 0; i < gloablSettings.partitionLayout.size(); i++)
-        {
-            totalPartition = totalPartition * gloablSettings.partitionLayout[i];
-        }
-        if (totalPartition != gloablSettings.metaserverNum)
-        {
-            throw std::runtime_error("metaserverNum should equals to the product of partitionLayout[i]");
-        }
-
-        dhtManager->initDHTManually(gloablSettings.lenArray, gloablSettings.partitionLayout);
-    }
-    else
-    {
-        throw std::runtime_error("unsuported partition method " + gloablSettings.partitionMethod);
-    }
-
-    if (globalRank == 0)
-    {
-        //print metaServerIDToBBX
-        for (auto it = dhtManager->metaServerIDToBBX.begin(); it != dhtManager->metaServerIDToBBX.end(); it++)
-        {
-            std::cout << "init DHT, meta id " << it->first << std::endl;
-            it->second->printBBXinfo();
-        }
-    }
     try
     {
-        //load the filter manager
-        bool ifTrigger = gloablSettings.addTrigger;
-
-        if (ifTrigger == true)
-        {
-            //mcache->loadFilterManager(fmanager);
-            spdlog::info("load the filter for rank {}", globalRank);
-        }
-
         runRerver(networkingType);
     }
     catch (const std::exception &e)

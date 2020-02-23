@@ -100,6 +100,7 @@ target_link_libraries(trigger thallium ${VTK_LIBRARIES} unimos_client)
 
 # add enable_testing
 # test everything ok before integrating them into a server
+
 if (ENABLE_TESTING)
   add_subdirectory(test)
 endif()

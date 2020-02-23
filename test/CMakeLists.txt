@@ -1,3 +1,5 @@
+
+
 add_executable(test_dhtmanager ./DHTManager/test_dhtmanager.cpp ../utils/hilbert/hilbert.c)
 target_link_libraries(test_dhtmanager dhtmanager)
 
@@ -61,6 +63,7 @@ target_link_libraries(06_custom_client thallium )
 add_executable(thalliumtest_threadpool ./thalimtest/thalliumtest_threadpool.cpp)
 target_link_libraries(thalliumtest_threadpool thallium)
 
+add_subdirectory(mock)
 
 add_test( NAME test_dhtmanager COMMAND test_dhtmanager)
 

@@ -81,6 +81,11 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
     //double diff1, diff2;
     //clock_gettime(CLOCK_REALTIME, &start);
     //get the server by round roubin
+    //TODO, save current server addr
+    //if this server addr is different one, add into pool
+    //other wise, get
+    //if the size of pool is larger than the half of the total number
+    //0.8 rate get from pool, 0.2 rate get new
     std::string rrbServerAddr = this->getServerAddrByRRbin();
     //spdlog::debug("put server addr: {}", rrbServerAddr);
     tl::remote_procedure remotePutRawData = this->m_clientEnginePtr->define("putrawdata");
@@ -99,28 +104,43 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
 
     //TODO, use async I/O ? store the request to check if the i/o finish when sim finish
     //the data only could be updated when the previous i/o finish
-    //MetaDataWrapper mdw = remotePutRawData.on(serverEndpoint)(step, varName, dataSummary, dataBulk);
-    auto request = remotePutRawData.on(serverEndpoint).async(step, varName, dataSummary, dataBulk);
+    std::vector<MetaDataWrapper> mdwList = remotePutRawData.on(serverEndpoint)(step, varName, dataSummary, dataBulk);
+    //auto request = remotePutRawData.on(serverEndpoint).async(step, varName, dataSummary, dataBulk);
 
     //clock_gettime(CLOCK_REALTIME, &end2);
     //diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
     //spdlog::info("put stage 2: {}", diff2);
-    bool completed = request.received();
+    //bool completed = request.received();
     // ...
     // actually wait on the request and get the result out of it
-    MetaDataWrapper mdw = request.wait();
+    //std::vector<MetaDataWrapper> mdwList = request.wait();
 
     //has been updated (data server and metadata server are same)
     //mdw.printInfo();
-    if (mdw.m_destAddr.compare("") == 0)
+    if (mdwList.size() == 0)
     {
         return 0;
     }
 
-    int status = this->putmetadata(mdw.m_destAddr, mdw.m_step, mdw.m_varName, mdw.m_rde);
-    return status;
-}
+    //range mdwList
 
+    for (auto it = mdwList.begin(); it != mdwList.end(); it++)
+    {
+        //get dest server
+        int status = this->putmetadata(it->m_destAddr,
+                                       it->m_step,
+                                       it->m_varName,
+                                       it->m_rde);
+        if (status != 0)
+        {
+            std::cerr << "failed to put metadata" << std::endl;
+            it->printInfo();
+            return -1;
+        }
+    }
+
+    return 0;
+}
 
 //get MetaAddrWrapper List this contains the coresponding server that overlap with current querybox
 //this can be called once for multiple get in different time step, since partition is fixed
