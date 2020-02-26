@@ -68,28 +68,30 @@ struct UniClient
         m_position = rrbStartPosition;
     };
 
+
+
     std::string m_masterAddr = "";
+    std::string m_associatedDataServer = "";
+    tl::endpoint m_serverEndpoint;
     tl::engine *m_clientEnginePtr = NULL;
-    tl::mutex m_positionMutex;
+
+    
+    size_t m_bulkSize=0;
+    void* m_dataContainer = nullptr;
+    std::vector<std::pair<void *, std::size_t>> m_segments;
+    tl::bulk m_dataBulk;
+
+    
     int m_position = 0;
     int m_totalServerNum = 0;
 
-    ~UniClient(){};
-
-    int getIDByRRB()
-    {
-        if (m_totalServerNum == 0)
-        {
-            throw std::runtime_error("total serverNum should not be zero");
+    ~UniClient(){
+        if(m_dataContainer!=nullptr){
+            free(m_dataContainer);
         }
-
-        int serverId = m_position % m_totalServerNum;
-        m_positionMutex.lock();
-        m_position++;
-        m_positionMutex.unlock();
-
-        return serverId;
     };
+
+    
 
     int getIDByRandom()
     {
@@ -108,7 +110,7 @@ struct UniClient
     int updateDHT(std::string serverAddr, std::vector<MetaAddrWrapper> metaAddrWrapperList);
 
     //get the address of the server by round roubin pattern
-    std::string getServerAddrByRRbin();
+    std::string getServerAddr();
 
     //put the raw data
     int putrawdata(size_t step, std::string varName, BlockSummary &dataSummary, void *dataContainer);
@@ -159,6 +161,8 @@ struct UniClient
     int getServerNum();
 
     int getAllServerAddr();
+
+    void initPutRawData(size_t dataMallocSize);
 
     UniClientCache *m_uniCache = nullptr;
 };

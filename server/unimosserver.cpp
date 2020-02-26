@@ -300,7 +300,7 @@ void putmetadata(const tl::request &req, size_t &step, std::string &varName, Raw
 }
 
 //put the raw data into the raw data manager
-void putrawdata(const tl::request &req, size_t &step, std::string &varName, BlockSummary &blockSummary, tl::bulk &dataBulk)
+void putrawdata(const tl::request &req, int clientID, size_t &step, std::string &varName, BlockSummary &blockSummary, tl::bulk &dataBulk)
 {
     struct timespec start, end1, end2;
     double diff1, diff2;
@@ -321,36 +321,40 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
 
     spdlog::debug("blockID is {} on server {} ", blockID, uniServer->m_addrManager->nodeAddr);
 
-    tl::endpoint ep = req.get_endpoint();
-
     //assign the memory
     size_t mallocSize = blockSummary.m_elemSize * blockSummary.m_elemNum;
 
     spdlog::debug("malloc size is {}", mallocSize);
 
-    try
+    //if clientID is not in map, get avalible addr
+    if (uniServer->m_bulkMap.find(clientID) == uniServer->m_bulkMap.end())
     {
-        void *localContainer = (void *)malloc(mallocSize);
-        if (localContainer == NULL)
-        {
-            blockSummary.printSummary();
-            spdlog::info("failed to malloc data");
-            req.respond(metadataWrapperList);
-            return;
-        }
-        //it is mandatory to use this expression
+        //create new bulk
+        void *tempdataContainer = (void *)malloc(mallocSize);
         std::vector<std::pair<void *, std::size_t>> segments(1);
-        segments[0].first = localContainer;
+
+        segments[0].first = tempdataContainer;
         segments[0].second = mallocSize;
 
-        //create the container for the data and expose it to remote server
-        tl::bulk local = globalServerEnginePtr->expose(segments, tl::bulk_mode::write_only);
+        tl::bulk tempBulk = globalServerEnginePtr->expose(segments, tl::bulk_mode::write_only);
+        uniServer->m_bulkMapmutex.lock();
+        uniServer->m_bulkMap[clientID] = tempBulk;
+        uniServer->m_dataContainerMap[clientID] = tempdataContainer;
+        uniServer->m_bulkMapmutex.unlock();
+        spdlog::info("allocate new bulk for clientID {}", clientID);
+    }
+
+    tl::bulk currentBulk = uniServer->m_bulkMap[clientID];
+
+    try
+    {
+        tl::endpoint ep = req.get_endpoint();
         //pull the data onto the server
-        dataBulk.on(ep) >> local;
+        dataBulk.on(ep) >> currentBulk;
 
         clock_gettime(CLOCK_REALTIME, &end1);
         diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
-        spdlog::info("server put stage 1: {}", diff1);
+        spdlog::debug("server put stage 1: {}", diff1);
 
         //spdlog::debug("Server received bulk, check the contents: ");
         //check the bulk
@@ -364,7 +368,8 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
         */
         //generate the empty container firstly, then get the data pointer
         //decreaset the data transfer, just keep the pointer instead of memcopy
-        int status = uniServer->m_blockManager->putBlock(blockID, blockSummary, localContainer);
+        int status = uniServer->m_blockManager->putBlock(blockID, blockSummary,  uniServer->m_dataContainerMap[clientID]);
+
 
         spdlog::debug("---put block {} on server {} map size {}", blockID, uniServer->m_addrManager->nodeAddr, uniServer->m_blockManager->DataBlockMap.size());
         if (status != 0)
@@ -421,6 +426,10 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
                 uniServer->m_addrManager->nodeAddr,
                 blockID,
                 blockSummary.m_dims, indexlb, indexub);
+
+            clock_gettime(CLOCK_REALTIME, &end2);
+            diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
+            //spdlog::info("server put stage 2: {}", diff2);
             //if dest of server is current one
             std::string destAddr = uniServer->m_dhtManager->metaServerIDToAddr[metaServerId];
             if (destAddr.compare(uniServer->m_addrManager->nodeAddr) == 0)
@@ -451,10 +460,6 @@ void putrawdata(const tl::request &req, size_t &step, std::string &varName, Bloc
         req.respond(metadataWrapperList);
         return;
     }
-
-    clock_gettime(CLOCK_REALTIME, &end2);
-    diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
-    spdlog::info("server put stage 2: {}", diff2);
 }
 
 void putTriggerInfo(const tl::request &req, std::string triggerName, DynamicTriggerInfo &dti)

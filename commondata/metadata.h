@@ -112,6 +112,8 @@ struct BlockSummary
   std::array<int, 3> m_indexlb{{0, 0, 0}};
   //the origin can be caculated by offset
   std::array<int, 3> m_indexub{{0, 0, 0}};
+  //this is use to find the associated rdma endpoint at the server in order to improve the performance
+  int m_clientID;
   //some extra information need to be sent from the data writer
   std::string m_extraInfo;
   

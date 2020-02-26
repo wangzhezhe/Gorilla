@@ -28,6 +28,12 @@ public:
     void write(const GrayScott &sim, size_t &step, std::string recordInfo = "");
     
     UniClient * m_uniclient = NULL;
+
+    ~Writer(){
+        if(m_uniclient!=NULL){
+            delete m_uniclient;
+        }
+    }
 };
 
 #endif

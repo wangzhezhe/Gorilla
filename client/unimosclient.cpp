@@ -62,19 +62,26 @@ int UniClient::updateDHT(std::string serverAddr, std::vector<MetaAddrWrapper> me
     return status;
 }
 
-std::string UniClient::getServerAddrByRRbin()
+std::string UniClient::getServerAddr()
 {
 
     //check the cache, return if exist
-    int serverId = this->getIDByRRB();
+    int serverId = this->m_position % this->m_totalServerNum;
     //std::cout << "use server ID " << serverId << std::endl;
-    if (this->m_uniCache != nullptr)
+    if (this->m_uniCache == nullptr)
     {
-        if (this->m_uniCache->ifAddrIDExist(serverId))
-        {
-            return this->m_uniCache->m_serverIDToAddr[serverId];
-        }
+        throw std::runtime_error("m_uniCache should not be null");
     }
+
+    if (this->m_uniCache->ifAddrIDExist(serverId) == false)
+    {
+        throw std::runtime_error("server id not exist");
+    }
+
+    return this->m_uniCache->m_serverIDToAddr[serverId];
+}
+
+/*
 
     //if not exist, get the addr from the server according to specific id
     tl::remote_procedure remoteGetAddrByID = this->m_clientEnginePtr->define("getaddrbyID");
@@ -90,6 +97,7 @@ std::string UniClient::getServerAddrByRRbin()
 
     return serverAddr;
 }
+*/
 
 std::string UniClient::loadMasterAddr(std::string masterConfigFile)
 {
@@ -110,16 +118,13 @@ std::string UniClient::loadMasterAddr(std::string masterConfigFile)
 }
 
 //this is called by the server node, the adress is already known
-int UniClient::putmetadata(std::string serverAddr, size_t step, std::string varName, RawDataEndpoint &rde)
-{
+//int UniClient::putmetadata(std::string serverAddr, size_t step, std::string varName, RawDataEndpoint &rde)
+//{
+//tl::remote_procedure putMetaData = myEngine.define("putMetaData").disable_response();
+//    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(serverAddr);
+//    return
 
-    tl::remote_procedure remotePutMetaData = this->m_clientEnginePtr->define("putmetadata");
-    //tl::remote_procedure putMetaData = myEngine.define("putMetaData").disable_response();
-    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(serverAddr);
-    int status = remotePutMetaData.on(serverEndpoint)(step, varName, rde);
-
-    return status;
-}
+//}
 /*
     struct timespec start, end;
     double diff;
@@ -130,43 +135,60 @@ int UniClient::putmetadata(std::string serverAddr, size_t step, std::string varN
     diff = (end.tv_sec - start.tv_sec) * 1.0 + (end.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
 */
 
-int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSummary, void *dataContainer)
+void UniClient::initPutRawData(size_t dataMallocSize)
 {
-    struct timespec start, end1, end2;
-    double diff1, diff2;
-    clock_gettime(CLOCK_REALTIME, &start);
-    //get the server by round roubin
-    //TODO, save current server addr
-    //if this server addr is different one, add into pool
-    //other wise, get
-    //if the size of pool is larger than the half of the total number
-    //0.8 rate get from pool, 0.2 rate get new
-    std::string rrbServerAddr = this->getServerAddrByRRbin();
-    //spdlog::debug("put server addr: {}", rrbServerAddr);
-    tl::remote_procedure remotePutRawData = this->m_clientEnginePtr->define("putrawdata");
-    //tl::remote_procedure putMetaData = myEngine.define("putMetaData").disable_response();
-    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(rrbServerAddr);
+    std::cout << "init the data bulk size " << dataMallocSize << std::endl;
+    this->m_bulkSize = dataMallocSize;
+    this->m_dataContainer = (void *)malloc(dataMallocSize);
+    this->m_segments = std::vector<std::pair<void *, std::size_t>>(1);
+    this->m_segments[0].first = (void *)(this->m_dataContainer);
+    this->m_segments[0].second = dataMallocSize;
+    //register the memory
+    this->m_dataBulk = this->m_clientEnginePtr->expose(this->m_segments, tl::bulk_mode::read_only);
+    return;
+}
 
+int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSummary, void *dataContainerSrc)
+{
+    //struct timespec start, end1, end2;
+    //double diff1, diff2;
+    //clock_gettime(CLOCK_REALTIME, &start);
     size_t dataMallocSize = dataSummary.getTotalSize();
-    std::vector<std::pair<void *, std::size_t>> segments(1);
-    segments[0].first = (void *)(dataContainer);
-    segments[0].second = dataMallocSize;
+    if (this->m_associatedDataServer.compare("") == 0)
+    {
+        //init the endpoint
+        //get the server addr according to the m_position
+        if (this->m_uniCache == nullptr)
+        {
+            throw std::runtime_error("the client cache could not be nullptr");
+        }
 
-    tl::bulk dataBulk = this->m_clientEnginePtr->expose(segments, tl::bulk_mode::read_only);
+        this->m_associatedDataServer = this->getServerAddr();
+        std::cout << "m_position " << m_position << " m_associatedDataServer " << this->m_associatedDataServer << std::endl;
+        this->m_serverEndpoint = this->m_clientEnginePtr->lookup(this->m_associatedDataServer);
+        this->initPutRawData(dataMallocSize);
+    }
 
-    //TODO, use async I/O ? store the request to check if the i/o finish when sim finish
-    //the data only could be updated when the previous i/o finish
-    //std::vector<MetaDataWrapper> mdwList = remotePutRawData.on(serverEndpoint)(step, varName, dataSummary, dataBulk);
-    auto request = remotePutRawData.on(serverEndpoint).async(step, varName, dataSummary, dataBulk);
+    if (dataMallocSize != this->m_bulkSize)
+    {
+        throw std::runtime_error("mismatch of the data size");
+    }
 
-    bool completed = request.received();
+    //copy data into the current datacontainer
+    memcpy(this->m_dataContainer, dataContainerSrc, dataMallocSize);
+
+    tl::remote_procedure remotePutRawData = this->m_clientEnginePtr->define("putrawdata");
+    std::vector<MetaDataWrapper> mdwList = remotePutRawData.on(this->m_serverEndpoint)(this->m_position, step, varName, dataSummary, this->m_dataBulk);
+    //auto request = remotePutRawData.on(this->m_serverEndpoint).async(this->m_position ,step, varName, dataSummary, this->m_dataBulk);
+
+    //bool completed = request.received();
     // ...
     // actually wait on the request and get the result out of it
-    std::vector<MetaDataWrapper> mdwList = request.wait();
+    //std::vector<MetaDataWrapper> mdwList = request.wait();
 
-    clock_gettime(CLOCK_REALTIME, &end1);
-    diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
-    std::cout <<"put stage 1: " << diff1 << std::endl;
+    //clock_gettime(CLOCK_REALTIME, &end1);
+    //diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+    //std::cout << "put stage 1: " << diff1 << std::endl;
 
     //has been updated (data server and metadata server are same)
     //mdw.printInfo();
@@ -176,14 +198,18 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
     }
 
     //range mdwList
-
+    tl::remote_procedure remotePutMetaData = this->m_clientEnginePtr->define("putmetadata");
     for (auto it = mdwList.begin(); it != mdwList.end(); it++)
     {
         //get dest server
-        int status = this->putmetadata(it->m_destAddr,
-                                       it->m_step,
-                                       it->m_varName,
-                                       it->m_rde);
+        //    int status = this->m_remotePutMetaData.on(m_serverEndpoint)(step, varName, rde);
+        //   return status;
+        //int status = this->putmetadata(it->m_destAddr,
+        //                               it->m_step,
+        //                               it->m_varName,
+        //                               it->m_rde);
+        tl::endpoint metaserverEndpoint = this->m_clientEnginePtr->lookup(it->m_destAddr);
+        int status = remotePutMetaData.on(metaserverEndpoint)(it->m_step, it->m_varName, it->m_rde);
         if (status != 0)
         {
             std::cerr << "failed to put metadata" << std::endl;
@@ -192,9 +218,9 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
         }
     }
 
-    clock_gettime(CLOCK_REALTIME, &end2);
-    diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
-    std::cout << "put stage 2: " << diff2 << std::endl;
+    //clock_gettime(CLOCK_REALTIME, &end2);
+    //diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
+    //std::cout << "put stage 2: " << diff2 << std::endl;
 
     return 0;
 }
@@ -204,10 +230,10 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
 std::vector<std::string> UniClient::getmetaServerList(size_t dims, std::array<int, 3> indexlb, std::array<int, 3> indexub)
 {
 
-    std::string rrbServerAddr = this->getServerAddrByRRbin();
+    std::string serverAddr = this->m_masterAddr;
     tl::remote_procedure remotegetmetaServerList = this->m_clientEnginePtr->define("getmetaServerList");
     //tl::remote_procedure putMetaData = myEngine.define("putMetaData").disable_response();
-    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(rrbServerAddr);
+    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(serverAddr);
     std::vector<std::string> metaserverList = remotegetmetaServerList.on(serverEndpoint)(dims, indexlb, indexub);
     return metaserverList;
 }

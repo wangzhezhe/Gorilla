@@ -9,6 +9,7 @@
 #include "MetadataManager/metadataManager.h"
 #include "FunctionManager/functionManager.h"
 #include "TriggerManager/triggerManager.h"
+#include <map>
 
 struct UniServer
 {
@@ -59,7 +60,15 @@ struct UniServer
         m_frawmanager = new FunctionManagerRaw();
     };
 
-    ~UniServer(){};
+    //init the bulk at the server end
+    tl::mutex m_bulkMapmutex;
+    std::map<int, tl::bulk> m_bulkMap;
+    std::map<int, void *> m_dataContainerMap;
+
+    ~UniServer()
+    {
+        //delete the m_dataContainerList
+    };
 };
 
 #endif
