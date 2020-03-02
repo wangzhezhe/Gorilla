@@ -215,7 +215,7 @@ int main(int argc, char **argv)
         //}
         //else
         //{
-            dataWriter.write(sim, step);
+        dataWriter.write(sim, step);
         //}
         //char countstr[50];
         //sprintf(countstr, "%03d_%04d", step, rank);

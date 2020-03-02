@@ -23,5 +23,12 @@ thallium unimos_client metaclient)
 thallium unimos_client metaclient)
 endif()
 
-
-
+# compile the sim-inline-adios
+find_package(ADIOS2 REQUIRED)
+add_executable(sim-inline-adios
+  ./sim-inline-adios/main.cpp
+  ./sim-inline-adios/gray-scott.cpp
+  ./sim-inline-adios/writer.cpp
+  ./sim-inline-adios/settings.cpp
+)
+target_link_libraries(sim-inline-adios ${VTK_LIBRARIES} adios2::adios2 MPI::MPI_C)
