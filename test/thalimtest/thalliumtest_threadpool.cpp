@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
     }
 
     std::vector<tl::managed<tl::thread>> ths;
-    for(int i=0; i < 16; i++) {
+    for(int i=0; i < 256; i++) {
         tl::managed<tl::thread> th = ess[i % ess.size()]->make_thread(
             [i] {
                 char str[200];
@@ -39,7 +39,9 @@ int main(int argc, char** argv) {
         mth->join();
     }
 
-    for(int i=0; i < 4; i++) {
+    sleep(10);
+
+    for(int i=0; i <256 ; i++) {
         ess[i]->join();
     }
 

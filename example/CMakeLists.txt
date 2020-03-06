@@ -30,4 +30,4 @@ add_executable(sim-inline-adios
   ./sim-inline-adios/writer.cpp
   ./sim-inline-adios/settings.cpp
 )
-target_link_libraries(sim-inline-adios ${VTK_LIBRARIES} adios2::adios2 MPI::MPI_C)
+target_link_libraries(sim-inline-adios adios2::adios2 ${VTK_LIBRARIES} MPI::MPI_C)

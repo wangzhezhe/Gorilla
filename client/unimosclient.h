@@ -162,6 +162,10 @@ struct UniClient
 
     int getAllServerAddr();
 
+    void startTimer();
+
+    void endTimer();
+
     void initPutRawData(size_t dataMallocSize);
 
     std::string executeRawFunc(

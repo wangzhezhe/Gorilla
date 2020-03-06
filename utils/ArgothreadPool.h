@@ -14,7 +14,7 @@ struct ArgoThreadPool
         if(esNumber<=0){
             throw std::runtime_error("pool number should larger than 0");
         }
-        m_threadNumer = m_poolSize*4;
+        m_threadNumer = m_poolSize*2;
         for (int i = 0; i < esNumber; i++)
         {
             tl::managed<tl::xstream> es = tl::xstream::create();
@@ -38,12 +38,13 @@ struct ArgoThreadPool
     //tl::managed<tl::pool> m_myPool = tl::pool::create(tl::pool::access::spmc);
 
     std::vector<tl::managed<tl::xstream>> m_ess;
-
+    
+    tl::mutex m_threadmutex;
     std::vector<tl::managed<tl::thread>> m_userThreadList;
 
     int getEssId(){
-        int essId = m_currentUserThreadId % m_poolSize;
         m_Mutex.lock();
+        int essId = m_currentUserThreadId % m_poolSize;
         //assume there are less than 256 thread running concurrently
         m_currentUserThreadId = (m_currentUserThreadId+1) % 256;
         m_Mutex.unlock();
@@ -59,6 +60,7 @@ struct ArgoThreadPool
     }
 
     ~ArgoThreadPool(){
+        std::cout << "delete thread pool\n" << std::endl;
         essjoin();
         for(auto& th : m_userThreadList) {
             th->join();

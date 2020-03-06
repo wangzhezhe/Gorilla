@@ -15,6 +15,7 @@
 #include <unistd.h>
 
 
+
 #define BILLION 1000000000L
 //#include "../putgetMeta/metaclient.h"
 
@@ -63,6 +64,8 @@ void print_simulator_settings(const GrayScott &s)
               << s.size_z << std::endl;
 }
 
+
+
 int main(int argc, char **argv)
 {
 
@@ -95,7 +98,8 @@ int main(int argc, char **argv)
     sim.init();
 
     //Init the engine according to the protocol
-    if(rank==0){
+    if (rank == 0)
+    {
         std::cout << "--use protocol: " << protocol << std::endl;
     }
 
@@ -104,7 +108,8 @@ int main(int argc, char **argv)
     std::ifstream infile(serverCred);
     std::string cred_id;
     std::getline(infile, cred_id);
-    if(rank==0){
+    if (rank == 0)
+    {
         std::cout << "load cred_id: " << cred_id << std::endl;
     }
 
@@ -152,6 +157,8 @@ int main(int argc, char **argv)
         0,
         MPI_COMM_WORLD)
     */
+
+
     Writer dataWriter(&globalclientEngine, rank);
 
     //writer_main.open(settings.output);
@@ -179,8 +186,6 @@ int main(int argc, char **argv)
     for (int i = 0; i < settings.steps;)
     {
 
-        
-
         for (int j = 0; j < settings.plotgap; j++)
         {
             sim.iterate();
@@ -206,11 +211,11 @@ int main(int argc, char **argv)
         //send record to the metadata server
         //if (rank == 0)
         //{
-            //start meta server when use this
-            //MetaClient *metaclient = new MetaClient(&globalclientEngine);
-            //std::string recordKey = "Trigger_" + std::to_string(step);
-            //metaclient->Recordtime(recordKey);
-            //dataWriter.write(sim, step, recordKey);
+        //start meta server when use this
+        //MetaClient *metaclient = new MetaClient(&globalclientEngine);
+        //std::string recordKey = "Trigger_" + std::to_string(step);
+        //metaclient->Recordtime(recordKey);
+        //dataWriter.write(sim, step, recordKey);
         //    dataWriter.write(sim, step);
         //}
         //else
@@ -227,10 +232,10 @@ int main(int argc, char **argv)
         MPI_Barrier(comm);
         clock_gettime(CLOCK_REALTIME, &end); /* mark end time */
         diff = (end.tv_sec - start.tv_sec) * 1.0 + (end.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
-        
+
         //char tempstr[200];
         //sprintf(tempstr,"step %d rank %d put %f\n",i,rank,diff);
-        
+
         //std::cout << tempstr << std::endl;
 
         //caculate the avg
@@ -248,6 +253,9 @@ int main(int argc, char **argv)
         //the adis needed to be installed before using
     }
 
-
+    //end timer
+    if(rank==0){
+        dataWriter.endwftimer();
+    }
     MPI_Finalize();
 }

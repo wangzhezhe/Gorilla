@@ -1,0 +1,46 @@
+#!/bin/bash
+#SBATCH --qos=debug
+#SBATCH --nodes=8
+#SBATCH --tasks-per-node=32
+#SBATCH --time=10:00
+#SBATCH --licenses=cscratch1
+#SBATCH --constraint=haswell
+
+module load openmpi
+
+# copy metadata server to current dir
+rm unimos_server.conf Gorila_cred_conf gorilla.log gray_scott_pe_* conf* core cred sim.log iso.log
+
+while [ ! -d ./vtkdataraw ]
+do
+    mkdir ./vtkdataraw
+done
+
+rm -rf ./vtkdataraw/*
+
+# config the dataspace
+PJSRC=
+CONF_DIMS=1288
+DSTASK=16
+DSNODE=4
+SIMTASK=128
+SIMNODE=4
+
+source ~/.gorilla
+
+#copy the adios config
+
+sleep 1
+
+srun -N $DSNODE -n $DSTASK -c 8 --cpu_bind=cores --time=00:05:00 ./unimos_server ~/cworkspace/src/Gorilla/server/settings_gni.json &> gorilla.log &
+
+while [ ! -f ./unimos_server.conf ]
+do
+    sleep 0.01
+done
+
+srun -N $SIMNODE -n $SIMTASK -c 1 --cpu_bind=cores ./example/gray-scott ~/cworkspace/src/Gorilla/example/simulation/settings.json gni &> sim.log 
+
+sleep 5
+
+wait

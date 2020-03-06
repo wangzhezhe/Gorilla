@@ -15,7 +15,7 @@ std::string defaultCheckGetStep(size_t step, std::string varName, RawDataEndpoin
 
 bool defaultComparisonStep(std::string checkResults, std::vector<std::string> parameters)
 {
-    std::cout << "defaultComparisonStep check results " << checkResults << std::endl;
+    //std::cout << "defaultComparisonStep check results " << checkResults << std::endl;
     std::stringstream sstream(checkResults);
     size_t currentstep;
     sstream >> currentstep;
@@ -29,7 +29,7 @@ bool defaultComparisonStep(std::string checkResults, std::vector<std::string> pa
 
         sstreamcheck >> steplb;
 
-        std::cout << "step lb " << steplb << " current step " << currentstep << std::endl;
+        //std::cout << "step lb " << steplb << " current step " << currentstep << std::endl;
         //only return true for specific step
         if (currentstep >= steplb)
         {
@@ -51,7 +51,7 @@ void defaultActionSartDt(DynamicTriggerManager *dtm, size_t step, std::string va
     }
     std::string triggerName = parameters[0];
 
-    std::cout << "start new trigger: " << triggerName << std::endl;
+    //std::cout << "start new trigger: " << triggerName << std::endl;
 
     dtm->commonstart(triggerName, step, varName, rde);
     return;
@@ -61,7 +61,7 @@ void defaultActionSartDt(DynamicTriggerManager *dtm, size_t step, std::string va
 std::string defaultCheck(size_t step, std::string varName, RawDataEndpoint &rde, std::vector<std::string> parameters)
 {
 
-    std::cout << "execute defaultCheck" << std::endl;
+    //std::cout << "execute defaultCheck" << std::endl;
 
     for (int i = 0; i < parameters.size(); i++)
     {
@@ -72,7 +72,7 @@ std::string defaultCheck(size_t step, std::string varName, RawDataEndpoint &rde,
 
 bool defaultComparison(std::string checkResults, std::vector<std::string> parameters)
 {
-    std::cout << "execute defaultComparison" << std::endl;
+    //std::cout << "execute defaultComparison" << std::endl;
     for (int i = 0; i < parameters.size(); i++)
     {
         std::cout << "parameters " << i << " value " << parameters[i] << std::endl;
@@ -82,7 +82,7 @@ bool defaultComparison(std::string checkResults, std::vector<std::string> parame
 
 void defaultAction(size_t step, std::string varName, UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
 {
-    std::cout << "execute defaultAction" << std::endl;
+    //std::cout << "execute defaultAction" << std::endl;
     for (int i = 0; i < parameters.size(); i++)
     {
         std::cout << "parameters " << i << " value " << parameters[i] << std::endl;
@@ -99,15 +99,15 @@ std::string InsituExpCheck(size_t step, std::string varName, RawDataEndpoint &rd
     }
     //this is the second
     int anaTime = std::stoi(parameters[0]);
-
+    //std::cout << "usleep: " << anaTime <<std::endl;
     //assume data checking heppens here
-    usleep(anaTime * 1000000);
+    usleep(anaTime);
     return std::to_string(step);
 }
 
 bool InsituExpCompare(std::string checkResults, std::vector<std::string> parameters)
 {
-    std::cout << "execute InsituExpCompare parameters " << parameters[0] << std::endl;
+    //std::cout << "execute InsituExpCompare parameters " << parameters[0] << std::endl;
     if (parameters.size() != 1)
     {
         throw std::runtime_error("the parameters of InsituExpCompare should longer than 1");
@@ -152,14 +152,39 @@ void InsituExpAction(size_t step, std::string varName, UniClient *uniclient, Raw
     }
 
     std::string functionName = parameters[0];
-    
+
     //transfer the varname and timestep
     std::vector<std::string> funcParameters;
     funcParameters.push_back(std::to_string(step));
     funcParameters.push_back(varName);
 
-    std::string result = uniclient->executeRawFunc(
-        rde.m_rawDataServerAddr, rde.m_rawDataID, functionName, funcParameters);
+    if (rde.m_rawDataServerAddr.compare(uniclient->m_masterAddr) == 0)
+    {
+        //TODO if the destaddr is not equal to the current one
+        return;
+    }
+
+    try
+    {
+        char str[256];
+        sprintf(str, "adios write step %s varName %s lb %d %d %d ub %d %d %d\n",
+                funcParameters[0].c_str(), funcParameters[1].c_str(),
+                rde.m_indexlb[0], rde.m_indexlb[1], rde.m_indexlb[2],
+                rde.m_indexub[0], rde.m_indexub[1], rde.m_indexub[2]);
+        std::cout << str << std::endl;
+
+        //simulate the writting process
+
+        int writeTime = 3.8 ;
+        usleep(writeTime * 1000000);
+        //std::string result = uniclient->executeRawFunc(
+        //    rde.m_rawDataServerAddr, rde.m_rawDataID, functionName, funcParameters);
+    }
+    catch (const std::exception &e)
+    {
+        std::cout << std::string(e.what()) << std::endl;
+        std::cout << "exception for executeRawFunc " << rde.m_rawDataServerAddr << std::endl;
+    }
 
     //std::cout << "execute results of InsituExpAction: " << result << std::endl;
 

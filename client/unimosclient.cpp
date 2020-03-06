@@ -13,6 +13,24 @@
     int ret = sum.on(server)(42,63);
 */
 
+void UniClient::startTimer()
+{
+    tl::remote_procedure remotestartTimer = this->m_clientEnginePtr->define("startTimer").disable_response();
+    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(this->m_masterAddr);
+    //the parameters here should be consistent with the defination at the server end
+    remotestartTimer.on(serverEndpoint)();
+    return;
+}
+
+void UniClient::endTimer()
+{
+    tl::remote_procedure remotestartTimer = this->m_clientEnginePtr->define("endTimer").disable_response();
+    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(this->m_masterAddr);
+    //the parameters here should be consistent with the defination at the server end
+    remotestartTimer.on(serverEndpoint)();
+    return;
+}
+
 int UniClient::getAllServerAddr()
 {
     if (this->m_uniCache == nullptr)
@@ -164,7 +182,7 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
         }
 
         this->m_associatedDataServer = this->getServerAddr();
-        std::cout << "m_position " << m_position << " m_associatedDataServer " << this->m_associatedDataServer << std::endl;
+        //std::cout << "m_position " << m_position << " m_associatedDataServer " << this->m_associatedDataServer << std::endl;
         this->m_serverEndpoint = this->m_clientEnginePtr->lookup(this->m_associatedDataServer);
         this->initPutRawData(dataMallocSize);
     }

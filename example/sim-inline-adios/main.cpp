@@ -10,11 +10,11 @@
 
 #include "timer.hpp"
 #include "gray-scott.h"
-#include "writer.h"
 
 #include <time.h>
 #include <stdio.h>
 #include <unistd.h>
+#include "writer.h"
 
 #define BILLION 1000000000L
 //#include "../putgetMeta/metaclient.h"
@@ -78,14 +78,13 @@ int main(int argc, char **argv)
     GrayScott sim(settings, comm);
     sim.init();
 
-
     adios2::ADIOS adios(settings.adios_config, comm, adios2::DebugON);
     adios2::IO io_main = adios.DeclareIO("SimulationOutput");
     Writer writer_main(settings, sim, io_main);
     writer_main.open(settings.output);
 
     //anatime in ms
-    int anaTime = 0.28 * 0.2 * 1000;
+    int anaTime = 0.25 * 1000;
 
     if (rank == 0)
     {
@@ -149,7 +148,25 @@ int main(int argc, char **argv)
 
         if (ifQualified)
         {
-           writer_main.write(step,sim);
+            //MPI_Barrier(comm);
+            //struct timespec writestart, writeend;
+            //clock_gettime(CLOCK_REALTIME, &writestart);
+
+            //the write time is not steady on HPC
+            int writeTime = 3.8 * 1000;
+            std::this_thread::sleep_for(std::chrono::milliseconds(writeTime));
+            //writer_main.write(step, sim);
+
+            //MPI_Barrier(comm);
+            //clock_gettime(CLOCK_REALTIME, &writeend);
+
+            //double writetime = (writeend.tv_sec - writestart.tv_sec) * 1.0 + (writeend.tv_nsec - writestart.tv_nsec) * 1.0 / BILLION;
+            //double time_sum_write;
+            //MPI_Reduce(&writetime, &time_sum_write, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+            //if (rank == 0)
+            //{
+            //    std::cout << "data write time: " << time_sum_write / procs << std::endl;
+            //}
         }
     }
 
@@ -167,7 +184,6 @@ int main(int argc, char **argv)
     }
 #endif
 
-    
     MPI_Finalize();
     return 0;
 }

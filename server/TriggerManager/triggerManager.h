@@ -32,9 +32,9 @@ struct DynamicTriggerManager
         m_dynamicTrigger[triggerName] = triggerInfo;
     };
 
-    void initstart(std::string triggerName, size_t step, std::string varName, RawDataEndpoint &rde);
+    void initstart(std::string triggerName, size_t step, std::string varName, RawDataEndpoint rde);
 
-    void commonstart(std::string triggerName, size_t step, std::string varName, RawDataEndpoint &rde);
+    void commonstart(std::string triggerName, size_t step, std::string varName, RawDataEndpoint rde);
 
 
     //void removeTrigger(std::string triggerName);

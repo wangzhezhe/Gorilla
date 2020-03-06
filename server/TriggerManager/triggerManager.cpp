@@ -1,7 +1,7 @@
 #include "triggerManager.h"
 #include "../FunctionManager/functionManager.h"
 
-void DynamicTriggerManager::initstart(std::string triggerName, size_t step, std::string varName, RawDataEndpoint &rde)
+void DynamicTriggerManager::initstart(std::string triggerName, size_t step, std::string varName, RawDataEndpoint rde)
 {
     if(this->m_dynamicTrigger.find(triggerName)==this->m_dynamicTrigger.end()){
             throw std::runtime_error("failed to get the trigger with name " + triggerName);
@@ -52,7 +52,7 @@ void DynamicTriggerManager::initstart(std::string triggerName, size_t step, std:
 }
 
 //common start
-void DynamicTriggerManager::commonstart(std::string triggerName,size_t step, std::string varName, RawDataEndpoint &rde)
+void DynamicTriggerManager::commonstart(std::string triggerName,size_t step, std::string varName, RawDataEndpoint rde)
 {
     if(this->m_dynamicTrigger.find(triggerName)==this->m_dynamicTrigger.end()){
             throw std::runtime_error("failed to get the trigger with name " + triggerName);

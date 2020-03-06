@@ -3,8 +3,8 @@
     "partitionMethod":"manual",    
     "metaserverNum": 8,
     "partitionLayout":[2,2,2],
-    "protocol": "verbs",
+    "protocol": "gni",
     "masterInfo":"./unimos_server.conf",
-    "addTrigger": false,
+    "addTrigger": true,
     "logLevel":0
 }

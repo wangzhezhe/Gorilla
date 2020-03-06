@@ -141,6 +141,8 @@ std::string testvtk(FunctionManagerRaw *fmr, const BlockSummary &bs, void *input
     return "";
 }
 
+
+
 std::string adiosWrite(FunctionManagerRaw *fmr, const BlockSummary &bs, void *inputData, const std::vector<std::string> &parameters)
 {
     // write the data into the adios bp file
@@ -156,19 +158,23 @@ std::string adiosWrite(FunctionManagerRaw *fmr, const BlockSummary &bs, void *in
         return "FAIL";
     }
 
-    
     char str[256];
     sprintf(str, "adios write step %s varName %s lb %d %d %d ub %d %d %d\n",
             parameters[0].c_str(), parameters[1].c_str(),
             bs.m_indexlb[0], bs.m_indexlb[1], bs.m_indexlb[2],
-            bs.m_indexub[0], bs.m_indexub[1], bs.m_indexub[2]
-    );
-    std::cout << str << std::endl;
-    
-    
-    // there is still unsolved bug here
-    //   maybe it is the prolem of using lpthread with mochibt
+            bs.m_indexub[0], bs.m_indexub[1], bs.m_indexub[2]);
+    //std::cout << str << std::endl;
 
+    //simulate the writting process
+
+    //int writeTime = 3.8;
+    //usleep(writeTime * 1000000);
+
+    //record time
+
+    // there is still unsolved bug here
+    /*
+    
     adios2::Variable<double> var_u;
     adios2::Variable<int> var_step;
 
@@ -176,19 +182,19 @@ std::string adiosWrite(FunctionManagerRaw *fmr, const BlockSummary &bs, void *in
     size_t shapey = bs.m_indexub[1] - bs.m_indexlb[1] + 1;
     size_t shapez = bs.m_indexub[2] - bs.m_indexlb[2] + 1;
 
-    var_u = fmr->m_io.DefineVariable<double>("U",
+    var_u = fmr->m_statefulConfig->m_io.DefineVariable<double>("U",
                                              {512, 512, 512},
                                              {(size_t)bs.m_indexlb[0], (size_t)bs.m_indexlb[1], (size_t)bs.m_indexlb[2]},
                                              {shapex, shapey, shapez});
 
     int step = atoi(parameters[0].c_str());
-    var_step = fmr->m_io.DefineVariable<int>("step");
+    var_step = fmr->m_statefulConfig->m_io.DefineVariable<int>("step");
 
     //fmr->m_writer.BeginStep();
-    fmr->m_writer.Put<int>(var_step, &step);
-    fmr->m_writer.Put<double>(var_u, (double *)inputData);
+    fmr->m_statefulConfig->m_writer.Put<int>(var_step, &step);
+    fmr->m_statefulConfig->m_writer.Put<double>(var_u, (double *)inputData);
     //fmr->m_writer.EndStep();
-    
+    */
 
     //write the current block into the adios
     //the partition of the staging server is useully less than the partition of the writer

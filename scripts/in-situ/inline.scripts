@@ -9,7 +9,7 @@
 module load openmpi
 
 # copy metadata server to current dir
-rm unimos_server.conf Gorila_cred_conf gorilla.log gray_scott_pe_* conf* core cred sim.log iso.log
+rm unimos_server.conf Gorila_cred_conf gray_scott_pe_* conf* core cred in_situ_sim.log
 
 while [ ! -d ./vtkdataraw ]
 do
@@ -20,7 +20,7 @@ rm -rf ./vtkdataraw/*
 
 # config the dataspace
 PJSRC=
-CONF_DIMS=1024
+CONF_DIMS=1288
 SIMTASK=128
 SIMNODE=4
 
@@ -33,4 +33,4 @@ sleep 1
 
 srun -N $SIMNODE -n $SIMTASK -c 1 --cpu_bind=cores ./example/sim-inline-adios ~/cworkspace/src/Gorilla/example/sim-inline-adios/settings.json &> in_situ_sim.log 
 
-wait
+sleep 5

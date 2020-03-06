@@ -25,6 +25,7 @@
 #include "../client/unimosclient.h"
 
 #include "unimosserver.hpp"
+#include "statefulConfig.h"
 
 //timer information
 //#include "../putgetMeta/metaclient.h"
@@ -262,7 +263,7 @@ void getaddrbyrrb(const tl::request &req)
     req.respond(serverAddr);
 }
 
-void putmetadata(const tl::request &req, size_t &step, std::string &varName, RawDataEndpoint &rde)
+void putmetadata(const tl::request &req, size_t &step, std::string &varName, RawDataEndpoint rde)
 {
     try
     {
@@ -272,7 +273,6 @@ void putmetadata(const tl::request &req, size_t &step, std::string &varName, Raw
             rde.printInfo();
         }
         uniServer->m_metaManager->updateMetaData(step, varName, rde);
-        req.respond(0);
     }
     catch (const std::exception &e)
     {
@@ -287,16 +287,29 @@ void putmetadata(const tl::request &req, size_t &step, std::string &varName, Raw
         //if the trigger is true
         if (gloablSettings.addTrigger == true)
         {
+
+            int essid = uniServer->m_dtmanager->m_threadPool->getEssId();
+            tl::managed<tl::thread> th = uniServer->m_dtmanager->m_threadPool->m_ess[essid]->make_thread([=]() {
+                uniServer->m_dtmanager->initstart("InitTrigger", step, varName, rde);
+                //time it
+                if (globalRank == 0)
+                {
+                    uniServer->m_frawmanager->m_statefulConfig->timeit();
+                }
+            });
+            uniServer->m_dtmanager->m_threadPool->m_threadmutex.lock();
+            uniServer->m_dtmanager->m_threadPool->m_userThreadList.push_back(std::move(th));
             spdlog::debug("start trigger for var {} step {} data id {}", varName, step, rde.m_rawDataID);
-            uniServer->m_dtmanager->initstart("InitTrigger", step, varName, rde);
+            uniServer->m_dtmanager->m_threadPool->m_threadmutex.unlock();
         }
     }
     catch (std::exception &e)
     {
         spdlog::info("exception for init trigger step {} varname {}: {}", step, varName, std::string(e.what()));
         rde.printInfo();
-        req.respond(-1);
     }
+
+    req.respond(0);
     return;
 }
 
@@ -435,6 +448,23 @@ void putrawdata(const tl::request &req, int clientID, size_t &step, std::string 
             if (destAddr.compare(uniServer->m_addrManager->nodeAddr) == 0)
             {
                 uniServer->m_metaManager->updateMetaData(step, varName, rde);
+                if (gloablSettings.addTrigger == true)
+                {
+
+                    int essid = uniServer->m_dtmanager->m_threadPool->getEssId();
+                    tl::managed<tl::thread> th = uniServer->m_dtmanager->m_threadPool->m_ess[essid]->make_thread([=]() {
+                        uniServer->m_dtmanager->initstart("InitTrigger", step, varName, rde);
+                        //time it
+                        if (globalRank == 0)
+                        {
+                            uniServer->m_frawmanager->m_statefulConfig->timeit();
+                        }
+                    });
+                    uniServer->m_dtmanager->m_threadPool->m_threadmutex.lock();
+                    uniServer->m_dtmanager->m_threadPool->m_userThreadList.push_back(std::move(th));
+                    spdlog::debug("start trigger for var {} step {} data id {}", varName, step, rde.m_rawDataID);
+                    uniServer->m_dtmanager->m_threadPool->m_threadmutex.unlock();
+                }
                 req.respond(metadataWrapperList);
                 return;
             }
@@ -529,6 +559,21 @@ void getRawDataEndpointList(const tl::request &req,
     }
 }
 
+void startTimer(const tl::request &req)
+{
+
+    uniServer->m_frawmanager->m_statefulConfig->initTimer();
+    spdlog::info("start timer for rank {}", globalRank);
+    return;
+}
+
+void endTimer(const tl::request &req)
+{
+
+    uniServer->m_frawmanager->m_statefulConfig->endTimer();
+    return;
+}
+
 void executeRawFunc(const tl::request &req, std::string &blockID,
                     std::string &functionName,
                     std::vector<std::string> &funcParameters)
@@ -552,6 +597,7 @@ void executeRawFunc(const tl::request &req, std::string &blockID,
     std::string exeResults = uniServer->m_frawmanager->execute(uniServer->m_frawmanager, bs, rawDataPtr,
                                                                functionName, funcParameters);
     req.respond(exeResults);
+
     return;
 }
 
@@ -749,6 +795,8 @@ void runRerver(std::string networkingType)
     globalServerEnginePtr->define("getDataSubregion", getDataSubregion);
     globalServerEnginePtr->define("putTriggerInfo", putTriggerInfo);
     globalServerEnginePtr->define("executeRawFunc", executeRawFunc);
+    globalServerEnginePtr->define("startTimer", startTimer).disable_response();
+    globalServerEnginePtr->define("endTimer", endTimer).disable_response();
 
     //for testing
     globalServerEnginePtr->define("hello", hello).disable_response();
@@ -788,6 +836,9 @@ void runRerver(std::string networkingType)
     //get the total number of the server
     //init the client Cache
     uniClient->m_totalServerNum = gloablSettings.metaserverNum;
+
+    //init stateful config (this may use MPI, do not mix it with mochi)
+    statefulConfig *sconfig = new statefulConfig();
     //init all the important manager of the server
     uniServer = new UniServer();
     uniServer->initManager(globalProc, gloablSettings.metaserverNum, uniClient, true);
@@ -797,9 +848,6 @@ void runRerver(std::string networkingType)
 
     //gather IP to the rank0 and broadcaster the IP to all the services
     gatherIP(selfAddr);
-
-    //for the server, the map in uniclientCache is already known
-    //init the uniclientCache
 
     //write master server to file, server init ok
     if (globalRank == 0)
@@ -824,13 +872,11 @@ void runRerver(std::string networkingType)
         uniServer->m_addrManager->broadcastMetaServer(uniClient);
     }
 
-
-
     spdlog::info("init server ok, call margo wait for rank {}", globalRank);
 
     //call the ADIOS init explicitly
-    uniServer->m_frawmanager->initADIOS(MPI_COMM_WORLD);
-    spdlog::info("init adios ok, call margo wait for rank {}", globalRank);
+    uniServer->m_frawmanager->m_statefulConfig = sconfig;
+    spdlog::info("init sconfig ok, call margo wait for rank {}", globalRank);
 
 #ifdef USE_GNI
     //destructor will not be called if send mid to engine

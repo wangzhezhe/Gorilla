@@ -55,7 +55,7 @@ struct UniServer
         }
 
         m_fmetamanager = new FunctionManagerMeta();
-        m_dtmanager = new DynamicTriggerManager(m_fmetamanager, 5, client);
+        m_dtmanager = new DynamicTriggerManager(m_fmetamanager, 16, client);
         m_frawmanager = new FunctionManagerRaw();
     };
 

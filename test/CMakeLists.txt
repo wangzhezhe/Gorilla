@@ -48,6 +48,9 @@ target_link_libraries(test_threadpool thallium )
 add_executable(test_addtrigger ./Trigger/test_trigger.cpp)
 target_link_libraries(test_addtrigger trigger thallium unimos_client)
 
+add_executable(test_triggerthreadpool ./Trigger/test_triggerthreadpool.cpp)
+target_link_libraries(test_triggerthreadpool trigger thallium)
+
 
 file(COPY ${gorilla_SOURCE_DIR}/server/settings.json
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
