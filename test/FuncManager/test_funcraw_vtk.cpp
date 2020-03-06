@@ -1,6 +1,6 @@
 
-#include "../server/FunctionManager/functionManager.h"
-#include "../server/FunctionManager/defaultFunctions/defaultfuncraw.h"
+#include "../../server/FunctionManager/functionManager.h"
+#include "../../server/FunctionManager/defaultFunctions/defaultfuncraw.h"
 #include <thallium.hpp>
 #include <unistd.h>
 
@@ -11,7 +11,7 @@ void test_exengineraw()
     BlockSummary bs;
     std::string funcName = "test";
     std::vector<std::string> parameters;
-    exengine->execute(bs, NULL, funcName, parameters);
+    exengine->execute(NULL, bs, NULL, funcName, parameters);
     //make sure the delete operation is called
     //then the destructor will be called;
     delete exengine;
@@ -40,7 +40,7 @@ void test_executeVTK_raw()
     BlockSummary bs(sizeof(double), len * len * len, DRIVERTYPE_RAWMEM, 3, {{0, 0, 0}}, {{9, 9, 9}});
     std::string funcName = "testvtk";
     std::vector<std::string> parameters;
-    exengine->execute(bs, rawdata.data(), funcName, parameters);
+    exengine->execute(NULL, bs, rawdata.data(), funcName, parameters);
     //make sure the delete operation is called
     //then the destructor will be called;
     delete exengine;

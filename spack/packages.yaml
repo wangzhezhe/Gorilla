@@ -96,7 +96,7 @@ packages:
            mpich@3.1.4: /soft/libraries/mpi/mpich-gcc-3.1.4
         buildable: False
     libfabric:
-        variants: fabrics=rxm,sockets,tcp,verbs
+        variants: fabrics=rxm,sockets,tcp,verbs,gni
     all:
         providers:
             mpi: [mpich]

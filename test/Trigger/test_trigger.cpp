@@ -1,10 +1,9 @@
 
-
-#include "../server/FunctionManager/defaultFunctions/defaultfuncmeta.h"
-#include "../server/FunctionManager/functionManager.h"
-#include "../commondata/metadata.h"
-#include "../server/TriggerManager/triggerManager.h"
+#include <server/FunctionManager/functionManager.h>
+#include <server/TriggerManager/triggerManager.h>
+#include <commondata/metadata.h>
 #include <unistd.h>
+#include <adios2.h>
 
 void test_steptrigger()
 {
@@ -23,8 +22,8 @@ void test_steptrigger()
     std::vector<std::string> actionParameters;
     actionParameters.push_back(triggerNameb);
 
-    FunctionManagerMeta *fmm = new FunctionManagerMeta(NULL);
-    DynamicTriggerManager *dtm = new DynamicTriggerManager(fmm, 5);
+    FunctionManagerMeta *fmm = new FunctionManagerMeta();
+    DynamicTriggerManager *dtm = new DynamicTriggerManager(fmm, 5, NULL);
 
 
     DynamicTriggerInfo tgInfo("defaultCheckGetStep", comparisonParameters, 
@@ -42,7 +41,6 @@ void test_steptrigger()
     //this is similar to the process of the subscribe
     dtm->updateTrigger(triggerName, tgInfo);
     dtm->updateTrigger(triggerNameb, tgInfob);
-
 
     RawDataEndpoint rde;
 

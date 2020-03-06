@@ -23,7 +23,8 @@ void add_basictrigger()
 
     //start the trigger when the condition is satisfied
     actionParameters.push_back(triggerNameCustomized);
-    DynamicTriggerInfo tgInfo("defaultCheckGetStep", checkParameters, 
+    DynamicTriggerInfo tgInfo(
+    "defaultCheckGetStep", checkParameters, 
     "defaultComparisonStep", comparisonParameters, 
     "defaultActionSartDt", actionParameters);
 

@@ -22,16 +22,16 @@ add_executable(test_rawdatamanager ./RawData/test_rawdatamanager.cpp)
 target_link_libraries(test_rawdatamanager rawdatamanager)
 
 add_executable(test_funcraw_vtk ./FuncManager/test_funcraw_vtk.cpp)
-target_link_libraries(test_funcraw_vtk trigger thallium ${VTK_LIBRARIES})
+target_link_libraries(test_funcraw_vtk PRIVATE adios2::adios2 trigger thallium ${VTK_LIBRARIES})
 
 add_executable(test_funcraw_basic ./FuncManager/test_funcraw_basic.cpp)
-target_link_libraries(test_funcraw_basic trigger thallium )
+target_link_libraries(test_funcraw_basic PRIVATE adios2::adios2 trigger thallium )
 
 add_executable(test_funcmeta ./FuncManager/test_funcmeta.cpp)
-target_link_libraries(test_funcmeta trigger unimos_client thallium ${VTK_LIBRARIES})
+target_link_libraries(test_funcmeta PRIVATE adios2::adios2 trigger unimos_client thallium ${VTK_LIBRARIES})
 
 add_executable(test_trigger ./Trigger/test_trigger.cpp)
-target_link_libraries(test_trigger trigger unimos_client thallium ${VTK_LIBRARIES})
+target_link_libraries(test_trigger adios2::adios2 trigger unimos_client thallium ${VTK_LIBRARIES})
 
 add_executable(test_addrManager ./Server/test_addrManager.cpp ${gorilla_SOURCE_DIR}/server/addrManager.cpp)
 target_link_libraries(test_addrManager ${UUID_LIBRARIES} thallium unimos_client)
@@ -45,15 +45,14 @@ target_link_libraries(test_put_get thallium unimos_client)
 add_executable(test_threadpool ./Util/test_threadpool.cpp)
 target_link_libraries(test_threadpool thallium )
 
-add_executable(test_addtrigger ./Server/test_addtrigger.cpp)
-target_link_libraries(test_addtrigger trigger thallium unimos_client )
+add_executable(test_addtrigger ./Trigger/test_trigger.cpp)
+target_link_libraries(test_addtrigger trigger thallium unimos_client)
 
 
 file(COPY ${gorilla_SOURCE_DIR}/server/settings.json
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 add_executable(test_setting ./Setting/test_setting.cpp ${gorilla_SOURCE_DIR}/server/settings.cpp)
 target_link_libraries(test_setting)
-
 
 add_executable(06_custom_server ./thalimtest/server.cpp)
 target_link_libraries(06_custom_server thallium)
@@ -62,6 +61,9 @@ target_link_libraries(06_custom_client thallium )
 
 add_executable(thalliumtest_threadpool ./thalimtest/thalliumtest_threadpool.cpp)
 target_link_libraries(thalliumtest_threadpool thallium)
+
+add_executable(test_insitu_exp ./Trigger/test_insitu_exp.cpp)
+target_link_libraries(test_insitu_exp thallium unimos_client)
 
 add_subdirectory(mock)
 

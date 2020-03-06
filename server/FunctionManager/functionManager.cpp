@@ -2,7 +2,9 @@
 #include <spdlog/spdlog.h>
 
 
+
 std::string FunctionManagerRaw::execute(
+FunctionManagerRaw* fmr,
 const BlockSummary &bs, 
 void *inputData,
 std::string fiunctionName,
@@ -18,7 +20,7 @@ const std::vector<std::string>& parameters)
     //this functionPointer is beyond the scope of the class
     //it is better to make it as a static function???
     rawdatafunctionPointer fp = this->m_functionMap[fiunctionName];
-    std::string results = fp(bs, inputData, parameters);
+    std::string results = fp(this, bs, inputData, parameters);
     return results;
 }
 

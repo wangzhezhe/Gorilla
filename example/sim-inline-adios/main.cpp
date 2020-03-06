@@ -85,7 +85,7 @@ int main(int argc, char **argv)
     writer_main.open(settings.output);
 
     //anatime in ms
-    int anaTime = 0.028 * 1000;
+    int anaTime = 0.28 * 0.2 * 1000;
 
     if (rank == 0)
     {

@@ -96,7 +96,7 @@ void DynamicTriggerManager::commonstart(std::string triggerName,size_t step, std
     {
         //execute the action
         //ap(this->m_dtm, step, varName, rde, this->m_fdAction.m_parameters);
-        ap(step, varName, rde, dti->m_actionFuncPara);
+        ap(step, varName, this->m_uniclient, rde, dti->m_actionFuncPara);
 
     }
     return;

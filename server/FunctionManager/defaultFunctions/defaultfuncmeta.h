@@ -5,7 +5,7 @@
 #include <string>
 #include "../../../commondata/metadata.h"
 #include "../../TriggerManager/triggerManager.h"
-
+#include "../../../client/unimosclient.h"
 //forward declaration
 struct DynamicTriggerManager;
 
@@ -33,12 +33,26 @@ std::vector<std::string> parameters);
 
 std::string defaultCheck(size_t step, std::string varName, RawDataEndpoint &rde, std::vector<std::string> parameters);
 
-bool defaultComparison(std::string checkResults, std::vector<std::string> parameters);
+bool defaultComparison(std::string checkResults, 
+std::vector<std::string> parameters);
 
 void defaultAction(
-    size_t step, 
-std::string varName, 
+size_t step, 
+std::string varName,
+UniClient* uniclient,
 RawDataEndpoint& rde,
+std::vector<std::string> parameters);
+
+std::string InsituExpCheck(size_t step, std::string varName, RawDataEndpoint &rde, std::vector<std::string> parameters);
+
+bool InsituExpCompare(std::string checkResults, 
+std::vector<std::string> parameters);
+
+void InsituExpAction(
+size_t step, 
+std::string varName, 
+UniClient *uniclient, 
+RawDataEndpoint &rde, 
 std::vector<std::string> parameters);
 
 #endif

@@ -426,3 +426,24 @@ void UniClient::registerTrigger(
     }
     return;
 }
+
+/*
+std::string &blockID,
+                    std::string &functionName,
+                    std::vector<std::string> &funcParameters
+*/
+std::string UniClient::executeRawFunc(
+    std::string serverAddr,
+    std::string blockID,
+    std::string functionName,
+    std::vector<std::string> &funcParameters)
+{
+    tl::remote_procedure remoteexecuteRawFunc = this->m_clientEnginePtr->define("executeRawFunc");
+    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(serverAddr);
+    std::string result = remoteexecuteRawFunc.on(serverEndpoint)(blockID, functionName, funcParameters);
+    return result;
+}
+
+//start a server that could listen to the notification from the server
+//this server can be started by a sepatate xstream by using the lamda expression
+//this only need to be started on specific rank such as rank=0

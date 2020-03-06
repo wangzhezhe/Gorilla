@@ -164,6 +164,12 @@ struct UniClient
 
     void initPutRawData(size_t dataMallocSize);
 
+    std::string executeRawFunc(
+        std::string serverAddr,
+        std::string blockID,
+        std::string functionName,
+        std::vector<std::string> &funcParameters);
+
     UniClientCache *m_uniCache = nullptr;
 };
 

@@ -11,7 +11,7 @@
 #include <vector>
 #include "../../commondata/metadata.h"
 #include "../../utils/ArgothreadPool.h"
-
+#include "../../client/unimosclient.h"
 
 namespace tl = thallium;
 
@@ -19,7 +19,11 @@ struct FunctionManagerMeta;
 
 struct DynamicTriggerManager
 {
-    DynamicTriggerManager(FunctionManagerMeta* funcmanagerMeta, size_t poolSize) : m_funcmanagerMeta(funcmanagerMeta)
+    DynamicTriggerManager(
+        FunctionManagerMeta* funcmanagerMeta, 
+        size_t poolSize,
+        UniClient* uniclient
+        ) : m_funcmanagerMeta(funcmanagerMeta), m_uniclient(uniclient)
     {
         this->m_threadPool = new ArgoThreadPool(poolSize);
     };
@@ -41,6 +45,10 @@ struct DynamicTriggerManager
 
     //the place that store the function
     FunctionManagerMeta* m_funcmanagerMeta = NULL;
+
+    //the function manager may need to send request to specific server
+    //it needs to hold a pointer to the client
+    UniClient* m_uniclient = nullptr;
 
     ArgoThreadPool* m_threadPool = NULL;
 

@@ -1,8 +1,9 @@
 
-#include "../server/FunctionManager/functionManager.h"
-#include "../server/FunctionManager/defaultFunctions/defaultfuncraw.h"
+#include "../../server/FunctionManager/functionManager.h"
+#include "../../server/FunctionManager/defaultFunctions/defaultfuncraw.h"
 #include <thallium.hpp>
 #include <unistd.h>
+#include <adios2.h>
 
 void test_exengine_rangeG()
 {
@@ -33,7 +34,7 @@ void test_exengine_rangeG()
 
     BlockSummary bs(sizeof(double), len * len * len, DRIVERTYPE_RAWMEM, 3, {{0, 0, 0}}, {{9, 9, 9}});
     std::string funcName = "valueRange";
-    std::string results = exengine->execute(bs, rawdata.data(), funcName, parameters);
+    std::string results = exengine->execute(NULL, bs, rawdata.data(), funcName, parameters);
     if(results.compare("1")!=0){
         throw std::runtime_error("failed for test_exengine_rangeG");
     }
@@ -69,7 +70,7 @@ void test_exengine_rangeL()
 
     BlockSummary bs(sizeof(double), len * len * len, DRIVERTYPE_RAWMEM, 3, {{0, 0, 0}}, {{9, 9, 9}});
     std::string funcName = "valueRange";
-    std::string results = exengine->execute(bs, rawdata.data(), funcName, parameters);
+    std::string results = exengine->execute(NULL, bs, rawdata.data(), funcName, parameters);
     if(results.compare("1")!=0){
         throw std::runtime_error("failed for test_exengine_rangeG");
     }
@@ -107,7 +108,7 @@ void test_exengine_rangeB()
 
     BlockSummary bs(sizeof(double), len * len * len, DRIVERTYPE_RAWMEM, 3, {{0, 0, 0}}, {{9, 9, 9}});
     std::string funcName = "valueRange";
-    std::string results = exengine->execute(bs, rawdata.data(), funcName, parameters);
+    std::string results = exengine->execute(NULL, bs, rawdata.data(), funcName, parameters);
     if(results.compare("0")!=0){
         throw std::runtime_error("failed for test_exengine_rangeG");
     }

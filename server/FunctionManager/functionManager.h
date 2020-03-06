@@ -2,14 +2,14 @@
 #define FUNCTIONMNG_H
 
 #include "../../commondata/metadata.h"
-#include "defaultFunctions/defaultfuncraw.h"
-#include "defaultFunctions/defaultfuncmeta.h"
-#include "../../client/unimosclient.h"
-
+#include "./defaultFunctions/defaultfuncmeta.h"
 
 #include <thallium.hpp>
 #include <map>
 #include <vector>
+#include <adios2.h>
+
+#include "mpi.h"
 
 namespace tl = thallium;
 
@@ -41,6 +41,7 @@ typedef void (*initActionPtr)(
 typedef void (*actionPtr)(    
     size_t step, 
     std::string varName, 
+    UniClient* uniclient,
     RawDataEndpoint& rde,
     std::vector<std::string> parameters);
 
@@ -49,7 +50,7 @@ typedef void (*actionPtr)(
 // the execution engine runs at the meta server
 struct FunctionManagerMeta
 {
-    FunctionManagerMeta(UniClient* uniclient):m_uniclient(uniclient)
+    FunctionManagerMeta()
     {
         registerFunc();
     };
@@ -63,6 +64,10 @@ struct FunctionManagerMeta
         registerCheckFunc("defaultCheck", &defaultCheck);
         registerComparisonFunc("defaultComparison", &defaultComparison);
         registerActionFunc("defaultAction", &defaultAction);
+
+        registerCheckFunc("InsituExpCheck", &InsituExpCheck);
+        registerComparisonFunc("InsituExpCompare", &InsituExpCompare);
+        registerActionFunc("InsituExpAction", &InsituExpAction);
 
         return;
     }
@@ -161,9 +166,7 @@ struct FunctionManagerMeta
     std::map<std::string, initActionPtr> m_initActionPtrMap;
     std::map<std::string, actionPtr> m_actionPtrMap;
 
-    //the function manager may need to send request to specific server
-    //it needs to hold a pointer to the client
-    UniClient* m_uniclient = nullptr;
+
 };
 
 //the function pointer that execute at the raw data server
@@ -173,7 +176,34 @@ struct FunctionManagerMeta
 // the execution engine runs at the raw data server
 // TODO put this at the dynamic trigger
 
+struct FunctionManagerRaw;
+//TODO use separate .h file???
 typedef std::string (*rawdatafunctionPointer)(
+FunctionManagerRaw* fmw,
+const BlockSummary &bs, 
+void *inputData, 
+const std::vector<std::string>& parameters);
+
+std::string test(
+FunctionManagerRaw* fmr,
+const BlockSummary &bs, 
+void *inputData,
+const std::vector<std::string>& parameters);
+
+std::string testvtk(
+FunctionManagerRaw*fmr,
+const BlockSummary &bs, 
+void *inputData,
+const std::vector<std::string>& parameters);
+
+std::string valueRange(
+FunctionManagerRaw*fmr,
+const BlockSummary &bs, 
+void *inputData, 
+const std::vector<std::string>& parameters);
+
+std::string adiosWrite(
+FunctionManagerRaw*fmr,
 const BlockSummary &bs, 
 void *inputData, 
 const std::vector<std::string>& parameters);
@@ -186,12 +216,18 @@ struct FunctionManagerRaw
         this->m_functionMap["test"] = &test;
         this->m_functionMap["testvtk"] = &testvtk;
         this->m_functionMap["valueRange"] = &valueRange;
+        this->m_functionMap["adiosWrite"] = &adiosWrite;
+        
+        //the io need to be started
+        //initADIOS();
+
     };
 
     bool registerFunction(std::string functionName, rawdatafunctionPointer fp);
     
     //put the execution logic together with the storage part
     std::string execute(
+    FunctionManagerRaw* fmr,
     const BlockSummary &bs, 
     void *inputData,
     std::string fiunctionName,
@@ -201,10 +237,31 @@ struct FunctionManagerRaw
     {
         std::cout << "destroy FunctionManagerRaw\n";
     };
+    
+    void initADIOS(MPI_Comm comm){
+        std::cout << "debug1 adios"<< std::endl;
+        adios2::ADIOS adios(comm, adios2::DebugON);
+                std::cout << "debug2 adios"<< std::endl;
+
+        this->m_io = adios.DeclareIO("gorilla_gs");
+                std::cout << "debug3 adios"<< std::endl;
+
+        this->m_io.SetEngine("BP4");
+        std::cout << "debug4 adios"<< std::endl;
+        this->m_writer = m_io.Open("gorilla_gs", adios2::Mode::Write);
+                std::cout << "debug5 adios"<< std::endl;
+
+    }
+
+    //TODO close IO
 
     //function map that maps the name of the function into the pointer of the function
     tl::mutex m_functionMapMutex;
     std::map<std::string, rawdatafunctionPointer> m_functionMap;
+
+    //if the adios is needed
+    adios2::IO m_io;
+    adios2::Engine m_writer;
 };
 
 

@@ -273,7 +273,6 @@ void putmetadata(const tl::request &req, size_t &step, std::string &varName, Raw
         }
         uniServer->m_metaManager->updateMetaData(step, varName, rde);
         req.respond(0);
-        return;
     }
     catch (const std::exception &e)
     {
@@ -286,8 +285,9 @@ void putmetadata(const tl::request &req, size_t &step, std::string &varName, Raw
     {
         //execute init trigger
         //if the trigger is true
-        if (gloablSettings.addTrigger)
+        if (gloablSettings.addTrigger == true)
         {
+            spdlog::debug("start trigger for var {} step {} data id {}", varName, step, rde.m_rawDataID);
             uniServer->m_dtmanager->initstart("InitTrigger", step, varName, rde);
         }
     }
@@ -297,6 +297,7 @@ void putmetadata(const tl::request &req, size_t &step, std::string &varName, Raw
         rde.printInfo();
         req.respond(-1);
     }
+    return;
 }
 
 //put the raw data into the raw data manager
@@ -368,8 +369,7 @@ void putrawdata(const tl::request &req, int clientID, size_t &step, std::string 
         */
         //generate the empty container firstly, then get the data pointer
         //decreaset the data transfer, just keep the pointer instead of memcopy
-        int status = uniServer->m_blockManager->putBlock(blockID, blockSummary,  uniServer->m_dataContainerMap[clientID]);
-
+        int status = uniServer->m_blockManager->putBlock(blockID, blockSummary, uniServer->m_dataContainerMap[clientID]);
 
         spdlog::debug("---put block {} on server {} map size {}", blockID, uniServer->m_addrManager->nodeAddr, uniServer->m_blockManager->DataBlockMap.size());
         if (status != 0)
@@ -546,7 +546,10 @@ void executeRawFunc(const tl::request &req, std::string &blockID,
 
     DataBlockInterface *dbi = uniServer->m_blockManager->DataBlockMap[blockID];
     void *rawDataPtr = dbi->getrawMemPtr();
-    std::string exeResults = uniServer->m_frawmanager->execute(bs, rawDataPtr,
+
+    //TODO init the adios if need to put
+
+    std::string exeResults = uniServer->m_frawmanager->execute(uniServer->m_frawmanager, bs, rawDataPtr,
                                                                functionName, funcParameters);
     req.respond(exeResults);
     return;
@@ -821,7 +824,13 @@ void runRerver(std::string networkingType)
         uniServer->m_addrManager->broadcastMetaServer(uniClient);
     }
 
+
+
     spdlog::info("init server ok, call margo wait for rank {}", globalRank);
+
+    //call the ADIOS init explicitly
+    uniServer->m_frawmanager->initADIOS(MPI_COMM_WORLD);
+    spdlog::info("init adios ok, call margo wait for rank {}", globalRank);
 
 #ifdef USE_GNI
     //destructor will not be called if send mid to engine

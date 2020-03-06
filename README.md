@@ -189,7 +189,7 @@ spack load -r abt-io
 
 //make sure the cmake use the suitable gcc version, or let the spack find the correct gcc version
 cd /home/zw241/cworkspace/build/build_Gorilla
-cmake  ~/cworkspace/src/Gorilla -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DVTK_DIR=~/cworkspace/build/build_vtk
+cmake  ~/cworkspace/src/Gorilla -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DVTK_DIR=~/cworkspace/build/build_vtk -DADIOS2_DIR=~/cworkspace/build/build_ADIOS2
 
 //on cori, vtk dir is /global/homes/z/zw241/cworkspace/install/install_VTK/lib64/cmake/vtk-8.90/
 //refer to this if install by cmake: https://github.com/grpc/grpc/issues/16675

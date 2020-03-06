@@ -54,9 +54,8 @@ struct UniServer
             throw std::runtime_error("the client should not be NULL for init func");
         }
 
-        m_fmetamanager = new FunctionManagerMeta(client);
-        m_dtmanager = new DynamicTriggerManager(m_fmetamanager, 5);
-
+        m_fmetamanager = new FunctionManagerMeta();
+        m_dtmanager = new DynamicTriggerManager(m_fmetamanager, 5, client);
         m_frawmanager = new FunctionManagerRaw();
     };
 

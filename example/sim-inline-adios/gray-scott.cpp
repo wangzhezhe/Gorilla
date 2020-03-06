@@ -143,6 +143,8 @@ void GrayScott::init_mpi()
     MPI_Dims_create(procs, 3, dims);
     npx = dims[0];
     npy = dims[1];
+
+
     npz = dims[2];
 
     MPI_Cart_create(comm, 3, dims, periods, 0, &cart_comm);

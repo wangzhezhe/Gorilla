@@ -38,6 +38,8 @@ xpkg_import_module (margo REQUIRED margo)
 xpkg_import_module (abtio REQUIRED abt-io)
 find_package (thallium REQUIRED)
 
+# compile the sim-inline-adios
+find_package(ADIOS2 REQUIRED)
 
 option(USE_GNI "use cray gni" OFF)
 
@@ -57,6 +59,7 @@ endif()
 # add the depedency
 include_directories(
      ${gorilla_SOURCE_DIR}/dep
+     ${gorilla_SOURCE_DIR}
 )
 
 
@@ -91,12 +94,12 @@ target_link_libraries (unimos_client thallium)
 
 # there is reference between each other, so it is better to build them together
 add_library(trigger 
-${gorilla_SOURCE_DIR}/server/FunctionManager/defaultFunctions/defaultfuncraw.cpp
 ${gorilla_SOURCE_DIR}/server/FunctionManager/defaultFunctions/defaultfuncmeta.cpp
+${gorilla_SOURCE_DIR}/server/FunctionManager/defaultFunctions/defaultfuncraw.cpp
 ${gorilla_SOURCE_DIR}/server/FunctionManager/functionManager.cpp
 ${gorilla_SOURCE_DIR}/server/TriggerManager/triggerManager.cpp
 )
-target_link_libraries(trigger thallium ${VTK_LIBRARIES} unimos_client)
+target_link_libraries(trigger adios2::adios2 thallium ${VTK_LIBRARIES} unimos_client)
 
 # add enable_testing
 # test everything ok before integrating them into a server
@@ -114,20 +117,24 @@ ${gorilla_SOURCE_DIR}/server/settings.cpp
 if(USE_GNI)
 target_link_libraries (unimos_server
  ${DRC_LIBRARIES}
- thallium 
+ adios2::adios2
+ thallium
  MPI::MPI_C 
  unimos_client 
  dhtmanager rawdatamanager metadatamanager 
  trigger ${VTK_LIBRARIES}
- metaclient)
+ metaclient
+ )
 else()
  target_link_libraries (unimos_server
- thallium 
+ adios2::adios2
+ thallium
  MPI::MPI_C 
  unimos_client 
  dhtmanager rawdatamanager metadatamanager 
- trigger ${VTK_LIBRARIES}
- metaclient)
+ trigger 
+ metaclient
+)
 endif()
 
 
