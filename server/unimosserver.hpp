@@ -55,6 +55,8 @@ struct UniServer
         }
 
         m_fmetamanager = new FunctionManagerMeta();
+        //TODO, control the thread number based on if the trigger is enabled
+        //the number for the in-situ thread pool should be small for scale 
         m_dtmanager = new DynamicTriggerManager(m_fmetamanager, 16, client);
         m_frawmanager = new FunctionManagerRaw();
     };

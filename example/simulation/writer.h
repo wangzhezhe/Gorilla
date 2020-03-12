@@ -26,17 +26,16 @@ public:
         //start the timer for the master server
         if (rank == 0)
         {
-            registerRtrigger();
+            registerRtrigger(2);
             m_uniclient->startTimer();
             std::cout << "ok to register the trigger and timer\n";
-
         }
     };
 
-    void endwftimer(){
-            registerRtrigger();
-            m_uniclient->endTimer();
-            std::cout << "end the  timer\n";
+    void endwftimer()
+    {
+        m_uniclient->endTimer();
+        std::cout << "end the timer\n";
     };
 
     void writeImageData(const GrayScott &sim, std::string fileName);
@@ -45,11 +44,10 @@ public:
 
     UniClient *m_uniclient = NULL;
 
-    void registerRtrigger()
+    void registerRtrigger(int num)
     {
         //add the init trigger
         std::string triggerNameInit = "InitTrigger";
-        std::string triggerNameExp = "InsituTriggerExp";
 
         //declare the function and the parameters
         std::vector<std::string> initCheckParameters;
@@ -57,21 +55,9 @@ public:
         std::vector<std::string> initActionParameters;
 
         initComparisonParameters.push_back("0");
-        //start the trigger when the condition is satisfied
-        initActionParameters.push_back(triggerNameExp);
 
-        DynamicTriggerInfo initTgInfo(
-            "defaultCheckGetStep", initCheckParameters,
-            "defaultComparisonStep", initComparisonParameters,
-            "defaultActionSartDt", initActionParameters);
-
-        //register the trigger
-        std::array<int, 3> indexlb = {{0, 0, 0}};
-        std::array<int, 3> indexub = {{1287, 1287, 1287}};
-        m_uniclient->registerTrigger(3, indexlb, indexub, triggerNameInit, initTgInfo);
-        
         //how many seconds
-        int anaTimeint = 0.25*1000000;
+        int anaTimeint = 2.0 * 1000000;
         std::string anaTime = std::to_string(anaTimeint);
         //declare the function and the parameters
         std::vector<std::string> checkParameters;
@@ -79,23 +65,32 @@ public:
         std::vector<std::string> actionParameters;
 
         checkParameters.push_back(anaTime);
-        comparisonParameters.push_back("2");
+        comparisonParameters.push_back("0");
         actionParameters.push_back("adiosWrite");
 
-        //start the trigger when the condition is satisfied
-        //InsituExpCheck is used to get step and execute the ana, input parameter
-        //is the time for ana execution
-        //InsituExpCompare is used to check the ana results
-        //InsituExpAction is used to write the data by ADIOS
-        DynamicTriggerInfo tgInfo(
-            "InsituExpCheck", checkParameters,
-            "InsituExpCompare", comparisonParameters,
-            "InsituExpAction", actionParameters);
 
         //register the trigger
-        //std::array<int, 3> indexlb = {{0, 0, 0}};
-        //std::array<int, 3> indexub = {{1023, 1023, 1023}};
-        m_uniclient->registerTrigger(3, indexlb, indexub, triggerNameExp, tgInfo);
+        std::array<int, 3> indexlb = {{0, 0, 0}};
+        std::array<int, 3> indexub = {{1287, 1287, 1287}};
+        
+        //register multiple in-staging executions
+        for (int i = 0; i < num; i++)
+        {
+            std::string triggerNameExp = "InsituTriggerExp_" + std::to_string(i);
+            initActionParameters.push_back(triggerNameExp);
+            DynamicTriggerInfo tgInfo(
+                "InsituExpCheck", checkParameters,
+                "InsituExpCompare", comparisonParameters,
+                "InsituExpAction", actionParameters);
+
+            m_uniclient->registerTrigger(3, indexlb, indexub, triggerNameExp, tgInfo);
+        }
+
+        DynamicTriggerInfo initTgInfo(
+            "defaultCheckGetStep", initCheckParameters,
+            "defaultComparisonStep", initComparisonParameters,
+            "defaultActionSartDt", initActionParameters);
+        m_uniclient->registerTrigger(3, indexlb, indexub, triggerNameInit, initTgInfo);
     }
 
     ~Writer()

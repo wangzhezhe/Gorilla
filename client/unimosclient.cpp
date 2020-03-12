@@ -155,7 +155,7 @@ std::string UniClient::loadMasterAddr(std::string masterConfigFile)
 
 void UniClient::initPutRawData(size_t dataMallocSize)
 {
-    std::cout << "init the data bulk size " << dataMallocSize << std::endl;
+    //std::cout << "init the data bulk size " << dataMallocSize << std::endl;
     this->m_bulkSize = dataMallocSize;
     this->m_dataContainer = (void *)malloc(dataMallocSize);
     this->m_segments = std::vector<std::pair<void *, std::size_t>>(1);

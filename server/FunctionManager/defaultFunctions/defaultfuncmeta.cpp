@@ -49,11 +49,15 @@ void defaultActionSartDt(DynamicTriggerManager *dtm, size_t step, std::string va
     {
         throw std::runtime_error("the parameters should larger than 1 for defaultActionSartDt");
     }
-    std::string triggerName = parameters[0];
 
-    //std::cout << "start new trigger: " << triggerName << std::endl;
+    //go through it
+    for (int i = 0; i < parameters.size(); i++)
+    {
+        std::string triggerName = parameters[i];
+        //std::cout << "start new trigger: " << triggerName << std::endl;
+        dtm->commonstart(triggerName, step, varName, rde);
+    }
 
-    dtm->commonstart(triggerName, step, varName, rde);
     return;
 }
 
@@ -93,7 +97,7 @@ void defaultAction(size_t step, std::string varName, UniClient *uniclient, RawDa
 //in-situ function for exp
 std::string InsituExpCheck(size_t step, std::string varName, RawDataEndpoint &rde, std::vector<std::string> parameters)
 {
-    if (parameters.size() != 1)
+    if (parameters.size() <= 1)
     {
         throw std::runtime_error("the parameters of InsituExpCheck should longer than 1");
     }
@@ -128,6 +132,10 @@ bool InsituExpCompare(std::string checkResults, std::vector<std::string> paramet
         {
             return true;
         }
+    }
+    else if (parameters[0].compare("0") == 0)
+    {
+        return true;
     }
     else
     {
@@ -174,9 +182,9 @@ void InsituExpAction(size_t step, std::string varName, UniClient *uniclient, Raw
         std::cout << str << std::endl;
 
         //simulate the writting process
-
-        int writeTime = 3.8 ;
-        usleep(writeTime * 1000000);
+        //do this for in-situ testing that contains the IO
+        //int writeTime = 3.8;
+        //usleep(writeTime * 1000000);
         //std::string result = uniclient->executeRawFunc(
         //    rde.m_rawDataServerAddr, rde.m_rawDataID, functionName, funcParameters);
     }
