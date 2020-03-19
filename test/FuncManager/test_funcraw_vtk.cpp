@@ -1,5 +1,5 @@
 
-#include "../../server/FunctionManager/functionManager.h"
+#include "../../server/FunctionManager/functionManagerRaw.h"
 #include "../../server/FunctionManager/defaultFunctions/defaultfuncraw.h"
 #include <thallium.hpp>
 #include <unistd.h>

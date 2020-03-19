@@ -18,6 +18,7 @@
 //enum DRIVERTYPE { RAWMEM, VTK };
 
 static std::string const DRIVERTYPE_RAWMEM = "RAWMEM";
+static std::string const DRIVERTYPE_VTKDATASET = "VTKDATASET";
 
 
 /*
@@ -300,19 +301,19 @@ struct DynamicTriggerInfo
     std::cout << "checkFunc " << m_checkFunc << std::endl;
     for (int i = 0; i < m_checkFuncPara.size(); i++)
     {
-      std::cout << "parameter i " << i << m_checkFuncPara[i] << std::endl;
+      std::cout << "parameter " << i << " " << m_checkFuncPara[i] << std::endl;
     }
 
     std::cout << "comparisonFunc " << m_comparisonFunc << std::endl;
     for (int i = 0; i < m_comparisonFuncPara.size(); i++)
     {
-      std::cout << "parameter i " << i << m_comparisonFuncPara[i] << std::endl;
+      std::cout << "parameter " << i << " " << m_comparisonFuncPara[i] << std::endl;
     }
 
     std::cout << "actionFunc " << m_actionFunc << std::endl;
     for (int i = 0; i < m_actionFuncPara.size(); i++)
     {
-      std::cout << "parameter i " << i << m_actionFuncPara[i] << std::endl;
+      std::cout << "parameter " << i << " " << m_actionFuncPara[i] << std::endl;
     }
   }
 

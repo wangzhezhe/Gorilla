@@ -71,12 +71,6 @@ add_library(metadatamanager
 ${gorilla_SOURCE_DIR}/server/MetadataManager/metadataManager.cpp)
 target_link_libraries (metadatamanager thallium)
 
-add_library(rawdatamanager 
-${gorilla_SOURCE_DIR}/server/RawdataManager/blockManager.cpp
-${gorilla_SOURCE_DIR}/server/RawdataManager/rawmemobj/rawmemobj.cpp
-)
-target_link_libraries(rawdatamanager thallium abt-io)
-
 find_package(VTK COMPONENTS
     FiltersCore
     IOImage
@@ -84,6 +78,14 @@ find_package(VTK COMPONENTS
     CommonCore
     FiltersSources
 )
+
+add_library(rawdatamanager 
+${gorilla_SOURCE_DIR}/server/RawdataManager/blockManager.cpp
+${gorilla_SOURCE_DIR}/server/RawdataManager/rawmemobj/rawmemobj.cpp
+${gorilla_SOURCE_DIR}/server/RawdataManager/vtkobj/vtkobj.cpp
+)
+target_link_libraries(rawdatamanager thallium abt-io ${VTK_LIBRARIES})
+
 
 add_library(metaclient ./putgetMeta/metaclient.cpp)
 target_link_libraries(metaclient thallium)
@@ -93,13 +95,17 @@ ${gorilla_SOURCE_DIR}/client/unimosclient.cpp)
 target_link_libraries (unimos_client thallium)
 
 # there is reference between each other, so it is better to build them together
-add_library(trigger 
+add_library(metatrigger 
 ${gorilla_SOURCE_DIR}/server/FunctionManager/defaultFunctions/defaultfuncmeta.cpp
-${gorilla_SOURCE_DIR}/server/FunctionManager/defaultFunctions/defaultfuncraw.cpp
-${gorilla_SOURCE_DIR}/server/FunctionManager/functionManager.cpp
 ${gorilla_SOURCE_DIR}/server/TriggerManager/triggerManager.cpp
 )
-target_link_libraries(trigger adios2::adios2 thallium ${VTK_LIBRARIES} unimos_client)
+target_link_libraries(metatrigger thallium unimos_client adios2::adios2)
+
+add_library(rawexec 
+${gorilla_SOURCE_DIR}/server/FunctionManager/defaultFunctions/defaultfuncraw.cpp
+${gorilla_SOURCE_DIR}/server/FunctionManager/functionManagerRaw.cpp
+)
+target_link_libraries(rawexec adios2::adios2 thallium ${VTK_LIBRARIES} unimos_client)
 
 # add enable_testing
 # test everything ok before integrating them into a server
@@ -122,7 +128,9 @@ target_link_libraries (unimos_server
  MPI::MPI_C 
  unimos_client 
  dhtmanager rawdatamanager metadatamanager 
- trigger ${VTK_LIBRARIES}
+ metatrigger 
+ rawexec
+ ${VTK_LIBRARIES}
  metaclient
  )
 else()
@@ -131,8 +139,11 @@ else()
  thallium
  MPI::MPI_C 
  unimos_client 
- dhtmanager rawdatamanager metadatamanager 
- trigger 
+ dhtmanager 
+ rawdatamanager 
+ metadatamanager 
+ rawexec
+ metatrigger 
  metaclient
 )
 endif()

@@ -17,16 +17,14 @@ public:
     Writer(tl::engine *clientEnginePtr, int rank)
     {
         m_uniclient = new UniClient(clientEnginePtr, "unimos_server.conf", rank);
-        UniClientCache *uniCache = new UniClientCache();
         //the cache should be attached with the client firstly
-        m_uniclient->m_uniCache = uniCache;
         m_uniclient->getAllServerAddr();
-        m_uniclient->m_totalServerNum = uniCache->m_serverIDToAddr.size();
+        m_uniclient->m_totalServerNum = m_uniclient->m_serverIDToAddr.size();
 
         //start the timer for the master server
         if (rank == 0)
         {
-            registerRtrigger(2);
+            registerRtrigger(1);
             m_uniclient->startTimer();
             std::cout << "ok to register the trigger and timer\n";
         }
@@ -57,7 +55,7 @@ public:
         initComparisonParameters.push_back("0");
 
         //how many seconds
-        int anaTimeint = 2.0 * 1000000;
+        int anaTimeint = 4.0 * 1000000;
         std::string anaTime = std::to_string(anaTimeint);
         //declare the function and the parameters
         std::vector<std::string> checkParameters;

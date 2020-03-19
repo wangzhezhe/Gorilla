@@ -5,10 +5,10 @@ test_mockServer.cpp
 settings_single.cpp
 sim_single.cpp)
 
-target_link_libraries(test_mockServer 
+target_link_libraries(test_mockServer
+ adios2::adios2 
  unimos_client 
  dhtmanager rawdatamanager metadatamanager 
- trigger ${VTK_LIBRARIES}
- thallium
- )
+ metatrigger rawexec ${VTK_LIBRARIES}
+ thallium)
 

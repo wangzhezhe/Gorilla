@@ -1,5 +1,6 @@
 #include "triggerManager.h"
-#include "../FunctionManager/functionManager.h"
+
+
 
 void DynamicTriggerManager::initstart(std::string triggerName, size_t step, std::string varName, RawDataEndpoint rde)
 {
@@ -45,7 +46,7 @@ void DynamicTriggerManager::initstart(std::string triggerName, size_t step, std:
     {
         //execute the action
         //ap(this->m_dtm, step, varName, rde, this->m_fdAction.m_parameters);
-        initAp(this, step, varName, rde, dti->m_actionFuncPara);
+        initAp(this->m_funcmanagerMeta, step, varName, rde, dti->m_actionFuncPara);
 
     }
     return;
@@ -58,7 +59,7 @@ void DynamicTriggerManager::commonstart(std::string triggerName,size_t step, std
             throw std::runtime_error("failed to get the trigger with name " + triggerName);
     }
 
-    DynamicTriggerInfo* dti =  &(this->m_dynamicTrigger[triggerName]);
+    DynamicTriggerInfo* dti = &(this->m_dynamicTrigger[triggerName]);
 
     checkPtr cp = this->m_funcmanagerMeta->getCheckFunc(dti->m_checkFunc);
     if (cp == NULL)
@@ -85,7 +86,7 @@ void DynamicTriggerManager::commonstart(std::string triggerName,size_t step, std
     //execute checking
     //size_t step, std::string varName, RawDataEndpoint& rde
 
-    std::string checkResults = cp(step, varName, rde,dti->m_checkFuncPara);
+    std::string checkResults = cp(step, varName, rde, dti->m_checkFuncPara);
 
     //it doesn't matter if the thread pool should be used here
     //since the checking at the metadata part is always lightweight

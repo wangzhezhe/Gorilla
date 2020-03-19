@@ -14,8 +14,6 @@
 #include <stdio.h>
 #include <unistd.h>
 
-
-
 #define BILLION 1000000000L
 //#include "../putgetMeta/metaclient.h"
 
@@ -63,8 +61,6 @@ void print_simulator_settings(const GrayScott &s)
     std::cout << "local grid size:  " << s.size_x << "x" << s.size_y << "x"
               << s.size_z << std::endl;
 }
-
-
 
 int main(int argc, char **argv)
 {
@@ -158,7 +154,6 @@ int main(int argc, char **argv)
         MPI_COMM_WORLD)
     */
 
-
     Writer dataWriter(&globalclientEngine, rank);
 
     //writer_main.open(settings.output);
@@ -220,7 +215,21 @@ int main(int argc, char **argv)
         //}
         //else
         //{
-        dataWriter.write(sim, step);
+
+        bool ifStage = false;
+        int anaTime = 4.0*1000;
+
+        if (ifStage)
+        {
+            //write to the stage server
+            dataWriter.write(sim, step);
+        }
+        else
+        {
+            //execute the analytics
+            std::this_thread::sleep_for(std::chrono::milliseconds(anaTime));
+        }
+
         //}
         //char countstr[50];
         //sprintf(countstr, "%03d_%04d", step, rank);
@@ -254,7 +263,8 @@ int main(int argc, char **argv)
     }
 
     //end timer
-    if(rank==0){
+    if (rank == 0)
+    {
         dataWriter.endwftimer();
     }
     MPI_Finalize();

@@ -1,19 +1,19 @@
-#ifndef FUNCTIONMNG_H
-#define FUNCTIONMNG_H
+#ifndef FUNCTIONMETA_H
+#define FUNCTIONMETA_H
 
 #include "../../commondata/metadata.h"
-#include "./defaultFunctions/defaultfuncmeta.h"
-#include "../statefulConfig.h"
 
+#include "../statefulConfig.h"
+//#include "../unimosserver.hpp"
+#include "./defaultFunctions/defaultfuncmeta.h"
 #include <thallium.hpp>
 #include <map>
 #include <vector>
 
 namespace tl = thallium;
 
-//forward declaration
+struct FunctionManagerMeta;
 struct DynamicTriggerManager;
-
 //the function pointer that execute at the metadata server
 
 typedef std::string (*initCheckPtr)(
@@ -30,7 +30,7 @@ typedef std::string (*checkPtr)(
 typedef bool (*comparisonPtr)(std::string checkResults, std::vector<std::string> parameters);
 
 typedef void (*initActionPtr)(
-    DynamicTriggerManager *dtm,
+    FunctionManagerMeta *fmm,
     size_t step,
     std::string varName,
     RawDataEndpoint &rde,
@@ -43,9 +43,8 @@ typedef void (*actionPtr)(
     RawDataEndpoint &rde,
     std::vector<std::string> parameters);
 
-// one profile is corresponding to a constraint manager
-// the execute method can be implemented by different drivers
-// the execution engine runs at the meta server
+
+//this should hold a pointer to the dynamic trigger
 struct FunctionManagerMeta
 {
     FunctionManagerMeta()
@@ -165,79 +164,10 @@ struct FunctionManagerMeta
     std::map<std::string, comparisonPtr> m_comparisonPtrMap;
     std::map<std::string, initActionPtr> m_initActionPtrMap;
     std::map<std::string, actionPtr> m_actionPtrMap;
+
+    //hold a pointer to the trigger manager
+    DynamicTriggerManager* m_dtm = NULL;
 };
 
-//the function pointer that execute at the raw data server
-
-// the execution engine runs at the raw data server
-// TODO put this at the dynamic trigger
-
-struct FunctionManagerRaw;
-//TODO use separate .h file???
-typedef std::string (*rawdatafunctionPointer)(
-    FunctionManagerRaw *fmw,
-    const BlockSummary &bs,
-    void *inputData,
-    const std::vector<std::string> &parameters);
-
-std::string test(
-    FunctionManagerRaw *fmr,
-    const BlockSummary &bs,
-    void *inputData,
-    const std::vector<std::string> &parameters);
-
-std::string testvtk(
-    FunctionManagerRaw *fmr,
-    const BlockSummary &bs,
-    void *inputData,
-    const std::vector<std::string> &parameters);
-
-std::string valueRange(
-    FunctionManagerRaw *fmr,
-    const BlockSummary &bs,
-    void *inputData,
-    const std::vector<std::string> &parameters);
-
-std::string adiosWrite(
-    FunctionManagerRaw *fmr,
-    const BlockSummary &bs,
-    void *inputData,
-    const std::vector<std::string> &parameters);
-
-struct FunctionManagerRaw
-{
-    FunctionManagerRaw()
-    {
-        //register the default function
-        this->m_functionMap["test"] = &test;
-        this->m_functionMap["testvtk"] = &testvtk;
-        this->m_functionMap["valueRange"] = &valueRange;
-        this->m_functionMap["adiosWrite"] = &adiosWrite;
-
-        //the io need to be started
-        //initADIOS();
-    };
-
-    bool registerFunction(std::string functionName, rawdatafunctionPointer fp);
-
-    //put the execution logic together with the storage part
-    std::string execute(
-        FunctionManagerRaw *fmr,
-        const BlockSummary &bs,
-        void *inputData,
-        std::string fiunctionName,
-        const std::vector<std::string> &parameters);
-
-    ~FunctionManagerRaw()
-    {
-        std::cout << "destroy FunctionManagerRaw\n";
-    };
-
-    statefulConfig *m_statefulConfig = NULL;
-
-    //function map that maps the name of the function into the pointer of the function
-    tl::mutex m_functionMapMutex;
-    std::map<std::string, rawdatafunctionPointer> m_functionMap;
-};
 
 #endif

@@ -2,12 +2,14 @@
 #ifndef __STATEFUL_CONFIG__H__
 #define __STATEFUL_CONFIG__H__
 
-#include <adios2.h>
+
 #include "mpi.h"
 
 #include <time.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <adios2.h>
+#define BILLION 1000000000L
 
 struct statefulConfig
 {

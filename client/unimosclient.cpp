@@ -5,42 +5,43 @@
 #include <unistd.h>
 #define BILLION 1000000000L
 
-/*
+tl::endpoint UniClient::lookup(
+    const std::string &address) const
+{
 
-    tl::remote_procedure sum = myEngine.define("sum");
-    tl::endpoint server = myEngine.lookup(argv[1]);
-    //attention, the return value here shoule be same with the type defined at the server end
-    int ret = sum.on(server)(42,63);
-*/
+    auto it = m_serverToEndpoints.find(address);
+    if (it == m_serverToEndpoints.end())
+    {
+        //do not lookup here to avoid the potential mercury race condition
+        throw std::runtime_error("cache the endpoint at the constructor\n");
+    }
+
+    return it->second;
+}
+
 
 void UniClient::startTimer()
 {
     tl::remote_procedure remotestartTimer = this->m_clientEnginePtr->define("startTimer").disable_response();
-    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(this->m_masterAddr);
     //the parameters here should be consistent with the defination at the server end
-    remotestartTimer.on(serverEndpoint)();
+    remotestartTimer.on(this->m_masterEndpoint)();
     return;
 }
 
 void UniClient::endTimer()
 {
     tl::remote_procedure remotestartTimer = this->m_clientEnginePtr->define("endTimer").disable_response();
-    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(this->m_masterAddr);
     //the parameters here should be consistent with the defination at the server end
-    remotestartTimer.on(serverEndpoint)();
+    remotestartTimer.on(m_masterEndpoint)();
     return;
 }
 
 int UniClient::getAllServerAddr()
 {
-    if (this->m_uniCache == nullptr)
-    {
-        throw std::runtime_error("the cache shouled not be nullptr when call getAllServerAddr");
-    }
     tl::remote_procedure remotegetAllServerAddr = this->m_clientEnginePtr->define("getAllServerAddr");
-    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(this->m_masterAddr);
     //the parameters here should be consistent with the defination at the server end
-    std::vector<MetaAddrWrapper> adrList = remotegetAllServerAddr.on(serverEndpoint)();
+    std::vector<MetaAddrWrapper> adrList = remotegetAllServerAddr.on(m_masterEndpoint)();
+
     if (adrList.size() == 0)
     {
         throw std::runtime_error("failed to get server list");
@@ -49,32 +50,27 @@ int UniClient::getAllServerAddr()
 
     for (auto it = adrList.begin(); it != adrList.end(); it++)
     {
-        this->m_uniCache->addAddr(it->m_index, it->m_addr);
+        this->m_serverIDToAddr[it->m_index] =  it->m_addr;
+        auto endpoint = this->m_clientEnginePtr->lookup(it->m_addr);
+        this->m_serverToEndpoints[it->m_addr] = endpoint;
     }
     return 0;
 }
 
 int UniClient::getServerNum()
 {
-    if (this->m_masterAddr.compare("") == 0)
-    {
-        throw std::runtime_error("the master addr should be initilized before getServerNum");
-        return 0;
-    }
-
-    //std::cout << "debug updateDHT server addr " << serverAddr << std::endl;
     tl::remote_procedure remotegetServerNum = this->m_clientEnginePtr->define("getServerNum");
-    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(this->m_masterAddr);
     //the parameters here should be consistent with the defination at the server end
-    int serverNum = remotegetServerNum.on(serverEndpoint)();
+    int serverNum = remotegetServerNum.on(m_masterEndpoint)();
     return serverNum;
 }
-//this is called by server node, the address is already known
+
+//this is called by server node, the endpoint is not initilized yet
 int UniClient::updateDHT(std::string serverAddr, std::vector<MetaAddrWrapper> metaAddrWrapperList)
 {
     //std::cout << "debug updateDHT server addr " << serverAddr << std::endl;
     tl::remote_procedure remoteupdateDHT = this->m_clientEnginePtr->define("updateDHT");
-    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(serverAddr);
+    tl::endpoint serverEndpoint = this->lookup(serverAddr);
     //the parameters here should be consistent with the defination at the server end
     int status = remoteupdateDHT.on(serverEndpoint)(metaAddrWrapperList);
     return status;
@@ -82,41 +78,17 @@ int UniClient::updateDHT(std::string serverAddr, std::vector<MetaAddrWrapper> me
 
 std::string UniClient::getServerAddr()
 {
-
     //check the cache, return if exist
     int serverId = this->m_position % this->m_totalServerNum;
-    //std::cout << "use server ID " << serverId << std::endl;
-    if (this->m_uniCache == nullptr)
-    {
-        throw std::runtime_error("m_uniCache should not be null");
-    }
 
-    if (this->m_uniCache->ifAddrIDExist(serverId) == false)
+    if (this->m_serverIDToAddr.find(serverId) == this->m_serverIDToAddr.end())
     {
         throw std::runtime_error("server id not exist");
     }
 
-    return this->m_uniCache->m_serverIDToAddr[serverId];
+    return this->m_serverIDToAddr[serverId];
 }
-
-/*
-
-    //if not exist, get the addr from the server according to specific id
-    tl::remote_procedure remoteGetAddrByID = this->m_clientEnginePtr->define("getaddrbyID");
-    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(this->m_masterAddr);
-    //the parameters here should be consistent with the defination at the server end
-    std::string serverAddr = remoteGetAddrByID.on(serverEndpoint)(serverId);
-    std::cout << "get server addr by explicit call: " << serverAddr << std::endl;
-    //store the data into the cache
-    if (this->m_uniCache != nullptr)
-    {
-        this->m_uniCache->addAddr(serverId, serverAddr);
-    }
-
-    return serverAddr;
-}
-*/
-
+ 
 std::string UniClient::loadMasterAddr(std::string masterConfigFile)
 {
 
@@ -134,24 +106,6 @@ std::string UniClient::loadMasterAddr(std::string masterConfigFile)
     }
     return content;
 }
-
-//this is called by the server node, the adress is already known
-//int UniClient::putmetadata(std::string serverAddr, size_t step, std::string varName, RawDataEndpoint &rde)
-//{
-//tl::remote_procedure putMetaData = myEngine.define("putMetaData").disable_response();
-//    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(serverAddr);
-//    return
-
-//}
-/*
-    struct timespec start, end;
-    double diff;
-    clock_gettime(CLOCK_REALTIME, &start); 
-    sleep(1.0);
-    //some functions here
-    clock_gettime(CLOCK_REALTIME, &end); 
-    diff = (end.tv_sec - start.tv_sec) * 1.0 + (end.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
-*/
 
 void UniClient::initPutRawData(size_t dataMallocSize)
 {
@@ -174,16 +128,8 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
     size_t dataMallocSize = dataSummary.getTotalSize();
     if (this->m_associatedDataServer.compare("") == 0)
     {
-        //init the endpoint
-        //get the server addr according to the m_position
-        if (this->m_uniCache == nullptr)
-        {
-            throw std::runtime_error("the client cache could not be nullptr");
-        }
-
         this->m_associatedDataServer = this->getServerAddr();
         //std::cout << "m_position " << m_position << " m_associatedDataServer " << this->m_associatedDataServer << std::endl;
-        this->m_serverEndpoint = this->m_clientEnginePtr->lookup(this->m_associatedDataServer);
         this->initPutRawData(dataMallocSize);
     }
 
@@ -193,10 +139,13 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
     }
 
     //copy data into the current datacontainer
+    //attention, if the simulation time is short consider to use the lock here
+    //for every process, there are large span between two data write opertaion
     memcpy(this->m_dataContainer, dataContainerSrc, dataMallocSize);
 
     tl::remote_procedure remotePutRawData = this->m_clientEnginePtr->define("putrawdata");
-    std::vector<MetaDataWrapper> mdwList = remotePutRawData.on(this->m_serverEndpoint)(this->m_position, step, varName, dataSummary, this->m_dataBulk);
+    tl::endpoint serverEndpoint = this->lookup(this->m_associatedDataServer);
+    std::vector<MetaDataWrapper> mdwList = remotePutRawData.on(serverEndpoint)(this->m_position, step, varName, dataSummary, this->m_dataBulk);
     //auto request = remotePutRawData.on(this->m_serverEndpoint).async(this->m_position ,step, varName, dataSummary, this->m_dataBulk);
 
     //bool completed = request.received();
@@ -219,14 +168,7 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
     tl::remote_procedure remotePutMetaData = this->m_clientEnginePtr->define("putmetadata");
     for (auto it = mdwList.begin(); it != mdwList.end(); it++)
     {
-        //get dest server
-        //    int status = this->m_remotePutMetaData.on(m_serverEndpoint)(step, varName, rde);
-        //   return status;
-        //int status = this->putmetadata(it->m_destAddr,
-        //                               it->m_step,
-        //                               it->m_varName,
-        //                               it->m_rde);
-        tl::endpoint metaserverEndpoint = this->m_clientEnginePtr->lookup(it->m_destAddr);
+        tl::endpoint metaserverEndpoint = this->lookup(it->m_destAddr);
         int status = remotePutMetaData.on(metaserverEndpoint)(it->m_step, it->m_varName, it->m_rde);
         if (status != 0)
         {
@@ -248,11 +190,9 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
 std::vector<std::string> UniClient::getmetaServerList(size_t dims, std::array<int, 3> indexlb, std::array<int, 3> indexub)
 {
 
-    std::string serverAddr = this->m_masterAddr;
     tl::remote_procedure remotegetmetaServerList = this->m_clientEnginePtr->define("getmetaServerList");
-    //tl::remote_procedure putMetaData = myEngine.define("putMetaData").disable_response();
-    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(serverAddr);
-    std::vector<std::string> metaserverList = remotegetmetaServerList.on(serverEndpoint)(dims, indexlb, indexub);
+    //ask the master server
+    std::vector<std::string> metaserverList = remotegetmetaServerList.on(m_masterEndpoint)(dims, indexlb, indexub);
     return metaserverList;
 }
 
@@ -264,7 +204,7 @@ std::vector<RawDataEndpoint> UniClient::getrawDataEndpointList(std::string serve
                                                                std::array<int, 3> indexub)
 {
     tl::remote_procedure remotegetrawDataEndpointList = this->m_clientEnginePtr->define("getRawDataEndpointList");
-    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(serverAddr);
+    tl::endpoint serverEndpoint = this->lookup(serverAddr);
     std::vector<RawDataEndpoint> rawDataEndpointList = remotegetrawDataEndpointList.on(serverEndpoint)(step, varName, dims, indexlb, indexub);
     return rawDataEndpointList;
 }
@@ -277,7 +217,7 @@ int UniClient::getSubregionData(std::string serverAddr, std::string blockID, siz
 {
 
     tl::remote_procedure remotegetSubregionData = this->m_clientEnginePtr->define("getDataSubregion");
-    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(serverAddr);
+    tl::endpoint serverEndpoint = this->lookup(serverAddr);
 
     std::vector<std::pair<void *, std::size_t>> segments(1);
     segments[0].first = (void *)(dataContainer);
@@ -394,19 +334,6 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
     return mvassemble;
 }
 
-//void getDataSubregion(const tl::request &req, std::string &blockID, size_t &dims, std::array<int, 3> &subregionlb, std::array<int, 3> &subregionub)
-
-/*
-//get the raw data according to the endpoint list
-int UniClient::getrawdata(std::string serverAddr, RawDataEndpoint &bs, void *dataContainer)
-{
-
-    //assume that the memory is allocated successfully for the dataContainer pointer
-
-    //get a list of RawDataEndpoint
-}
-*/
-
 //put trigger info into specific metadata server
 int UniClient::putTriggerInfo(
     std::string serverAddr,
@@ -414,7 +341,7 @@ int UniClient::putTriggerInfo(
     DynamicTriggerInfo &dti)
 {
     tl::remote_procedure remoteputTriggerInfo = this->m_clientEnginePtr->define("putTriggerInfo");
-    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(serverAddr);
+    tl::endpoint serverEndpoint = this->lookup(serverAddr);
     int status = remoteputTriggerInfo.on(serverEndpoint)(triggerName, dti);
     return status;
 }
@@ -445,11 +372,6 @@ void UniClient::registerTrigger(
     return;
 }
 
-/*
-std::string &blockID,
-                    std::string &functionName,
-                    std::vector<std::string> &funcParameters
-*/
 std::string UniClient::executeRawFunc(
     std::string serverAddr,
     std::string blockID,
@@ -457,7 +379,7 @@ std::string UniClient::executeRawFunc(
     std::vector<std::string> &funcParameters)
 {
     tl::remote_procedure remoteexecuteRawFunc = this->m_clientEnginePtr->define("executeRawFunc");
-    tl::endpoint serverEndpoint = this->m_clientEnginePtr->lookup(serverAddr);
+    tl::endpoint serverEndpoint = this->lookup(serverAddr);
     std::string result = remoteexecuteRawFunc.on(serverEndpoint)(blockID, functionName, funcParameters);
     return result;
 }

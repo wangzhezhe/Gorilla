@@ -93,14 +93,14 @@ void testMetaData()
     while (innerit != it->second.end())
     {
       // range vector
-      int size = innerit->second.size();
+      int size = innerit->second->m_metadataBlock["rawdata"].size();
       std::cout << "varName " << innerit->first << " vector size " << size
                 << std::endl;
       for (int i = 0; i < size; i++)
       {
         std::cout << innerit->first << " "
-                  << innerit->second[i].m_rawDataServerAddr << " "
-                  << innerit->second[i].m_rawDataID << std::endl;
+                  << innerit->second->m_metadataBlock["rawdata"][i].m_rawDataServerAddr << " "
+                  << innerit->second->m_metadataBlock["rawdata"][i].m_rawDataID << std::endl;
       }
 
       innerit++;
@@ -126,16 +126,102 @@ void testMetadataWrapper()
 {
   MetaDataWrapper mdw;
   mdw.printInfo();
-  if(mdw.m_destAddr.compare("")!=0){
-      throw std::runtime_error("failed to test null wrapper");
+  if (mdw.m_destAddr.compare("") != 0)
+  {
+    throw std::runtime_error("failed to test null wrapper");
   }
+}
+
+void testMetaDataType()
+{
+
+  tl::abt scope;
+  MetaDataManager metam(10);
+  for (int i = 0; i < 15; i++)
+  {
+    std::string varname = "testVarName" + std::to_string(i);
+    std::string serverAddr1 = "testserverAddr1" + std::to_string(i);
+    std::string serverAddr2 = "testserverAddr2" + std::to_string(i);
+    std::string serverAddr3 = "testserverAddr3" + std::to_string(i);
+
+    std::array<int, DEFAULT_MAX_DIM> indexlb = {{0, 0, 0}};
+    std::array<int, DEFAULT_MAX_DIM> indexub = {{1, 1, 1}};
+
+    RawDataEndpoint rde1(serverAddr1, std::to_string(i), 3, indexlb,
+                         indexub);
+    RawDataEndpoint rde2(serverAddr2, std::to_string(i), 3, indexlb,
+                         indexub);
+
+    RawDataEndpoint rde3(serverAddr3, std::to_string(i), 3, indexlb,
+                         indexub);
+
+    metam.updateMetaData(i, varname, rde1, "type1");
+    metam.updateMetaData(i, varname, rde2, "type2");
+    metam.updateMetaData(i, varname, rde3, "type3");
+  }
+
+  auto it = metam.m_metaDataMap.begin();
+  while (it != metam.m_metaDataMap.end())
+  {
+    std::cout << it->first << std::endl;
+    auto innerit = it->second.begin();
+    while (innerit != it->second.end())
+    {
+      // range vector
+      int size = innerit->second->m_metadataBlock["type1"].size();
+      std::cout << "varName " << innerit->first << " vector size " << size
+                << std::endl;
+      for (int i = 0; i < size; i++)
+      {
+        std::cout << innerit->first << " "
+                  << innerit->second->m_metadataBlock["type1"][i].m_rawDataServerAddr << " "
+                  << innerit->second->m_metadataBlock["type1"][i].m_rawDataID << std::endl;
+      }
+
+      size = innerit->second->m_metadataBlock["type2"].size();
+      std::cout << "varName " << innerit->first << " vector size " << size
+                << std::endl;
+      for (int i = 0; i < size; i++)
+      {
+        std::cout << innerit->first << " "
+                  << innerit->second->m_metadataBlock["type2"][i].m_rawDataServerAddr << " "
+                  << innerit->second->m_metadataBlock["type2"][i].m_rawDataID << std::endl;
+      }
+
+      size = innerit->second->m_metadataBlock["type3"].size();
+      std::cout << "varName " << innerit->first << " vector size " << size
+                << std::endl;
+      for (int i = 0; i < size; i++)
+      {
+        std::cout << innerit->first << " "
+                  << innerit->second->m_metadataBlock["type3"][i].m_rawDataServerAddr << " "
+                  << innerit->second->m_metadataBlock["type3"][i].m_rawDataID << std::endl;
+      }
+
+      innerit++;
+    }
+    it++;
+  }
+
+  /*
+  TODO, need to delete the data stored at the raw data server after shrink the metadata map
+  if (metam.m_metaDataMap.size() != 10)
+  {
+    throw std::runtime_error("failed for metaDataMap size\n");
+  }
+
+  if ((metam.m_windowlb != 5) || (metam.m_windowub != 14))
+  {
+    throw std::runtime_error("failed for metaDataMap windlow bound\n");
+  }
+  */
 }
 
 int main()
 {
 
   testMetaData();
+  testMetaDataType();
   testMetaDataOverlap();
-
   testMetadataWrapper();
 }

@@ -1,7 +1,11 @@
-#include "functionManager.h"
+#include "functionManagerRaw.h"
 #include <spdlog/spdlog.h>
 
 
+//if the execute aims to generate the new version of the data
+//the return value is the id of original function,
+//then at the trigger, replace the original id and use the same index (the data is on the same node)
+//we do not need to update the metadata when there is multiple version of the dataduring the workflow execution
 
 std::string FunctionManagerRaw::execute(
 FunctionManagerRaw* fmr,

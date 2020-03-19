@@ -12,18 +12,15 @@
 #include "../../commondata/metadata.h"
 #include "../../utils/ArgothreadPool.h"
 #include "../../client/unimosclient.h"
+#include "../FunctionManager/functionManagerMeta.h"
 
 namespace tl = thallium;
 
-struct FunctionManagerMeta;
-
 struct DynamicTriggerManager
 {
-    DynamicTriggerManager(
-        FunctionManagerMeta* funcmanagerMeta, 
+    DynamicTriggerManager( 
         size_t poolSize,
-        UniClient* uniclient
-        ) : m_funcmanagerMeta(funcmanagerMeta), m_uniclient(uniclient)
+        UniClient* uniclient):m_uniclient(uniclient)
     {
         this->m_threadPool = new ArgoThreadPool(poolSize);
     };
@@ -58,6 +55,8 @@ struct DynamicTriggerManager
         {
             delete this->m_threadPool;
         }
+
+
     };
 };
 

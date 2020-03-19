@@ -15,9 +15,8 @@ struct AddrManager
     int m_serverNum;
     //the list of all the servers
     std::vector<std::string> m_endPointsLists;
-    
+        
     int m_metaServerNum;
-
 
     AddrManager(){};
 

@@ -48,22 +48,26 @@ std::string AddrManager::getByRRobin()
     return serverAddr;
 }
 
+//send the informaion of the meta data to all the nodes
+//every nodes in the cluster will know the information of the metadata
 void AddrManager::broadcastMetaServer(UniClient *globalClient)
 {
     //send the meta server to all the compute node (except the master server itsself)
-
     int metaServerNum = this->m_metaServerNum;
     std::vector<MetaAddrWrapper> metaAddrWrapperList;
-
+    
+    //the first #metaServerNum is the metaserver
+    //but in the usual case, the metaServerNum keep same with the m_endPointsLists
     for (int i = 0; i < metaServerNum; i++)
     {
         MetaAddrWrapper mdw(i, this->m_endPointsLists[i]);
         metaAddrWrapperList.push_back(mdw);
     }
-
     for (auto it = m_endPointsLists.begin(); it != m_endPointsLists.end(); it++)
     {
         std::string serverAddr = *it;
+
+        //tell every client what is the address of the metadata nodes
         int status = globalClient->updateDHT(serverAddr, metaAddrWrapperList);
         if (status != 0)
         {

@@ -6,5 +6,6 @@
     "protocol": "verbs",
     "masterInfo":"./unimos_server.conf",
     "addTrigger": false,
+    "triggerFile":"./trigger_test.json",
     "logLevel":0
 }

@@ -215,10 +215,8 @@ int main(int argc, char *argv[])
 #endif
 
     UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf", rank);
-    UniClientCache *uniCache = new UniClientCache();
-    uniclient->m_uniCache = uniCache;
     uniclient->getAllServerAddr();
-    uniclient->m_totalServerNum = uniCache->m_serverIDToAddr.size();
+    uniclient->m_totalServerNum = uniclient->m_serverIDToAddr.size();
 
     
     std::string VarNameU = "grascott_u";
@@ -282,7 +280,8 @@ int main(int argc, char *argv[])
         //writePolyvtk(fname, polyData);
         //std::cout << "ok for ts " << step << std::endl;
     }
-
+    
+    delete uniclient;
     MPI_Finalize();
 
     return 0;

@@ -3,7 +3,7 @@
 #define DEFAULTFUNCRAW_H
 
 #include "../../../commondata/metadata.h"
-#include "../functionManager.h"
+#include "../functionManagerRaw.h"
 #include <vector>
 #include <string>
 

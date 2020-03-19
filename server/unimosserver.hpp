@@ -7,7 +7,7 @@
 #include "../client/unimosclient.h"
 #include "RawdataManager/blockManager.h"
 #include "MetadataManager/metadataManager.h"
-#include "FunctionManager/functionManager.h"
+#include "FunctionManager/functionManagerRaw.h"
 #include "TriggerManager/triggerManager.h"
 #include <map>
 
@@ -27,8 +27,8 @@ struct UniServer
     DHTManager *m_dhtManager = nullptr;
 
     //the trigger manager
-    FunctionManagerMeta *m_fmetamanager = nullptr;
     FunctionManagerRaw *m_frawmanager = nullptr;
+    FunctionManagerMeta *m_fmetamanager = nullptr;
     DynamicTriggerManager *m_dtmanager = nullptr;
 
     void initManager(int globalProc, int metaServerNum, UniClient *client, bool ifDistributed)
@@ -54,11 +54,17 @@ struct UniServer
             throw std::runtime_error("the client should not be NULL for init func");
         }
 
-        m_fmetamanager = new FunctionManagerMeta();
         //TODO, control the thread number based on if the trigger is enabled
-        //the number for the in-situ thread pool should be small for scale 
-        m_dtmanager = new DynamicTriggerManager(m_fmetamanager, 16, client);
+        //the number for the in-situ thread pool should be small for scale
+
+        m_dtmanager = new DynamicTriggerManager(16, client);
+        
+        m_fmetamanager = new FunctionManagerMeta();
+        m_fmetamanager->m_dtm = m_dtmanager;
+        m_dtmanager->m_funcmanagerMeta = m_fmetamanager;
+
         m_frawmanager = new FunctionManagerRaw();
+        m_frawmanager->m_blockManager=m_blockManager;
     };
 
     //init the bulk at the server end
@@ -66,8 +72,7 @@ struct UniServer
     std::map<int, tl::bulk> m_bulkMap;
     std::map<int, void *> m_dataContainerMap;
 
-    ~UniServer()
-    {
+    ~UniServer(){
         //delete the m_dataContainerList
     };
 };

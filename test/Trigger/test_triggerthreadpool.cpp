@@ -1,6 +1,6 @@
 
 
-#include <server/FunctionManager/functionManager.h>
+#include <server/FunctionManager/functionManagerMeta.h>
 #include <server/TriggerManager/triggerManager.h>
 #include <commondata/metadata.h>
 #include <unistd.h>
@@ -18,8 +18,7 @@ void hello(int i)
 int main()
 {
     tl::abt scope;
-    FunctionManagerMeta *m_fmetamanager = new FunctionManagerMeta();
-    DynamicTriggerManager *m_dtmanager = new DynamicTriggerManager(m_fmetamanager, 8, NULL);
+    DynamicTriggerManager *m_dtmanager = new DynamicTriggerManager(8, NULL);
 
     for (int i = 0; i < 128; i++)
     {
@@ -32,5 +31,4 @@ int main()
     }
 
     delete m_dtmanager;
-    delete m_fmetamanager;
 }

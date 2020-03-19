@@ -4,10 +4,10 @@
 #include <vector>
 #include <string>
 #include "../../../commondata/metadata.h"
-#include "../../TriggerManager/triggerManager.h"
 #include "../../../client/unimosclient.h"
-//forward declaration
-struct DynamicTriggerManager;
+
+
+struct FunctionManagerMeta;
 
 std::string defaultCheckGetStep(size_t step, std::string varName, RawDataEndpoint &rde);
 
@@ -23,7 +23,7 @@ std::vector<std::string> parameters);
 */
 
 void defaultActionSartDt(
-DynamicTriggerManager*dtm,
+FunctionManagerMeta*fmm,
 size_t step, 
 std::string varName, 
 RawDataEndpoint& rde,

@@ -114,22 +114,22 @@ void gatherIP(std::string endpoint)
 
     char *rcvString = NULL;
 
-    if (globalRank == 0)
+    //if (globalRank == 0)
+    //{
+    //it is possible that some ip are 2 digits and some are 3 digits
+    //add extra space to avoid message truncated error
+    //the logest ip is 15 digit plus one comma
+    int rcvSize = msgPaddingLen * globalProc * sizeof(char);
+    //std::cout << "sendSize: " << sendSize << ", rcvSize:" << rcvSize << std::endl;
+    rcvString = (char *)malloc(rcvSize);
     {
-        //it is possible that some ip are 2 digits and some are 3 digits
-        //add extra space to avoid message truncated error
-        //the logest ip is 15 digit plus one comma
-        int rcvSize = msgPaddingLen * globalProc * sizeof(char);
-        //std::cout << "sendSize: " << sendSize << ", rcvSize:" << rcvSize << std::endl;
-        rcvString = (char *)malloc(rcvSize);
+        if (rcvString == NULL)
         {
-            if (rcvString == NULL)
-            {
-                MPI_Abort(MPI_COMM_WORLD, 1);
-                return;
-            }
+            MPI_Abort(MPI_COMM_WORLD, 1);
+            return;
         }
     }
+    //}
 
     /*
     MPI_Gather(void* send_data,
@@ -152,37 +152,25 @@ void gatherIP(std::string endpoint)
     //write to file for ip list json file if it is necessary
     //or expose the list by the rpc
 
-    if (globalRank == 0)
+    //broadcast the results to all the services
+    //the size is different compared with the MPI_Gather
+    error_code = MPI_Bcast(rcvString, rcvSize, MPI_CHAR, 0, MPI_COMM_WORLD);
+    if (error_code != MPI_SUCCESS)
     {
-        //printf("check retuen value: ");
-        //char *temp = rcvString;
-        //for (int i = 0; i < rcvLen * globalProc; i++)
-        //{
-        //    printf("%c", *temp);
-        //    temp++;
-        //}
-        //std::cout << '\n';
-        //add termination for the last position
-        //rcvString[rcvLen * procNum - 1] = '\0';
-        //printf("rcv value: %s\n", rcvString);
-        //string list = string(rcvString);
-        //only fetch the first procNum ip
-        std::vector<std::string> ipList = IPTOOL::split(rcvString, msgPaddingLen * globalProc, 'H', 'E');
-
-        //std::cout << "check the ip list:" << std::endl;
-        for (int i = 0; i < ipList.size(); i++)
-        {
-            //only store the worker addr
-            //if (epManager->nodeAddr.compare(ipList[i]) != 0)
-            //{
-            //spdlog::debug("rank {} add raw data server {}", globalRank, ipList[i]);
-            uniServer->m_addrManager->m_endPointsLists.push_back(ipList[i]);
-
-            //}
-        }
-
-        free(rcvString);
+        std::cout << "error for rank " << globalRank << " get MPI_BcastError: " << error_code << std::endl;
     }
+
+    std::vector<std::string> ipList = IPTOOL::split(rcvString, msgPaddingLen * globalProc, 'H', 'E');
+
+    for (int i = 0; i < ipList.size(); i++)
+    {
+        //store all server addrs
+
+        spdlog::debug("rank {} add raw data server {}", globalRank, ipList[i]);
+        uniServer->m_addrManager->m_endPointsLists.push_back(ipList[i]);
+    }
+
+    free(rcvString);
 }
 
 void hello(const tl::request &req)
@@ -193,6 +181,21 @@ void hello(const tl::request &req)
 void hello2(const tl::request &req)
 {
     std::cout << "Hello World!" << std::endl;
+}
+
+void updateEndpoints(const tl::request &req, std::vector<std::string> &serverLists)
+{
+
+    //put the metadata into current epManager
+    int size = serverLists.size();
+
+    for (int i = 0; i < size; i++)
+    {
+        uniServer->m_addrManager->m_endPointsLists.push_back(serverLists[i]);
+    }
+
+    req.respond(0);
+    return;
 }
 
 //currently we use the global dht for all the variables
@@ -216,16 +219,22 @@ void updateDHT(const tl::request &req, std::vector<MetaAddrWrapper> &datawrapper
     return;
 }
 
+//this should be the addr of the compute nodes
+//the meta nodes is invisiable for the data writer
 void getAllServerAddr(const tl::request &req)
 {
 
     std::vector<MetaAddrWrapper> adrList;
 
-    for (auto it = uniServer->m_dhtManager->metaServerIDToAddr.begin();
-         it != uniServer->m_dhtManager->metaServerIDToAddr.end(); it++)
+    int i = 0;
+
+    for (auto it = uniServer->m_addrManager->m_endPointsLists.begin();
+         it != uniServer->m_addrManager->m_endPointsLists.end(); it++)
     {
-        MetaAddrWrapper mar(it->first, it->second);
+        spdlog::debug("getAllServerAddr, check all server endpoint id {} value {}", i, *it);
+        MetaAddrWrapper mar(i, *it);
         adrList.push_back(mar);
+        i++;
     }
 
     req.respond(adrList);
@@ -355,7 +364,7 @@ void putrawdata(const tl::request &req, int clientID, size_t &step, std::string 
         uniServer->m_bulkMap[clientID] = tempBulk;
         uniServer->m_dataContainerMap[clientID] = tempdataContainer;
         uniServer->m_bulkMapmutex.unlock();
-        spdlog::info("allocate new bulk for clientID {}", clientID);
+        spdlog::info("allocate new bulk for clientID {} serverRank {}", clientID, globalRank);
     }
 
     tl::bulk currentBulk = uniServer->m_bulkMap[clientID];
@@ -832,7 +841,8 @@ void runRerver(std::string networkingType)
     //the server engine can also be the client engine, only one engine can be declared here
     globalClientEnginePtr = &serverEnginge;
     uniClient = new UniClient(globalClientEnginePtr, globalRank);
-    uniClient->m_masterAddr = masterAddr;
+    uniClient->initMaster(masterAddr);
+
     //get the total number of the server
     //init the client Cache
     uniClient->m_totalServerNum = gloablSettings.metaserverNum;
@@ -844,6 +854,9 @@ void runRerver(std::string networkingType)
     uniServer->initManager(globalProc, gloablSettings.metaserverNum, uniClient, true);
 
     //init the DHT
+    //this is initilized based on the partition layout
+    //if there are large amount of the nodes in cluster
+    //but the meta server is 1, it is also ok
     initDHT();
 
     //gather IP to the rank0 and broadcaster the IP to all the services
@@ -866,9 +879,14 @@ void runRerver(std::string networkingType)
     }
 
     //bradcaster the ip to all the worker nodes use the thallium api
+    //this should be after the init of the server
+    uniClient->initEndPoints(uniServer->m_addrManager->m_endPointsLists);
+
     if (uniServer->m_addrManager->ifMaster)
     {
         //there is gathered address information only for the master node
+        //master will broad cast the list to all the servers
+        //init the endpoint for all the slave node
         uniServer->m_addrManager->broadcastMetaServer(uniClient);
     }
 

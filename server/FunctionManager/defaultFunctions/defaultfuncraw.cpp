@@ -13,10 +13,17 @@
 #include <sstream>
 #include <adios2.h>
 
+
+
 std::string test(FunctionManagerRaw *fmr, const BlockSummary &bs, void *inputData, const std::vector<std::string> &parameters)
 {
     //bs.printSummary();
     std::cout << "test the default data execution" << std::endl;
+    //test call the server
+    if(fmr->m_blockManager==NULL){
+        throw std::runtime_error("the pointer to the m_blockManager is null");
+    }
+    //do sth and put data into the blockManager if it is necessary
     return "";
 }
 

@@ -15,43 +15,28 @@
 
 namespace tl = thallium;
 
-//this cache is used to store the information from the server
-//this will be used to decrease the interaction between client and server
-struct UniClientCache
-{
-    UniClientCache(){};
-
-    //the addr of the server addr
-    //assume the number of the meta server same with the total server
-    //TODO add flag to distiguish the meta number and the server number
-    //if the number of metaserver is different compared with the data server number
-    tl::mutex m_addrMapMutex;
-    std::map<int, std::string> m_serverIDToAddr;
-
-    ~UniClientCache(){};
-
-    bool ifAddrIDExist(int id)
-    {
-        if (this->m_serverIDToAddr.find(id) == this->m_serverIDToAddr.end())
-        {
-            //this id not exist
-            return false;
-        }
-        return true;
-    };
-
-    void addAddr(int addrId, std::string serverAddr)
-    {
-        this->m_addrMapMutex.lock();
-        this->m_serverIDToAddr[addrId] = serverAddr;
-        this->m_addrMapMutex.unlock();
-        return;
-    };
-};
-
 struct UniClient
 {
     UniClient(){};
+
+    void initMaster(std::string masterAddr)
+    {
+        this->m_masterEndpoint = this->m_clientEnginePtr->lookup(masterAddr);
+        return;
+    }
+
+    //this is called if the addr of all the server is already known
+    //otherwise, it will initilized by getAllServerAddr
+    void initEndPoints(std::vector<std::string> &serverList)
+    {
+        for (auto it = serverList.begin(); it != serverList.end(); it++)
+        {
+            auto endpoint = this->m_clientEnginePtr->lookup(*it);
+            m_serverToEndpoints[*it] = endpoint;
+        }
+        return;
+    }
+
     //for server enginge, the client ptr is the pointer to the server engine
     //for the client code, the client engine is the pointer to the engine with the client mode
     UniClient(tl::engine *clientEnginePtr, std::string masterConfigFile, int rrbStartPosition)
@@ -60,38 +45,46 @@ struct UniClient
         m_masterAddr = loadMasterAddr(masterConfigFile);
         m_position = rrbStartPosition;
         std::cout << "load master Addr: " << m_masterAddr << std::endl;
+        this->initMaster(m_masterAddr);
     };
-    //set the m_masterAddr separately
+
+    //set the m_masterAddr separately when use this
     UniClient(tl::engine *clientEnginePtr, int rrbStartPosition)
     {
         m_clientEnginePtr = clientEnginePtr;
         m_position = rrbStartPosition;
     };
 
+    //from the id to the string (this may used by the writer to fix the specific server)
+    std::map<int, std::string> m_serverIDToAddr;
 
+    //from the string to the endpoints, this is used by all clients
+    //caculate this at the beginning when init the client to avoid the potential mercury mistakes
+    std::map<std::string, tl::endpoint> m_serverToEndpoints;
 
-    std::string m_masterAddr = "";
+    tl::endpoint lookup(const std::string &address) const;
+
+    std::string m_masterAddr;
+    tl::endpoint m_masterEndpoint;
     std::string m_associatedDataServer = "";
-    tl::endpoint m_serverEndpoint;
     tl::engine *m_clientEnginePtr = NULL;
 
-    
-    size_t m_bulkSize=0;
-    void* m_dataContainer = nullptr;
+    size_t m_bulkSize = 0;
+    void *m_dataContainer = nullptr;
     std::vector<std::pair<void *, std::size_t>> m_segments;
     tl::bulk m_dataBulk;
 
-    
     int m_position = 0;
     int m_totalServerNum = 0;
 
-    ~UniClient(){
-        if(m_dataContainer!=nullptr){
+    ~UniClient()
+    {
+        if (m_dataContainer != nullptr)
+        {
             free(m_dataContainer);
         }
+        std::cout << "destroy UniClient"<<std::endl;
     };
-
-    
 
     int getIDByRandom()
     {
@@ -173,8 +166,6 @@ struct UniClient
         std::string blockID,
         std::string functionName,
         std::vector<std::string> &funcParameters);
-
-    UniClientCache *m_uniCache = nullptr;
 };
 
 #endif

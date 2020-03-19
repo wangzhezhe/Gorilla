@@ -1,8 +1,7 @@
 #include <iostream>
 #include <sstream>
 #include "defaultfuncmeta.h"
-
-struct DynamicTriggerManager;
+#include "../../TriggerManager/triggerManager.h"
 
 //get metadata
 std::string defaultCheckGetStep(size_t step, std::string varName, RawDataEndpoint &rde)
@@ -41,7 +40,7 @@ bool defaultComparisonStep(std::string checkResults, std::vector<std::string> pa
 }
 
 //start a new dynamic trigger
-void defaultActionSartDt(DynamicTriggerManager *dtm, size_t step, std::string varName, RawDataEndpoint &rde, std::vector<std::string> parameters)
+void defaultActionSartDt(FunctionManagerMeta *fmm, size_t step, std::string varName, RawDataEndpoint &rde, std::vector<std::string> parameters)
 {
     //start another dynamic trigger
     //the first element id the name of the dynamic trigger
@@ -55,7 +54,10 @@ void defaultActionSartDt(DynamicTriggerManager *dtm, size_t step, std::string va
     {
         std::string triggerName = parameters[i];
         //std::cout << "start new trigger: " << triggerName << std::endl;
-        dtm->commonstart(triggerName, step, varName, rde);
+        if(fmm->m_dtm==NULL){
+            throw std::runtime_error("the pointer to the dynamic trigger should not be null");
+        }
+        fmm->m_dtm->commonstart(triggerName, step, varName, rde);
     }
 
     return;
@@ -97,7 +99,7 @@ void defaultAction(size_t step, std::string varName, UniClient *uniclient, RawDa
 //in-situ function for exp
 std::string InsituExpCheck(size_t step, std::string varName, RawDataEndpoint &rde, std::vector<std::string> parameters)
 {
-    if (parameters.size() <= 1)
+    if (parameters.size() ==0)
     {
         throw std::runtime_error("the parameters of InsituExpCheck should longer than 1");
     }
@@ -112,7 +114,7 @@ std::string InsituExpCheck(size_t step, std::string varName, RawDataEndpoint &rd
 bool InsituExpCompare(std::string checkResults, std::vector<std::string> parameters)
 {
     //std::cout << "execute InsituExpCompare parameters " << parameters[0] << std::endl;
-    if (parameters.size() != 1)
+    if (parameters.size() == 0)
     {
         throw std::runtime_error("the parameters of InsituExpCompare should longer than 1");
     }

@@ -1,7 +1,9 @@
 
 
 #include "blockManager.h"
+//this should be put at the .cpp file instead of the .h file
 #include "rawmemobj/rawmemobj.h"
+#include "vtkobj/vtkobj.hpp"
 #include <iostream>
 
 int BlockManager::putBlock(std::string blockID,
@@ -12,6 +14,14 @@ int BlockManager::putBlock(std::string blockID,
   {
 
     DataBlockInterface *dbi = new RawMemObj(blockSummary);
+    dbi->putData(dataPointer);
+    this->m_DataBlockMapMutex.lock();
+    DataBlockMap[blockID] = dbi;
+    this->m_DataBlockMapMutex.unlock();
+  }
+  else if (blockSummary.m_drivertype.compare(DRIVERTYPE_VTKDATASET) == 0)
+  {
+    DataBlockInterface *dbi = new VTKObj(blockSummary);
     dbi->putData(dataPointer);
     this->m_DataBlockMapMutex.lock();
     DataBlockMap[blockID] = dbi;
@@ -61,11 +71,14 @@ size_t BlockManager::getBlockSize(std::string blockID)
   return bs.m_elemNum * bs.m_elemSize;
 }
 
-
-bool BlockManager::checkDataExistance(std::string blockID){
-   if(this->DataBlockMap.find(blockID)!=this->DataBlockMap.end()){
-     return true;
-   }else{
-     return false;
-   }
+bool BlockManager::checkDataExistance(std::string blockID)
+{
+  if (this->DataBlockMap.find(blockID) != this->DataBlockMap.end())
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
 }
