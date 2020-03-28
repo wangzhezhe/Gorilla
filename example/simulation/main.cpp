@@ -183,8 +183,36 @@ int main(int argc, char **argv)
 
         for (int j = 0; j < settings.plotgap; j++)
         {
+#ifdef ENABLE_TIMERS
+        MPI_Barrier(comm);
+        struct timespec iterstart, iterend;
+        double iterdiff;
+        clock_gettime(CLOCK_REALTIME, &iterstart); /* mark start time */
+#endif
             sim.iterate();
             i++;
+
+#ifdef ENABLE_TIMERS
+
+        MPI_Barrier(comm);
+        clock_gettime(CLOCK_REALTIME, &iterend); /* mark end time */
+        iterdiff = (iterend.tv_sec - iterstart.tv_sec) * 1.0 + (iterend.tv_nsec - iterstart.tv_nsec) * 1.0 / BILLION;
+
+        //char tempstr[200];
+        //sprintf(tempstr,"step %d rank %d put %f\n",i,rank,diff);
+
+        //std::cout << tempstr << std::endl;
+
+        //caculate the avg
+        double sumiterdiff;
+        MPI_Reduce(&iterdiff, &sumiterdiff, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+
+        if (rank == 0)
+        {
+            std::cout << "step " << i << " avg iter " << sumiterdiff / procs << std::endl;
+        }
+
+#endif
         }
 
 #ifdef ENABLE_TIMERS
@@ -216,7 +244,7 @@ int main(int argc, char **argv)
         //else
         //{
 
-        bool ifStage = false;
+        bool ifStage = true;
         int anaTime = 4.0*1000;
 
         if (ifStage)

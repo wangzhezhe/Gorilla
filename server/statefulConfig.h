@@ -3,23 +3,27 @@
 #define __STATEFUL_CONFIG__H__
 
 
-#include "mpi.h"
+//#include "mpi.h"
 
 #include <time.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <adios2.h>
+#include <thallium.hpp>
+
 #define BILLION 1000000000L
+
+namespace tl = thallium;
 
 struct statefulConfig
 {
         statefulConfig()
         {
-                //this->initADIOS();
+                this->initADIOS();
         };
         void initADIOS()
         {
-                adios2::ADIOS adios(MPI_COMM_WORLD, adios2::DebugON);
+                adios2::ADIOS adios(adios2::DebugON);
                 this->m_io = adios.DeclareIO("gorilla_gs");
                 this->m_io.SetEngine("BP4");
                 this->m_writer = m_io.Open("gorilla_gs", adios2::Mode::Write);
@@ -68,6 +72,9 @@ struct statefulConfig
         //adios info
         adios2::IO m_io;
         adios2::Engine m_writer;
+        //this lock is used for parallel varaible defination
+        tl::mutex m_adiosLock;
+
 
         //timer info
         bool ifTimerInit = false;

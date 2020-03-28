@@ -2,23 +2,12 @@
     {
         "name_trigger":"testTrigger1",
         "lb":[0,0,0],
-        "ub":[1024,1024,1024],
+        "ub":[1287,1287,1287],
         "funcName_check":"InsituExpCheck",
         "funcName_compare": "InsituExpCompare",
         "funcName_action":"InsituExpAction",
-        "parameters_check":[],
-        "parameters_compare":["10"],
+        "parameters_check":["para1", "para2", "para3"],
+        "parameters_compare":["para1", "para2", "para3"],
         "parameters_action":["para1", "para2", "para3"]
-    },
-    {
-        "name_trigger":"testTrigger2",
-        "lb":[0,0,0],
-        "ub":[512,512,512],
-        "funcName_check":"defaultCheck",
-        "funcName_compare": "defaultComparison",
-        "funcName_action":"defaultAction",
-        "parameters_check":[],
-        "parameters_compare":["15"],
-        "parameters_action":["para4", "para5", "para6"]
     }
 ]

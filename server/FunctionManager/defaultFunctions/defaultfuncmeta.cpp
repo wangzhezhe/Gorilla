@@ -176,19 +176,19 @@ void InsituExpAction(size_t step, std::string varName, UniClient *uniclient, Raw
 
     try
     {
-        char str[256];
-        sprintf(str, "adios write step %s varName %s lb %d %d %d ub %d %d %d\n",
-                funcParameters[0].c_str(), funcParameters[1].c_str(),
-                rde.m_indexlb[0], rde.m_indexlb[1], rde.m_indexlb[2],
-                rde.m_indexub[0], rde.m_indexub[1], rde.m_indexub[2]);
-        std::cout << str << std::endl;
+        //char str[256];
+        //sprintf(str, "adios write step %s varName %s lb %d %d %d ub %d %d %d\n",
+        //        funcParameters[0].c_str(), funcParameters[1].c_str(),
+        //        rde.m_indexlb[0], rde.m_indexlb[1], rde.m_indexlb[2],
+        //        rde.m_indexub[0], rde.m_indexub[1], rde.m_indexub[2]);
+        //std::cout << str << std::endl;
 
         //simulate the writting process
         //do this for in-situ testing that contains the IO
         //int writeTime = 3.8;
         //usleep(writeTime * 1000000);
-        //std::string result = uniclient->executeRawFunc(
-        //    rde.m_rawDataServerAddr, rde.m_rawDataID, functionName, funcParameters);
+        std::string result = uniclient->executeRawFunc(
+            rde.m_rawDataServerAddr, rde.m_rawDataID, functionName, funcParameters);
     }
     catch (const std::exception &e)
     {

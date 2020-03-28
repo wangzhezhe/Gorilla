@@ -65,7 +65,7 @@ int main(int argc, char **argv)
 
         dti->printInfo();
 
-        //register the trigger to the server
+        //register the trigger to the server, the init trigger should be registered automatically
     }
 
     return 0;

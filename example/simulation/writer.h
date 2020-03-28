@@ -55,7 +55,7 @@ public:
         initComparisonParameters.push_back("0");
 
         //how many seconds
-        int anaTimeint = 4.0 * 1000000;
+        int anaTimeint = 0 * 1000000;
         std::string anaTime = std::to_string(anaTimeint);
         //declare the function and the parameters
         std::vector<std::string> checkParameters;
