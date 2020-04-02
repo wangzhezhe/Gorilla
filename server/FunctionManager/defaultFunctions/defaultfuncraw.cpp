@@ -147,6 +147,8 @@ std::string testvtk(FunctionManagerRaw *fmr, const BlockSummary &bs, void *input
     return "";
 }
 
+//there are some issues for using adios. maybe it is the problem of the multithread using of adios
+//https://github.com/ornladios/ADIOS2/issues/2076
 std::string adiosWrite(FunctionManagerRaw *fmr, const BlockSummary &bs, void *inputData, const std::vector<std::string> &parameters)
 {
     // write the data into the adios bp file

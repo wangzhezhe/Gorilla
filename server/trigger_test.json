@@ -1,13 +1,24 @@
 [
     {
+        "name_trigger":"InitTrigger",
+        "lb":[0,0,0],
+        "ub":[511,511,511],
+        "funcName_check":"defaultCheckGetStep",
+        "funcName_compare": "defaultComparisonStep",
+        "funcName_action":"defaultActionSartDt",
+        "parameters_check":[],
+        "parameters_compare":["0"],
+        "parameters_action":["testTrigger1"]
+    },
+    {
         "name_trigger":"testTrigger1",
         "lb":[0,0,0],
-        "ub":[1287,1287,1287],
-        "funcName_check":"InsituExpCheck",
-        "funcName_compare": "InsituExpCompare",
-        "funcName_action":"InsituExpAction",
-        "parameters_check":["para1", "para2", "para3"],
-        "parameters_compare":["para1", "para2", "para3"],
-        "parameters_action":["para1", "para2", "para3"]
+        "ub":[511,511,511],
+        "funcName_check":"defaultCheck",
+        "funcName_compare": "defaultComparison",
+        "funcName_action":"defaultNotifyAction",
+        "parameters_check":["check_para1", "check_para2", "check_para3"],
+        "parameters_compare":["compare_para1", "compare_para2", "compare_para3"],
+        "parameters_action":["action_para1", "action_para2", "action_para3"]
     }
 ]

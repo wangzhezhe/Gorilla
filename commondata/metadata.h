@@ -8,7 +8,6 @@
 #include <thallium/serialization/stl/array.hpp>
 #include <thallium/serialization/stl/string.hpp>
 #include <thallium/serialization/stl/vector.hpp>
-#include <thallium/serialization/stl/map.hpp>
 
 #include <tuple>
 #include <typeinfo>

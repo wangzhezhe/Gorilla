@@ -54,7 +54,8 @@ void defaultActionSartDt(FunctionManagerMeta *fmm, size_t step, std::string varN
     {
         std::string triggerName = parameters[i];
         //std::cout << "start new trigger: " << triggerName << std::endl;
-        if(fmm->m_dtm==NULL){
+        if (fmm->m_dtm == NULL)
+        {
             throw std::runtime_error("the pointer to the dynamic trigger should not be null");
         }
         fmm->m_dtm->commonstart(triggerName, step, varName, rde);
@@ -86,7 +87,7 @@ bool defaultComparison(std::string checkResults, std::vector<std::string> parame
     return true;
 }
 
-void defaultAction(size_t step, std::string varName, UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
+void defaultAction(FunctionManagerMeta *fmm, size_t step, std::string varName, UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
 {
     //std::cout << "execute defaultAction" << std::endl;
     for (int i = 0; i < parameters.size(); i++)
@@ -96,10 +97,36 @@ void defaultAction(size_t step, std::string varName, UniClient *uniclient, RawDa
     return;
 }
 
+void defaultNotifyAction(FunctionManagerMeta *fmm, size_t step, std::string varName, UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
+{
+
+    //notify the watcher
+    if (fmm->m_dtm == NULL)
+    {
+        throw std::runtime_error("the pointer to the dynamic trigger should not be null for defaultNotifyAction");
+    }
+
+    //range the watcher set and send block info
+    for (auto it = fmm->m_dtm->m_registeredWatcherSet.begin(); it != fmm->m_dtm->m_registeredWatcherSet.end(); ++it)
+    {
+        std::cout << "send notification to " << *it << std::endl;
+        
+        //TODO use specialized data structure to send the event information
+        BlockSummary bs;
+        bs.m_indexlb = rde.m_indexlb;
+        bs.m_indexub = rde.m_indexub;
+     
+        uniclient->notifyBack(*it, bs);
+    }
+
+    //todo, ask raw data server to get the metadata then send the block summary back to the watcher
+    return;
+}
+
 //in-situ function for exp
 std::string InsituExpCheck(size_t step, std::string varName, RawDataEndpoint &rde, std::vector<std::string> parameters)
 {
-    if (parameters.size() ==0)
+    if (parameters.size() == 0)
     {
         throw std::runtime_error("the parameters of InsituExpCheck should longer than 1");
     }
@@ -146,7 +173,7 @@ bool InsituExpCompare(std::string checkResults, std::vector<std::string> paramet
     return false;
 }
 
-void InsituExpAction(size_t step, std::string varName, UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
+void InsituExpAction(FunctionManagerMeta *fmm, size_t step, std::string varName, UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
 {
     //write the data into the adios
     //send request to the raw data server and let it execut the adios data writting

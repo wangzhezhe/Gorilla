@@ -501,6 +501,34 @@ void putrawdata(const tl::request &req, int clientID, size_t &step, std::string 
     }
 }
 
+void registerWatcher(const tl::request &req, std::string watcherAddr, std::vector<std::string> &triggerName)
+{
+    //range the triggerName, if current trigger name is registered
+    //put the watcherAddr into the triggerManger
+    for (auto it = triggerName.begin(); it != triggerName.end(); ++it)
+    {
+        std::string triggerName = *it;
+        spdlog::debug("register watcher for trigger {}", triggerName);
+        //if trigger is on this node
+        if (uniServer->m_dtmanager->m_dynamicTrigger.find(triggerName) != uniServer->m_dtmanager->m_dynamicTrigger.end())
+        {
+            //register the watcher if it is not empty
+            uniServer->m_dtmanager->m_watcherSetMutex.lock();
+            uniServer->m_dtmanager->m_registeredWatcherSet.insert(watcherAddr);
+
+            auto endpoint = uniClient->m_clientEnginePtr->lookup(watcherAddr);
+            uniClient->m_serverToEndpoints[watcherAddr] = endpoint;
+
+            uniServer->m_dtmanager->m_watcherSetMutex.unlock();
+        }
+        else
+        {
+            spdlog::info("try to watch unregistered trigger {}", triggerName);
+        }
+    }
+    req.respond(0);
+}
+
 void putTriggerInfo(const tl::request &req, std::string triggerName, DynamicTriggerInfo &dti)
 {
 
@@ -804,6 +832,8 @@ void runRerver(std::string networkingType)
     globalServerEnginePtr->define("getDataSubregion", getDataSubregion);
     globalServerEnginePtr->define("putTriggerInfo", putTriggerInfo);
     globalServerEnginePtr->define("executeRawFunc", executeRawFunc);
+    globalServerEnginePtr->define("registerWatcher", registerWatcher);
+
     globalServerEnginePtr->define("startTimer", startTimer).disable_response();
     globalServerEnginePtr->define("endTimer", endTimer).disable_response();
 

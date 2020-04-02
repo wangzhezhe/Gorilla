@@ -37,6 +37,7 @@ typedef void (*initActionPtr)(
     std::vector<std::string> parameters);
 
 typedef void (*actionPtr)(
+    FunctionManagerMeta *fmm,
     size_t step,
     std::string varName,
     UniClient *uniclient,
@@ -66,6 +67,9 @@ struct FunctionManagerMeta
         registerCheckFunc("InsituExpCheck", &InsituExpCheck);
         registerComparisonFunc("InsituExpCompare", &InsituExpCompare);
         registerActionFunc("InsituExpAction", &InsituExpAction);
+
+        registerActionFunc("defaultNotifyAction", &defaultNotifyAction);
+
 
         return;
     }

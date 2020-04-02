@@ -40,6 +40,12 @@ struct DynamicTriggerManager
     //from the trigger name to the trigger instance
     std::map<std::string, DynamicTriggerInfo> m_dynamicTrigger;
 
+
+    //from the triggerName to the watcher
+    tl::mutex m_watcherSetMutex;
+    std::set<std::string> m_registeredWatcherSet;
+
+
     //the place that store the function
     FunctionManagerMeta* m_funcmanagerMeta = NULL;
 

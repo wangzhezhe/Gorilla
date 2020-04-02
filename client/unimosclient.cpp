@@ -13,12 +13,11 @@ tl::endpoint UniClient::lookup(
     if (it == m_serverToEndpoints.end())
     {
         //do not lookup here to avoid the potential mercury race condition
-        throw std::runtime_error("cache the endpoint at the constructor\n");
+        throw std::runtime_error("failed to find addr, cache the endpoint at the constructor\n");
     }
 
     return it->second;
 }
-
 
 void UniClient::startTimer()
 {
@@ -50,7 +49,7 @@ int UniClient::getAllServerAddr()
 
     for (auto it = adrList.begin(); it != adrList.end(); it++)
     {
-        this->m_serverIDToAddr[it->m_index] =  it->m_addr;
+        this->m_serverIDToAddr[it->m_index] = it->m_addr;
         auto endpoint = this->m_clientEnginePtr->lookup(it->m_addr);
         this->m_serverToEndpoints[it->m_addr] = endpoint;
     }
@@ -88,7 +87,7 @@ std::string UniClient::getServerAddr()
 
     return this->m_serverIDToAddr[serverId];
 }
- 
+
 std::string UniClient::loadMasterAddr(std::string masterConfigFile)
 {
 
@@ -346,6 +345,22 @@ int UniClient::putTriggerInfo(
     return status;
 }
 
+void UniClient::registerWatcher(std::vector<std::string> triggerNameList)
+{
+
+    //range all the server
+    std::string watcherAddr = this->m_clientEnginePtr->self();
+    tl::remote_procedure remoteregisterWatchInfo = this->m_clientEnginePtr->define("registerWatcher");
+
+    //register the watcher
+    for (auto it = this->m_serverToEndpoints.begin(); it != this->m_serverToEndpoints.end(); ++it)
+    {
+        tl::endpoint serverEndpoint = it->second;
+        int status = remoteregisterWatchInfo.on(serverEndpoint)(watcherAddr, triggerNameList);
+    }
+    return;
+}
+
 void UniClient::registerTrigger(
     size_t dims,
     std::array<int, 3> indexlb,
@@ -382,6 +397,16 @@ std::string UniClient::executeRawFunc(
     tl::endpoint serverEndpoint = this->lookup(serverAddr);
     std::string result = remoteexecuteRawFunc.on(serverEndpoint)(blockID, functionName, funcParameters);
     return result;
+}
+
+
+//notify the data watcher
+//be carefule, there are race condition here, if find the remote procedure dynamically
+void UniClient::notifyBack(std::string watcherAddr, BlockSummary& bs){
+    tl::remote_procedure remotenotifyBack = this->m_clientEnginePtr->define("rcvNotify");
+    tl::endpoint serverEndpoint = this->lookup(watcherAddr);
+    std::string result = remotenotifyBack.on(serverEndpoint)(bs);
+    return;
 }
 
 //start a server that could listen to the notification from the server

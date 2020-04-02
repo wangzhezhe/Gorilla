@@ -91,7 +91,9 @@ add_library(metaclient ./putgetMeta/metaclient.cpp)
 target_link_libraries(metaclient thallium)
 
 add_library (unimos_client 
-${gorilla_SOURCE_DIR}/client/unimosclient.cpp)
+${gorilla_SOURCE_DIR}/client/unimosclient.cpp
+${gorilla_SOURCE_DIR}/client/watcher.cpp
+)
 target_link_libraries (unimos_client thallium)
 
 # there is reference between each other, so it is better to build them together

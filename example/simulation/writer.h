@@ -23,10 +23,11 @@ public:
 
         //start the timer for the master server
         if (rank == 0)
-        {
-            registerRtrigger(1);
+        {   
+            //register trigger by separate service
+            //registerRtrigger(1);
             m_uniclient->startTimer();
-            std::cout << "ok to register the trigger and timer\n";
+            //std::cout << "ok to register the trigger and timer\n";
         }
     };
 

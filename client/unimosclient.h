@@ -166,6 +166,11 @@ struct UniClient
         std::string blockID,
         std::string functionName,
         std::vector<std::string> &funcParameters);
+
+    void registerWatcher(std::vector<std::string> triggerNameList);
+
+    void notifyBack(std::string watcherAddr, BlockSummary& bs);
+
 };
 
 #endif

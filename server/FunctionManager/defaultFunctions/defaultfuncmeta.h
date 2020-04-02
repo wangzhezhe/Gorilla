@@ -37,11 +37,21 @@ bool defaultComparison(std::string checkResults,
 std::vector<std::string> parameters);
 
 void defaultAction(
+FunctionManagerMeta*fmm,
 size_t step, 
 std::string varName,
 UniClient* uniclient,
 RawDataEndpoint& rde,
 std::vector<std::string> parameters);
+
+void defaultNotifyAction(
+FunctionManagerMeta *fmm, 
+size_t step, 
+std::string varName, 
+UniClient *uniclient, 
+RawDataEndpoint &rde, 
+std::vector<std::string> parameters);
+
 
 std::string InsituExpCheck(size_t step, std::string varName, RawDataEndpoint &rde, std::vector<std::string> parameters);
 
@@ -49,6 +59,7 @@ bool InsituExpCompare(std::string checkResults,
 std::vector<std::string> parameters);
 
 void InsituExpAction(
+FunctionManagerMeta *fmm,    
 size_t step, 
 std::string varName, 
 UniClient *uniclient, 

@@ -23,6 +23,7 @@ struct statefulConfig
         };
         void initADIOS()
         {
+                //do not use mpi here
                 adios2::ADIOS adios(adios2::DebugON);
                 this->m_io = adios.DeclareIO("gorilla_gs");
                 this->m_io.SetEngine("BP4");

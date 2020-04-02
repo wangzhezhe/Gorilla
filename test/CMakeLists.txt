@@ -71,8 +71,10 @@ add_executable(test_insitu_exp ./Trigger/test_insitu_exp.cpp)
 target_link_libraries(test_insitu_exp thallium unimos_client)
 
 add_executable(test_trigger_loader ./Trigger/test_trigger_loader.cpp)
-target_link_libraries(test_trigger_loader)
+target_link_libraries(test_trigger_loader thallium unimos_client)
 
+add_executable(test_client_watcher ./Client/test_watcher.cpp)
+target_link_libraries(test_client_watcher thallium unimos_client)
 
 add_subdirectory(mock)
 
