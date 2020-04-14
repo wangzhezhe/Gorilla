@@ -50,7 +50,7 @@ void DHTManager::initDHTBySFC(size_t ndim, size_t metaServerNum, BBX *globalBBX)
   for (int i = 0; i < ndim; i++)
   {
     // this is the number of the value, so plus one
-    maxDimLen = std::max(maxDimLen, globalBBX->BoundList[i]->m_ub + 1);
+    maxDimLen = std::max(maxDimLen, globalBBX->BoundList[i].m_ub + 1);
   }
 
   //the len of every dim in virtual box is virtualMaxDimLen
@@ -105,18 +105,17 @@ void DHTManager::initDHTBySFC(size_t ndim, size_t metaServerNum, BBX *globalBBX)
       if (iter == metaServerIDToBBX.end())
       {
 
-        Bound *b = new Bound();
         BBX *bbx = new BBX(1);
-        bbx->BoundList.push_back(b);
+        bbx->BoundList.push_back(Bound());
         this->metaServerIDToBBX[serverID] = bbx;
       }
 
       // update the lowerbound and the upper bound for specific partition
-      this->metaServerIDToBBX[serverID]->BoundList[0]->m_lb =
-          std::min(this->metaServerIDToBBX[serverID]->BoundList[0]->m_lb, i);
+      this->metaServerIDToBBX[serverID]->BoundList[0].m_lb =
+          std::min(this->metaServerIDToBBX[serverID]->BoundList[0].m_lb, i);
 
-      this->metaServerIDToBBX[serverID]->BoundList[0]->m_ub =
-          std::max(this->metaServerIDToBBX[serverID]->BoundList[0]->m_ub, i);
+      this->metaServerIDToBBX[serverID]->BoundList[0].m_ub =
+          std::max(this->metaServerIDToBBX[serverID]->BoundList[0].m_ub, i);
       // modify the ub if it is larger than real value
     }
   }
@@ -142,8 +141,8 @@ void DHTManager::initDHTBySFC(size_t ndim, size_t metaServerNum, BBX *globalBBX)
         if (iter == metaServerIDToBBX.end())
         {
 
-          Bound *b1 = new Bound();
-          Bound *b2 = new Bound();
+          Bound b1 ;
+          Bound b2 ;
           BBX *bbx = new BBX(2);
           bbx->BoundList.push_back(b1);
           bbx->BoundList.push_back(b2);
@@ -151,15 +150,15 @@ void DHTManager::initDHTBySFC(size_t ndim, size_t metaServerNum, BBX *globalBBX)
         }
 
         // update the lowerbound and the upper bound for specific partition
-        this->metaServerIDToBBX[serverID]->BoundList[0]->m_lb =
-            std::min(this->metaServerIDToBBX[serverID]->BoundList[0]->m_lb, i);
-        this->metaServerIDToBBX[serverID]->BoundList[1]->m_lb =
-            std::min(this->metaServerIDToBBX[serverID]->BoundList[1]->m_lb, j);
+        this->metaServerIDToBBX[serverID]->BoundList[0].m_lb =
+            std::min(this->metaServerIDToBBX[serverID]->BoundList[0].m_lb, i);
+        this->metaServerIDToBBX[serverID]->BoundList[1].m_lb =
+            std::min(this->metaServerIDToBBX[serverID]->BoundList[1].m_lb, j);
 
-        this->metaServerIDToBBX[serverID]->BoundList[0]->m_ub =
-            std::max(this->metaServerIDToBBX[serverID]->BoundList[0]->m_ub, i);
-        this->metaServerIDToBBX[serverID]->BoundList[1]->m_ub =
-            std::max(this->metaServerIDToBBX[serverID]->BoundList[1]->m_ub, j);
+        this->metaServerIDToBBX[serverID]->BoundList[0].m_ub =
+            std::max(this->metaServerIDToBBX[serverID]->BoundList[0].m_ub, i);
+        this->metaServerIDToBBX[serverID]->BoundList[1].m_ub =
+            std::max(this->metaServerIDToBBX[serverID]->BoundList[1].m_ub, j);
       }
     }
   }
@@ -188,9 +187,9 @@ void DHTManager::initDHTBySFC(size_t ndim, size_t metaServerNum, BBX *globalBBX)
           if (iter == metaServerIDToBBX.end())
           {
 
-            Bound *b1 = new Bound();
-            Bound *b2 = new Bound();
-            Bound *b3 = new Bound();
+            Bound b1 ;
+            Bound b2 ;
+            Bound b3 ;
             BBX *bbx = new BBX(3);
             bbx->BoundList.push_back(b1);
             bbx->BoundList.push_back(b2);
@@ -199,19 +198,19 @@ void DHTManager::initDHTBySFC(size_t ndim, size_t metaServerNum, BBX *globalBBX)
           }
 
           // update the lowerbound and the upper bound for specific partition
-          this->metaServerIDToBBX[serverID]->BoundList[0]->m_lb = std::min(
-              this->metaServerIDToBBX[serverID]->BoundList[0]->m_lb, i);
-          this->metaServerIDToBBX[serverID]->BoundList[1]->m_lb = std::min(
-              this->metaServerIDToBBX[serverID]->BoundList[1]->m_lb, j);
-          this->metaServerIDToBBX[serverID]->BoundList[2]->m_lb = std::min(
-              this->metaServerIDToBBX[serverID]->BoundList[2]->m_lb, k);
+          this->metaServerIDToBBX[serverID]->BoundList[0].m_lb = std::min(
+              this->metaServerIDToBBX[serverID]->BoundList[0].m_lb, i);
+          this->metaServerIDToBBX[serverID]->BoundList[1].m_lb = std::min(
+              this->metaServerIDToBBX[serverID]->BoundList[1].m_lb, j);
+          this->metaServerIDToBBX[serverID]->BoundList[2].m_lb = std::min(
+              this->metaServerIDToBBX[serverID]->BoundList[2].m_lb, k);
 
-          this->metaServerIDToBBX[serverID]->BoundList[0]->m_ub = std::max(
-              this->metaServerIDToBBX[serverID]->BoundList[0]->m_ub, i);
-          this->metaServerIDToBBX[serverID]->BoundList[1]->m_ub = std::max(
-              this->metaServerIDToBBX[serverID]->BoundList[1]->m_ub, j);
-          this->metaServerIDToBBX[serverID]->BoundList[2]->m_ub = std::max(
-              this->metaServerIDToBBX[serverID]->BoundList[2]->m_ub, k);
+          this->metaServerIDToBBX[serverID]->BoundList[0].m_ub = std::max(
+              this->metaServerIDToBBX[serverID]->BoundList[0].m_ub, i);
+          this->metaServerIDToBBX[serverID]->BoundList[1].m_ub = std::max(
+              this->metaServerIDToBBX[serverID]->BoundList[1].m_ub, j);
+          this->metaServerIDToBBX[serverID]->BoundList[2].m_ub = std::max(
+              this->metaServerIDToBBX[serverID]->BoundList[2].m_ub, k);
 
           if (k % 2 == 0)
           {
@@ -295,24 +294,24 @@ void DHTManager::initDHTManually(std::vector<int> &lenArray, std::vector<int> &p
 
         if (dims >= 1)
         {
-          Bound *b = new Bound();
+          Bound b;
           bbx->BoundList.push_back(b);
-          this->metaServerIDToBBX[partitionID]->BoundList[0]->m_lb = x * xSpan;
-          this->metaServerIDToBBX[partitionID]->BoundList[0]->m_ub = std::min((x + 1) * xSpan - 1, lenArray[0] - 1);
+          this->metaServerIDToBBX[partitionID]->BoundList[0].m_lb = x * xSpan;
+          this->metaServerIDToBBX[partitionID]->BoundList[0].m_ub = std::min((x + 1) * xSpan - 1, lenArray[0] - 1);
 
           if (dims >= 2)
           {
-            Bound *b = new Bound();
+            Bound b;
             bbx->BoundList.push_back(b);
-            this->metaServerIDToBBX[partitionID]->BoundList[1]->m_lb = y * ySpan;
-            this->metaServerIDToBBX[partitionID]->BoundList[1]->m_ub = std::min((y + 1) * ySpan - 1, lenArray[1] - 1);
+            this->metaServerIDToBBX[partitionID]->BoundList[1].m_lb = y * ySpan;
+            this->metaServerIDToBBX[partitionID]->BoundList[1].m_ub = std::min((y + 1) * ySpan - 1, lenArray[1] - 1);
 
             if (dims >= 3)
             {
-              Bound *b = new Bound();
+              Bound b;
               bbx->BoundList.push_back(b);
-              this->metaServerIDToBBX[partitionID]->BoundList[2]->m_lb = z * zSpan;
-              this->metaServerIDToBBX[partitionID]->BoundList[2]->m_ub = std::min((z + 1) * zSpan - 1, lenArray[2] - 1);
+              this->metaServerIDToBBX[partitionID]->BoundList[2].m_lb = z * zSpan;
+              this->metaServerIDToBBX[partitionID]->BoundList[2].m_ub = std::min((z + 1) * zSpan - 1, lenArray[2] - 1);
             }
           }
         }
@@ -333,8 +332,8 @@ std::vector<ResponsibleMetaServer> DHTManager::getMetaServerID(BBX *BBXQuery)
   for (auto it = this->metaServerIDToBBX.begin();
        it != this->metaServerIDToBBX.end(); ++it)
   {
-    // compare the BBXQuery with every item and store the overlapping part into
-    BBX *overlapBBX = getOverlapBBX(BBXQuery, it->second);
+    // compare the BBXQuery with every item and store the overlapping part into list
+    BBX *overlapBBX = getOverlapBBX(*BBXQuery, *(it->second));
     if (overlapBBX != NULL)
     {
       ResponsibleMetaServer rbm(it->first, overlapBBX);

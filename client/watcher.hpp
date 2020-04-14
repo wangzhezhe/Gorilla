@@ -13,7 +13,7 @@ struct Watcher {
     //the function will be called if there is notification
     std::string startWatch(tl::engine *enginePtr);
     //close the server
-    int end(){};
+    //int end(){};
     ~Watcher(){};
 
 

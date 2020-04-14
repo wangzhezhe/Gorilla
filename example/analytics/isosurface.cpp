@@ -218,7 +218,6 @@ int main(int argc, char *argv[])
     uniclient->getAllServerAddr();
     uniclient->m_totalServerNum = uniclient->m_serverIDToAddr.size();
 
-    
     std::string VarNameU = "grascott_u";
     //gray scott simulation start from 1
     for (int step = 1; step <= steps; step++)
@@ -244,7 +243,7 @@ int main(int argc, char *argv[])
         double diff;
         clock_gettime(CLOCK_REALTIME, &start); /* mark start time */
 #endif
-
+        //this API will block there, if no metadata is updated
         MATRIXTOOL::MatrixView dataView = uniclient->getArbitraryData(step, VarNameU, sizeof(double), 3, indexlb, indexub);
 
 #ifdef ENABLE_TIMERS
@@ -268,6 +267,7 @@ int main(int argc, char *argv[])
             //std::string recordKey = "Trigger_" + std::to_string(step);
             //MetaClient *metaclient = new MetaClient(&clientEngine);
             //metaclient->Recordtime(recordKey);
+            std::cout << "read ok for step " << step << std::endl;
         }
 
         //todo add the checking operation for the pdf
@@ -280,7 +280,7 @@ int main(int argc, char *argv[])
         //writePolyvtk(fname, polyData);
         //std::cout << "ok for ts " << step << std::endl;
     }
-    
+
     delete uniclient;
     MPI_Finalize();
 

@@ -29,7 +29,7 @@ void initDHT(UniServer *uniServer)
         BBX *globalBBX = new BBX(dataDims);
         for (int i = 0; i < dataDims; i++)
         {
-            Bound *b = new Bound(0, maxLen - 1);
+            Bound b(0, maxLen - 1);
             globalBBX->BoundList.push_back(b);
         }
         uniServer->m_dhtManager->initDHTBySFC(dataDims, gloablSettings.metaserverNum, globalBBX);

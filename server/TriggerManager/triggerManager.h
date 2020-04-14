@@ -42,6 +42,8 @@ struct DynamicTriggerManager
 
 
     //from the triggerName to the watcher
+    //TODO, the collective operation is necessary here, only sent the request back
+    //when all notifier send notify info
     tl::mutex m_watcherSetMutex;
     std::set<std::string> m_registeredWatcherSet;
 

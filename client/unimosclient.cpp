@@ -160,6 +160,7 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
     //mdw.printInfo();
     if (mdwList.size() == 0)
     {
+        throw std::runtime_error("the size of the metadatalist is not supposed to be 0");
         return 0;
     }
 
@@ -167,6 +168,7 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
     tl::remote_procedure remotePutMetaData = this->m_clientEnginePtr->define("putmetadata");
     for (auto it = mdwList.begin(); it != mdwList.end(); it++)
     {
+        std::cout << "debug mdwlist position" << this->m_position << it->m_destAddr << std::endl;
         tl::endpoint metaserverEndpoint = this->lookup(it->m_destAddr);
         int status = remotePutMetaData.on(metaserverEndpoint)(it->m_step, it->m_varName, it->m_rde);
         if (status != 0)
@@ -247,16 +249,27 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
     std::vector<std::string> metaList = this->getmetaServerList(dims, indexlb, indexub);
 
     std::vector<MATRIXTOOL::MatrixView> matrixViewList;
-
     for (auto it = metaList.begin(); it != metaList.end(); it++)
     {
+        std::vector<RawDataEndpoint> rweList;
         std::string metaServerAddr = *it;
-        std::vector<RawDataEndpoint> rweList = this->getrawDataEndpointList(metaServerAddr, step, varName, dims, indexlb, indexub);
-        std::cout << "metadata server " << metaServerAddr << " size of rweList " << rweList.size() << std::endl;
-        if (rweList.size() == 0)
+        while (true)
         {
-            throw std::runtime_error("failed to get the overlap raw data endpoint for " + metaServerAddr);
+            rweList = this->getrawDataEndpointList(metaServerAddr, step, varName, dims, indexlb, indexub);
+            //std::cout << "metadata server " << metaServerAddr << " size of rweList " << rweList.size() << std::endl;
+            if (rweList.size() == 0)
+            {
+                //the metadata is not updated on this server, waiting
+                usleep(500000);
+                continue;
+            }
+            else
+            {
+                break;
+            }
+            //TODO. if wait for a long time, throw runtime error
         }
+        //for every metadata, get the rawdata 
         for (auto itrwe = rweList.begin(); itrwe != rweList.end(); itrwe++)
         {
             //itrwe->printInfo();
@@ -360,7 +373,9 @@ void UniClient::registerWatcher(std::vector<std::string> triggerNameList)
     }
     return;
 }
-
+//TODO, add the identity for different group
+//only the master will send the notify information back to the client
+//when put trigger, it is necessary to put identity
 void UniClient::registerTrigger(
     size_t dims,
     std::array<int, 3> indexlb,
@@ -399,10 +414,10 @@ std::string UniClient::executeRawFunc(
     return result;
 }
 
-
 //notify the data watcher
 //be carefule, there are race condition here, if find the remote procedure dynamically
-void UniClient::notifyBack(std::string watcherAddr, BlockSummary& bs){
+void UniClient::notifyBack(std::string watcherAddr, BlockSummary &bs)
+{
     tl::remote_procedure remotenotifyBack = this->m_clientEnginePtr->define("rcvNotify");
     tl::endpoint serverEndpoint = this->lookup(watcherAddr);
     std::string result = remotenotifyBack.on(serverEndpoint)(bs);

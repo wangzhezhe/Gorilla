@@ -113,6 +113,7 @@ inline void *getSubMatrix(size_t elemSize, std::array<size_t, DEFAULT_MAX_DIM> s
 // assume that the bounding box match with the data size
 struct MatrixView
 {
+  MatrixView(){m_data = NULL; m_bbx = NULL;};
   MatrixView(BBX *bbx, void *data) : m_bbx(bbx), m_data(data){};
   BBX *m_bbx = NULL;
   void *m_data = NULL;

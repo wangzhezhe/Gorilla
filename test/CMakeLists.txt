@@ -9,6 +9,9 @@ target_link_libraries(test_dhtmanagerManual dhtmanager)
 add_executable(test_metadatamanager ./MetaData/test_metadata.cpp)
 target_link_libraries(test_metadatamanager metadatamanager)
 
+add_executable(test_meta_bbxcover ./MetaData/test_meta_bbxcover.cpp)
+target_link_libraries(test_meta_bbxcover metadatamanager)
+
 add_executable(test_bbx ./Util/test_bbx.cpp)
 target_link_libraries(test_bbx)
 
@@ -93,3 +96,6 @@ add_test( NAME test_addrManager COMMAND test_addrManager)
 add_test( NAME test_trigger COMMAND test_trigger)
 
 add_test( NAME test_setting COMMAND test_setting)
+
+add_test( NAME test_meta_bbxcover COMMAND test_meta_bbxcover)
+

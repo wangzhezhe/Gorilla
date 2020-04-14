@@ -71,11 +71,15 @@ struct MetaDataManager
   // one data partition is associated with multiple versions
   std::map<size_t, std::map<std::string, MetaDataBlock*>> m_metaDataMap;
 
-  void updateMetaData(size_t step, std::string varName, RawDataEndpoint &rde, std::string dataVersion = DRIVERTYPE_RAWMEM);
+  void updateMetaData(size_t step, std::string varName, RawDataEndpoint &rde, std::string dataType = DRIVERTYPE_RAWMEM);
 
   // the bounding box of the RawDataEndpoints is adjusted
   std::vector<RawDataEndpoint> getOverlapEndpoints(size_t, std::string varName,
-                                                   BBX *bbx, std::string dataVersion = DRIVERTYPE_RAWMEM);
+                                                   BBX *bbx, std::string dataType = DRIVERTYPE_RAWMEM);
+
+  std::vector<RawDataEndpoint> getRawEndpoints(size_t step, std::string varName, std::string dataType = DRIVERTYPE_RAWMEM);
+  
+  bool ifCovered(std::vector<RawDataEndpoint> &existlist,BBX queryBBX);
 
   ~MetaDataManager(){
      std::cout << "destroy MetaDataManager" << std::endl;

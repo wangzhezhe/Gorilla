@@ -333,7 +333,7 @@ void putrawdata(const tl::request &req, int clientID, size_t &step, std::string 
     //generate the unique id for new data
 
     std::vector<MetaDataWrapper> metadataWrapperList;
-    spdlog::debug("execute raw data put for server id {} :", globalRank);
+    spdlog::debug("execute raw data put for server id {}", globalRank);
     if (gloablSettings.logLevel > 0)
     {
         blockSummary.printSummary();
@@ -429,8 +429,7 @@ void putrawdata(const tl::request &req, int clientID, size_t &step, std::string 
         //go through metaserverList, for every id get the address from metaServerIDToAddr
         //send request to metaDataServer
 
-        //update the coresponding metaserverList
-
+        //update the coresponding metaserverList[when the actual region is larger than metaserver, use the overlap as the index]
         //update the meta data by async way to improve the performance of the put operation
         for (auto it = metaserverList.begin(); it != metaserverList.end(); it++)
         {
@@ -454,8 +453,14 @@ void putrawdata(const tl::request &req, int clientID, size_t &step, std::string 
             //spdlog::info("server put stage 2: {}", diff2);
             //if dest of server is current one
             std::string destAddr = uniServer->m_dhtManager->metaServerIDToAddr[metaServerId];
+            /* update direactly if meta data service and raw data service locate on same node
             if (destAddr.compare(uniServer->m_addrManager->nodeAddr) == 0)
             {
+                spdlog::debug("server {} put meta", uniServer->m_addrManager->nodeAddr);
+                if (gloablSettings.logLevel > 0)
+                {
+                    rde.printInfo();
+                }
                 uniServer->m_metaManager->updateMetaData(step, varName, rde);
                 if (gloablSettings.addTrigger == true)
                 {
@@ -479,19 +484,14 @@ void putrawdata(const tl::request &req, int clientID, size_t &step, std::string 
             }
             else
             {
+            */
+            MetaDataWrapper mdw(destAddr, step, varName, rde);
+            metadataWrapperList.push_back(mdw);
 
-                MetaDataWrapper mdw(destAddr, step, varName, rde);
-                metadataWrapperList.push_back(mdw);
-                req.respond(metadataWrapperList);
-                return;
-            }
-
-            //if (recordKey.compare("") != 0)
-            //{
-            //    MetaClient *metaclient = new MetaClient(globalServerEnginePtr);
-            //    metaclient->Recordtime(recordKey);
-            //}
         }
+        //when all metadata is wrapped, then send back
+        req.respond(metadataWrapperList);
+        return;
     }
     catch (const std::exception &e)
     {
@@ -528,7 +528,9 @@ void registerWatcher(const tl::request &req, std::string watcherAddr, std::vecto
     }
     req.respond(0);
 }
-
+//TODO, the trigger should also know the master among all knows that holds this trigger
+//every trigger is a computing group essentially
+//it needs to know the master addr of this group
 void putTriggerInfo(const tl::request &req, std::string triggerName, DynamicTriggerInfo &dti)
 {
 
@@ -585,6 +587,27 @@ void getRawDataEndpointList(const tl::request &req,
     try
     {
         BBXTOOL::BBX *BBXQuery = new BBXTOOL::BBX(dims, indexlb, indexub);
+
+        //check if all required partition is avalible, get raw endpoint first then execute check operation
+        std::vector<RawDataEndpoint> rdeplist = uniServer->m_metaManager->getRawEndpoints(step, varName);
+
+        //get overlap between the query and the boundry that this process respond to
+        ;
+        BBX queryBBX(dims, indexlb, indexub);
+        BBX *overlap = getOverlapBBX(queryBBX, *(uniServer->m_dhtManager->metaServerIDToBBX[globalRank]));
+        if (overlap == NULL)
+        {
+            req.respond(rawDataEndpointList);
+            throw std::runtime_error("dht error, there should overlap between queried bbx and current metadata partition\n");
+            return;
+        }
+        bool ifcover = uniServer->m_metaManager->ifCovered(rdeplist, *overlap);
+        if (ifcover == false)
+        {
+            //return a none array if it is not covered
+            req.respond(rawDataEndpointList);
+            return;
+        }
         rawDataEndpointList = uniServer->m_metaManager->getOverlapEndpoints(step, varName, BBXQuery);
         free(BBXQuery);
         req.respond(rawDataEndpointList);
@@ -594,6 +617,7 @@ void getRawDataEndpointList(const tl::request &req,
         spdlog::info("exception for getRawDataEndpointList: {}", std::string(e.what()));
         req.respond(rawDataEndpointList);
     }
+    return;
 }
 
 void startTimer(const tl::request &req)
@@ -700,8 +724,8 @@ void initDHT()
         BBX *globalBBX = new BBX(dataDims);
         for (int i = 0; i < dataDims; i++)
         {
-            Bound *b = new Bound(0, maxLen - 1);
-            globalBBX->BoundList.push_back(b);
+            Bound tempb(0, maxLen - 1);
+            globalBBX->BoundList.push_back(tempb);
         }
         uniServer->m_dhtManager->initDHTBySFC(dataDims, gloablSettings.metaserverNum, globalBBX);
     }

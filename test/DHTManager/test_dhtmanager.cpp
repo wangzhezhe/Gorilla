@@ -8,26 +8,26 @@
 void testInit1d() {
   std::cout << "------init 1d------" << std::endl;
   DHTManager *dhtm = new DHTManager();
-  Bound *a = new Bound(0, 15);
+  Bound a(0, 15);
   BBX *ra1d = new BBX(1);
   ra1d->BoundList.push_back(a);
   dhtm->initDHTBySFC(1, 4, ra1d);
   dhtm->printDTMInfo();
 
-  if (dhtm->metaServerIDToBBX[0]->BoundList[0]->m_lb != 0 ||
-      dhtm->metaServerIDToBBX[0]->BoundList[0]->m_ub != 3) {
+  if (dhtm->metaServerIDToBBX[0]->BoundList[0].m_lb != 0 ||
+      dhtm->metaServerIDToBBX[0]->BoundList[0].m_ub != 3) {
     throw std::runtime_error("failed for testInit1d\n");
   }
-  if (dhtm->metaServerIDToBBX[1]->BoundList[0]->m_lb != 4 ||
-      dhtm->metaServerIDToBBX[1]->BoundList[0]->m_ub != 7) {
+  if (dhtm->metaServerIDToBBX[1]->BoundList[0].m_lb != 4 ||
+      dhtm->metaServerIDToBBX[1]->BoundList[0].m_ub != 7) {
     throw std::runtime_error("failed for testInit1d\n");
   }
-  if (dhtm->metaServerIDToBBX[2]->BoundList[0]->m_lb != 8 ||
-      dhtm->metaServerIDToBBX[2]->BoundList[0]->m_ub != 11) {
+  if (dhtm->metaServerIDToBBX[2]->BoundList[0].m_lb != 8 ||
+      dhtm->metaServerIDToBBX[2]->BoundList[0].m_ub != 11) {
     throw std::runtime_error("failed for testInit1d\n");
   }
-  if (dhtm->metaServerIDToBBX[3]->BoundList[0]->m_lb != 12 ||
-      dhtm->metaServerIDToBBX[3]->BoundList[0]->m_ub != 15) {
+  if (dhtm->metaServerIDToBBX[3]->BoundList[0].m_lb != 12 ||
+      dhtm->metaServerIDToBBX[3]->BoundList[0].m_ub != 15) {
     throw std::runtime_error("failed for testInit1d\n");
   }
 }
@@ -38,27 +38,27 @@ void testInit2d() {
   // the number of the dimention is supposed to be 2^n
   // there are problems for other number
   // TODO provide partition method that is not limit to the 2^n
-  Bound *a = new Bound(0, 511);
+  Bound a(0, 511);
   BBX *ra2d = new BBX(2);
   ra2d->BoundList.push_back(a);
   ra2d->BoundList.push_back(a);
   dhtm->initDHTBySFC(2, 4, ra2d);
   dhtm->printDTMInfo();
 
-  if (dhtm->metaServerIDToBBX[0]->BoundList[0]->m_lb != 0 ||
-      dhtm->metaServerIDToBBX[0]->BoundList[0]->m_ub != 255) {
+  if (dhtm->metaServerIDToBBX[0]->BoundList[0].m_lb != 0 ||
+      dhtm->metaServerIDToBBX[0]->BoundList[0].m_ub != 255) {
     throw std::runtime_error("failed for testInit2d\n");
   }
-  if (dhtm->metaServerIDToBBX[1]->BoundList[0]->m_lb != 0 ||
-      dhtm->metaServerIDToBBX[1]->BoundList[0]->m_ub != 255) {
+  if (dhtm->metaServerIDToBBX[1]->BoundList[0].m_lb != 0 ||
+      dhtm->metaServerIDToBBX[1]->BoundList[0].m_ub != 255) {
     throw std::runtime_error("failed for testInit2d\n");
   }
-  if (dhtm->metaServerIDToBBX[2]->BoundList[0]->m_lb != 256 ||
-      dhtm->metaServerIDToBBX[2]->BoundList[0]->m_ub != 511) {
+  if (dhtm->metaServerIDToBBX[2]->BoundList[0].m_lb != 256 ||
+      dhtm->metaServerIDToBBX[2]->BoundList[0].m_ub != 511) {
     throw std::runtime_error("failed for testInit2d\n");
   }
-  if (dhtm->metaServerIDToBBX[3]->BoundList[0]->m_lb != 256 ||
-      dhtm->metaServerIDToBBX[3]->BoundList[0]->m_ub != 511) {
+  if (dhtm->metaServerIDToBBX[3]->BoundList[0].m_lb != 256 ||
+      dhtm->metaServerIDToBBX[3]->BoundList[0].m_ub != 511) {
     throw std::runtime_error("failed for testInit2d\n");
   }
 }
@@ -68,7 +68,7 @@ void testInit2dEgecase() {
   DHTManager *dhtm = new DHTManager();
 
   // if the dim is not the 2^n
-  Bound *a = new Bound(0, 9);
+  Bound a(0, 9);
   BBX *ra2d = new BBX(2);
   ra2d->BoundList.push_back(a);
   ra2d->BoundList.push_back(a);
@@ -82,7 +82,7 @@ void testInit3dLarge(){
   // the number of the dimention is supposed to be 2^n
   // there are problems for other number
   // TODO provide partition method that is not limit to the 2^n
-  Bound *a = new Bound(0, 511);
+  Bound a(0, 511);
   BBX *ra3d = new BBX(3);
   ra3d->BoundList.push_back(a);
   ra3d->BoundList.push_back(a);
@@ -97,7 +97,7 @@ void testInit3d() {
   // the number of the dimention is supposed to be 2^n
   // there are problems for other number
   // TODO provide partition method that is not limit to the 2^n
-  Bound *a = new Bound(0, 7);
+  Bound a (0, 7);
   BBX *ra3d = new BBX(3);
   ra3d->BoundList.push_back(a);
   ra3d->BoundList.push_back(a);
@@ -111,19 +111,19 @@ void testgetMetaServerID() {
   DHTManager *dhtm = new DHTManager();
 
   // if the dim is not the 2^n
-  Bound *a = new Bound(0, 15);
+  Bound a(0, 15);
   BBX *globalDomain = new BBX(2);
   globalDomain->BoundList.push_back(a);
   globalDomain->BoundList.push_back(a);
 
   dhtm->initDHTBySFC(2, 4, globalDomain);
 
-  Bound *b = new Bound(4, 10);
+  Bound b (4, 10);
   BBX *queryDomain1 = new BBX(2);
   queryDomain1->BoundList.push_back(b);
   queryDomain1->BoundList.push_back(b);
 
-  Bound *c = new Bound(4, 6);
+  Bound c (4, 6);
   BBX *queryDomain2 = new BBX(2);
   queryDomain2->BoundList.push_back(c);
   queryDomain2->BoundList.push_back(c);
@@ -146,11 +146,11 @@ void testgetMetaServerID() {
 
 void testBBX() {
   DHTManager *dhtm = new DHTManager();
-  Bound *a = new Bound(0, 2);
-  Bound *b = new Bound(3, 5);
-  Bound *c = new Bound(1, 4);
-  Bound *d = new Bound(0, 1);
-  Bound *e = new Bound(1, 2);
+  Bound a (0, 2);
+  Bound b (3, 5);
+  Bound c (1, 4);
+  Bound d (0, 1);
+  Bound e (1, 2);
 
   BBX *ra = new BBX(2);
   ra->BoundList.push_back(a);
@@ -183,27 +183,27 @@ void testBBX() {
   //  throw std::runtime_error("failed for testing the overlap of ra,rb\n");
   //}
 
-  BBX *rac = getOverlapBBX(ra, rc);
+  BBX *rac = getOverlapBBX(*ra, *rc);
   if (rac == NULL) {
     throw std::runtime_error(
         "failed for testing the overlap of ra,rc, it should not be null\n");
   }
-  if (rac->BoundList.size() != 2 || rac->BoundList[0]->m_lb != 1 ||
-      rac->BoundList[0]->m_ub != 2 || rac->BoundList[1]->m_lb != 1 ||
-      rac->BoundList[1]->m_ub != 2) {
+  if (rac->BoundList.size() != 2 || rac->BoundList[0].m_lb != 1 ||
+      rac->BoundList[0].m_ub != 2 || rac->BoundList[1].m_lb != 1 ||
+      rac->BoundList[1].m_ub != 2) {
     rac->printBBXinfo();
     throw std::runtime_error("failed for testing the overlap of ra,rc\n");
   }
 
-  BBX *rad = getOverlapBBX(ra, rd);
+  BBX *rad = getOverlapBBX(*ra, *rd);
 
   if (rad == NULL) {
     throw std::runtime_error(
         "failed for testing the overlap of ra,rd, it should not be null\n");
   }
-  if (rad->BoundList.size() != 2 || rad->BoundList[0]->m_lb != 0 ||
-      rad->BoundList[0]->m_ub != 1 || rad->BoundList[1]->m_lb != 1 ||
-      rad->BoundList[1]->m_ub != 2) {
+  if (rad->BoundList.size() != 2 || rad->BoundList[0].m_lb != 0 ||
+      rad->BoundList[0].m_ub != 1 || rad->BoundList[1].m_lb != 1 ||
+      rad->BoundList[1].m_ub != 2) {
     rad->printBBXinfo();
     throw std::runtime_error("failed for testing the overlap of ra,rd\n");
   }
@@ -213,9 +213,9 @@ void testBound() {
 
   DHTManager *dhtm = new DHTManager();
 
-  Bound *a = new Bound(10, 20);
-  Bound *b = new Bound(30, 50);
-  Bound *c = new Bound(15, 40);
+  Bound a (10, 20);
+  Bound b (30, 50);
+  Bound c (15, 40);
 
   Bound *d =  getOverlapBound(a, b);
   if (d != NULL) {
