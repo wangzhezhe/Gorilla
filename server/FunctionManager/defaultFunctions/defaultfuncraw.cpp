@@ -173,10 +173,7 @@ std::string adiosWrite(FunctionManagerRaw *fmr, const BlockSummary &bs, void *in
 
     //record time
 
-    // there is still unsolved bug here
-
-    adios2::Variable<double> var_u;
-    adios2::Variable<int> var_step;
+    //there is still unsolved bug here
 
     size_t shapex = bs.m_indexub[0] - bs.m_indexlb[0] + 1;
     size_t shapey = bs.m_indexub[1] - bs.m_indexlb[1] + 1;
@@ -187,20 +184,43 @@ std::string adiosWrite(FunctionManagerRaw *fmr, const BlockSummary &bs, void *in
             bs.m_indexlb[0], bs.m_indexlb[1], bs.m_indexlb[2],
             shapex, shapey, shapez);
     std::cout << str << std::endl;
+    if (fmr->m_statefulConfig == NULL)
+    {
+        throw std::runtime_error("pointer to statefulConfig should not be null");
+    }
+    std::cout << "--- debug engine name " << fmr->m_statefulConfig->m_engine.Name() << std::endl;
+    std::cout << "--- debug type " << fmr->m_statefulConfig->m_engine.Type() << std::endl;
+    std::cout << "--- debug io name " << fmr->m_statefulConfig->m_io.Name() << std::endl;
 
-    //there is problem to call the defineVaraible in parallel
+    //the lock is used to avoid the race condition between write of different thread
     fmr->m_statefulConfig->m_adiosLock.lock();
-    var_u = fmr->m_statefulConfig->m_io.DefineVariable<double>("U",
-                                                               {512, 512, 512},
-                                                               {(size_t)bs.m_indexlb[0], (size_t)bs.m_indexlb[1], (size_t)bs.m_indexlb[2]},
-                                                               {shapex, shapey, shapez});
+
+    adios2::Dims start = {(size_t)bs.m_indexlb[0], (size_t)bs.m_indexlb[1], (size_t)bs.m_indexlb[2]};
+    adios2::Dims count = {shapex, shapey, shapez};
+
+    //use set selection to modify the variable selection into the current partition
+    const std::string variableName = "data";
+    adios2::Variable<double> variableData = fmr->m_statefulConfig->m_io.InquireVariable<double>(variableName);
+    variableData.SetSelection({start, count});
+    //adios2::Variable<int> variableStep = fmr->m_statefulConfig->m_io.InquireVariable<int>("step");
 
     int step = atoi(parameters[0].c_str());
-    var_step = fmr->m_statefulConfig->m_io.DefineVariable<int>("step");
-    fmr->m_statefulConfig->m_adiosLock.unlock();
 
-    fmr->m_statefulConfig->m_writer.Put<int>(var_step, &step);
-    fmr->m_statefulConfig->m_writer.Put<double>(var_u, (double *)inputData);
+    std::cout << "check step " << step << std::endl;
+    double *temp = (double *)inputData;
+    for (int i = 0; i < 10; i++)
+    {
+        std::cout << "check data " << *temp << std::endl;
+        temp++;
+    }
+
+    //fmr->m_statefulConfig->m_engine.Put<int>(variableStep, &step);
+    //fmr->m_statefulConfig->m_engine.PerformPuts();
+
+    fmr->m_statefulConfig->m_engine.Put<double>(variableData, (double *)inputData);
+    fmr->m_statefulConfig->m_engine.PerformPuts();
+
+    fmr->m_statefulConfig->m_adiosLock.unlock();
 
     //write the current block into the adios
     //the partition of the staging server is useully less than the partition of the writer

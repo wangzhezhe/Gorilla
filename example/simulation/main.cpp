@@ -130,6 +130,7 @@ int main(int argc, char **argv)
     mid = margo_init_opt("gni", MARGO_CLIENT_MODE, &hii, 0, 1);
     tl::engine globalclientEngine(mid);
 #else
+
     tl::engine globalclientEngine(protocol, THALLIUM_CLIENT_MODE);
 #endif
 
@@ -170,6 +171,11 @@ int main(int argc, char **argv)
     Timer timer_compute;
     Timer timer_write;
 
+    MPI_Barrier(comm);
+    struct timespec wfstart, wfend;
+    double wfdiff;
+    clock_gettime(CLOCK_REALTIME, &wfstart); /* mark start time */
+
     //std::ostringstream log_fname;
     //log_fname << "gray_scott_pe_" << rank << ".log";
 
@@ -184,33 +190,33 @@ int main(int argc, char **argv)
         for (int j = 0; j < settings.plotgap; j++)
         {
 #ifdef ENABLE_TIMERS
-        MPI_Barrier(comm);
-        struct timespec iterstart, iterend;
-        double iterdiff;
-        clock_gettime(CLOCK_REALTIME, &iterstart); /* mark start time */
+            MPI_Barrier(comm);
+            struct timespec iterstart, iterend;
+            double iterdiff;
+            clock_gettime(CLOCK_REALTIME, &iterstart); /* mark start time */
 #endif
             sim.iterate();
             i++;
 
 #ifdef ENABLE_TIMERS
 
-        MPI_Barrier(comm);
-        clock_gettime(CLOCK_REALTIME, &iterend); /* mark end time */
-        iterdiff = (iterend.tv_sec - iterstart.tv_sec) * 1.0 + (iterend.tv_nsec - iterstart.tv_nsec) * 1.0 / BILLION;
+            MPI_Barrier(comm);
+            clock_gettime(CLOCK_REALTIME, &iterend); /* mark end time */
+            iterdiff = (iterend.tv_sec - iterstart.tv_sec) * 1.0 + (iterend.tv_nsec - iterstart.tv_nsec) * 1.0 / BILLION;
 
-        //char tempstr[200];
-        //sprintf(tempstr,"step %d rank %d put %f\n",i,rank,diff);
+            //char tempstr[200];
+            //sprintf(tempstr,"step %d rank %d put %f\n",i,rank,diff);
 
-        //std::cout << tempstr << std::endl;
+            //std::cout << tempstr << std::endl;
 
-        //caculate the avg
-        double sumiterdiff;
-        MPI_Reduce(&iterdiff, &sumiterdiff, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+            //caculate the avg
+            double sumiterdiff;
+            MPI_Reduce(&iterdiff, &sumiterdiff, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
 
-        if (rank == 0)
-        {
-            std::cout << "step " << i << " avg iter " << sumiterdiff / procs << std::endl;
-        }
+            if (rank == 0)
+            {
+                std::cout << "step " << i << " avg iter " << sumiterdiff / procs << std::endl;
+            }
 
 #endif
         }
@@ -245,18 +251,37 @@ int main(int argc, char **argv)
         //{
 
         bool ifStage = true;
-        int anaTime = 4.0*1000;
+
+        int anaTime = 4.0 * 1000;
+        int detectionTime = 0.5 * 1000;
+        bool ifAna = false;
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(detectionTime));
+
+        //if (step % 5 == 1 || step % 5 == 2 || step % 5 == 3 || step % 5 == 4)
+        //{
+        //    ifAna = true;
+        //}
+
+        if (ifAna)
+        {
+            if (rank == 0)
+            {
+                std::cout << "inline ana/vis for step " << step << std::endl;
+                std::this_thread::sleep_for(std::chrono::milliseconds(anaTime));
+            }
+        }
 
         if (ifStage)
         {
             //write to the stage server
             dataWriter.write(sim, step);
         }
-        else
-        {
-            //execute the analytics
-            std::this_thread::sleep_for(std::chrono::milliseconds(anaTime));
-        }
+        //else
+        //{
+        //execute the analytics
+        //    std::this_thread::sleep_for(std::chrono::milliseconds(anaTime));
+        //}
 
         //}
         //char countstr[50];
@@ -290,10 +315,12 @@ int main(int argc, char **argv)
         //the adis needed to be installed before using
     }
 
-    //end timer
-    if (rank == 0)
+    clock_gettime(CLOCK_REALTIME, &wfend); /* mark end time */
+    wfdiff = (wfend.tv_sec - wfstart.tv_sec) * 1.0 + (wfend.tv_nsec - wfstart.tv_nsec) * 1.0 / BILLION;
+    if (rank < 10)
     {
-        dataWriter.endwftimer();
+        std::cout << "wf time " << wfdiff << std::endl;
+        //dataWriter.endwftimer();
     }
     MPI_Finalize();
 }

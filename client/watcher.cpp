@@ -3,7 +3,9 @@
 #include "watcher.hpp"
 #include "../commondata/metadata.h"
 #include <iostream>
-
+//TODO, reduce the infromaion here, this is recieved by several partition
+//consider how to reduce the notification
+//send a function pointer here and call this function when there is notification information
 void rcvNotify(const tl::request &req, BlockSummary& bs){
     //prtint the metadata info
     std::cout << "rcvNotify is called " << std::endl;

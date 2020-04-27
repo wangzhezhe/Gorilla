@@ -19,3 +19,8 @@
 ### the number of the staging service compared with the reader/writer 
 
 generally speaking, the # sim > # stage, it makes no sense to run more data staging service compared with data writer with fixed resources except for debugging.
+
+
+### about the trigger and watcher
+
+one trigger is coresponding to one MPI process at the client, the notificaiton will be reduced at the client

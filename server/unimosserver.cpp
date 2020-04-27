@@ -487,7 +487,6 @@ void putrawdata(const tl::request &req, int clientID, size_t &step, std::string 
             */
             MetaDataWrapper mdw(destAddr, step, varName, rde);
             metadataWrapperList.push_back(mdw);
-
         }
         //when all metadata is wrapped, then send back
         req.respond(metadataWrapperList);
@@ -592,7 +591,6 @@ void getRawDataEndpointList(const tl::request &req,
         std::vector<RawDataEndpoint> rdeplist = uniServer->m_metaManager->getRawEndpoints(step, varName);
 
         //get overlap between the query and the boundry that this process respond to
-        ;
         BBX queryBBX(dims, indexlb, indexub);
         BBX *overlap = getOverlapBBX(queryBBX, *(uniServer->m_dhtManager->metaServerIDToBBX[globalRank]));
         if (overlap == NULL)
@@ -948,6 +946,10 @@ void runRerver(std::string networkingType)
 
     //call the ADIOS init explicitly
     uniServer->m_frawmanager->m_statefulConfig = sconfig;
+    //test if the engine is normal
+    
+    std::cout << "---debug adios io name in in server: " << uniServer->m_frawmanager->m_statefulConfig->m_io.Name() << std::endl;
+    std::cout << "--- debug engine type in server " << uniServer->m_frawmanager->m_statefulConfig->m_engine.Type() << std::endl;
     spdlog::info("init sconfig ok, call margo wait for rank {}", globalRank);
 
 #ifdef USE_GNI

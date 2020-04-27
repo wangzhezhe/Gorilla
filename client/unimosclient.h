@@ -144,7 +144,7 @@ struct UniClient
         std::string triggerName,
         DynamicTriggerInfo &dti);
 
-    void registerTrigger(
+    int registerTrigger(
         size_t dims,
         std::array<int, 3> indexlb,
         std::array<int, 3> indexub,

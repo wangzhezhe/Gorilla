@@ -206,6 +206,7 @@ struct BlockSummary
   }
 };
 
+
 struct RawDataEndpoint
 {
   RawDataEndpoint(){};
@@ -332,6 +333,7 @@ struct DynamicTriggerInfo
     ar &m_comparisonFuncPara;
     ar &m_actionFunc;
     ar &m_actionFuncPara;
+    ar &m_masterAddr;
   }
 };
 

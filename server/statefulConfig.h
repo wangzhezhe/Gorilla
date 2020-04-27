@@ -22,12 +22,24 @@ struct statefulConfig
                 this->initADIOS();
         };
         void initADIOS()
-        {
-                //do not use mpi here
-                adios2::ADIOS adios(adios2::DebugON);
-                this->m_io = adios.DeclareIO("gorilla_gs");
+        {       //TODO, update this part
+                //the adios object is deleted after this function
+                if(this->Adios==nullptr){
+                    this->Adios.reset(new adios2::ADIOS);
+                }
+                this->m_io = this->Adios->DeclareIO("gorilla_gs");
                 this->m_io.SetEngine("BP4");
-                this->m_writer = m_io.Open("gorilla_gs", adios2::Mode::Write);
+
+
+                //define varaible, it doesn't matter about the start and count since it will be udpated by setselection
+                const std::string variableName = "data";
+                this->m_io.DefineVariable<double>(variableName,adios2::Dims{512,512,512},adios2::Dims(), adios2::Dims());
+                this->m_io.DefineVariable<int>("step");
+
+                this->m_engine = m_io.Open("gorilla_gs.bp", adios2::Mode::Write);
+                
+                std::cout << "---debug adios io name in init: " <<  this->m_io.Name() << std::endl;
+                std::cout << "---debug adios engine type in init: " <<  this->m_engine.Type() << std::endl;
         }
 
         void initTimer()
@@ -71,9 +83,16 @@ struct statefulConfig
         ~statefulConfig(){};
 
         //adios info
+        //refer to the implementation for this https://gitlab.kitware.com/vtk/adis/-/blob/master/adis/DataSource.h
+        std::unique_ptr<adios2::ADIOS> Adios = nullptr;
         adios2::IO m_io;
-        adios2::Engine m_writer;
-        //this lock is used for parallel varaible defination
+        adios2::Engine m_engine;
+        //the variable is supposed to defined once per process
+        std::unique_ptr<adios2::Variable<double>> var_u = nullptr;
+        adios2::Variable<int> var_step;
+
+        //this lock is used to avoid the race condition for data write between different thread in one process
+        //refer to https://github.com/ornladios/ADIOS2/issues/2076#issuecomment-617925292 for detials
         tl::mutex m_adiosLock;
 
 

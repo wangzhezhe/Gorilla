@@ -1,0 +1,24 @@
+[
+    {
+        "name_trigger":"InitTrigger",
+        "lb":[0,0,0],
+        "ub":[511,511,511],
+        "funcName_check":"defaultCheckGetStep",
+        "funcName_compare": "defaultComparisonStep",
+        "funcName_action":"defaultActionSartDt",
+        "parameters_check":[],
+        "parameters_compare":["0"],
+        "parameters_action":["testAdios"]
+    },
+    {
+        "name_trigger":"testAdios",
+        "lb":[0,0,0],
+        "ub":[511,511,511],
+        "funcName_check":"InsituExpCheck",
+        "funcName_compare": "InsituExpCompare",
+        "funcName_action":"InsituExpAction",
+        "parameters_check":["500000"],
+        "parameters_compare":["0"],
+        "parameters_action":["adiosWrite"]
+    }
+]

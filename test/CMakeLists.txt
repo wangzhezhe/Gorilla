@@ -66,6 +66,9 @@ add_executable(06_custom_server ./thalimtest/server.cpp)
 target_link_libraries(06_custom_server thallium)
 add_executable(06_custom_client ./thalimtest/client.cpp)
 target_link_libraries(06_custom_client thallium )
+add_executable(mpinotifyblock ./thalimtest/mpinotifyblock.cpp)
+target_link_libraries(mpinotifyblock thallium MPI::MPI_C)
+
 
 add_executable(thalliumtest_threadpool ./thalimtest/thalliumtest_threadpool.cpp)
 target_link_libraries(thalliumtest_threadpool thallium)
@@ -74,10 +77,14 @@ add_executable(test_insitu_exp ./Trigger/test_insitu_exp.cpp)
 target_link_libraries(test_insitu_exp thallium unimos_client)
 
 add_executable(test_trigger_loader ./Trigger/test_trigger_loader.cpp)
-target_link_libraries(test_trigger_loader thallium unimos_client)
+target_link_libraries(test_trigger_loader thallium unimos_client ${DRC_LIBRARIES})
 
 add_executable(test_client_watcher ./Client/test_watcher.cpp)
 target_link_libraries(test_client_watcher thallium unimos_client)
+
+add_executable(adiosthread ./thalimtest/adiosthread.cpp)
+target_link_libraries(adiosthread adios2::adios2)
+
 
 add_subdirectory(mock)
 

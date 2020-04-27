@@ -269,7 +269,7 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
             }
             //TODO. if wait for a long time, throw runtime error
         }
-        //for every metadata, get the rawdata 
+        //for every metadata, get the rawdata
         for (auto itrwe = rweList.begin(); itrwe != rweList.end(); itrwe++)
         {
             //itrwe->printInfo();
@@ -376,7 +376,7 @@ void UniClient::registerWatcher(std::vector<std::string> triggerNameList)
 //TODO, add the identity for different group
 //only the master will send the notify information back to the client
 //when put trigger, it is necessary to put identity
-void UniClient::registerTrigger(
+int UniClient::registerTrigger(
     size_t dims,
     std::array<int, 3> indexlb,
     std::array<int, 3> indexub,
@@ -386,20 +386,29 @@ void UniClient::registerTrigger(
 
     std::vector<std::string> metaList = this->getmetaServerList(dims, indexlb, indexub);
 
-    std::vector<MATRIXTOOL::MatrixView> matrixViewList;
+    if (metaList.size() == 0)
+    {
+        throw std::runtime_error("the metadata list should not be empty");
+        return 0;
+    }
 
+    std::vector<MATRIXTOOL::MatrixView> matrixViewList;
+    std::string metaServerAddr = metaList[0];
+    //TODO add information about the metaserver when registering
     for (auto it = metaList.begin(); it != metaList.end(); it++)
     {
         //send request to coresponding metadata server
         //and add the trigger
-        std::string metaServerAddr = *it;
-        int status = putTriggerInfo(metaServerAddr, triggerName, dti);
+        //set the master addr of the trigger group
+        int status = putTriggerInfo(*it, triggerName, dti);
         if (status != 0)
         {
             throw std::runtime_error("failed to putTriggerInfo for metaServer " + metaServerAddr);
         }
     }
-    return;
+
+    //return number of the metaserve, know how many notification in total for each step
+    return metaList.size();
 }
 
 std::string UniClient::executeRawFunc(

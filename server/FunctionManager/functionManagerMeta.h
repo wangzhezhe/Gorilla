@@ -40,6 +40,7 @@ typedef void (*actionPtr)(
     FunctionManagerMeta *fmm,
     size_t step,
     std::string varName,
+    std::string triggerGroupMaster;
     UniClient *uniclient,
     RawDataEndpoint &rde,
     std::vector<std::string> parameters);

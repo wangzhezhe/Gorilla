@@ -87,7 +87,7 @@ bool defaultComparison(std::string checkResults, std::vector<std::string> parame
     return true;
 }
 
-void defaultAction(FunctionManagerMeta *fmm, size_t step, std::string varName, UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
+void defaultAction(FunctionManagerMeta *fmm, size_t step, std::string varName,  UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
 {
     //std::cout << "execute defaultAction" << std::endl;
     for (int i = 0; i < parameters.size(); i++)
@@ -97,6 +97,7 @@ void defaultAction(FunctionManagerMeta *fmm, size_t step, std::string varName, U
     return;
 }
 
+//TODO, if it is master, then notify to the watcher, if it is not master, then sent the information to the master
 void defaultNotifyAction(FunctionManagerMeta *fmm, size_t step, std::string varName, UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
 {
 
@@ -106,16 +107,17 @@ void defaultNotifyAction(FunctionManagerMeta *fmm, size_t step, std::string varN
         throw std::runtime_error("the pointer to the dynamic trigger should not be null for defaultNotifyAction");
     }
 
-    //range the watcher set and send block info
+    //range the watcher set and send block info to master
+    //the master will send the notification back to the watcher
     for (auto it = fmm->m_dtm->m_registeredWatcherSet.begin(); it != fmm->m_dtm->m_registeredWatcherSet.end(); ++it)
     {
-        std::cout << "send notification to " << *it << std::endl;
-        
+        std::cout << "send notification to master " << *it << std::endl;
         //TODO use specialized data structure to send the event information
         BlockSummary bs;
         bs.m_indexlb = rde.m_indexlb;
         bs.m_indexub = rde.m_indexub;
-     
+
+        //let the client to do the reduce operations
         uniclient->notifyBack(*it, bs);
     }
 
@@ -173,7 +175,7 @@ bool InsituExpCompare(std::string checkResults, std::vector<std::string> paramet
     return false;
 }
 
-void InsituExpAction(FunctionManagerMeta *fmm, size_t step, std::string varName, UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
+void InsituExpAction(FunctionManagerMeta *fmm, size_t step, std::string varName,  UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
 {
     //write the data into the adios
     //send request to the raw data server and let it execut the adios data writting
