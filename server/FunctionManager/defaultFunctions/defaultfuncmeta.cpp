@@ -87,7 +87,7 @@ bool defaultComparison(std::string checkResults, std::vector<std::string> parame
     return true;
 }
 
-void defaultAction(FunctionManagerMeta *fmm, size_t step, std::string varName,  UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
+void defaultAction(FunctionManagerMeta *fmm, size_t step, std::string varName, std::string triggerMaster, UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
 {
     //std::cout << "execute defaultAction" << std::endl;
     for (int i = 0; i < parameters.size(); i++)
@@ -98,7 +98,7 @@ void defaultAction(FunctionManagerMeta *fmm, size_t step, std::string varName,  
 }
 
 //TODO, if it is master, then notify to the watcher, if it is not master, then sent the information to the master
-void defaultNotifyAction(FunctionManagerMeta *fmm, size_t step, std::string varName, UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
+void defaultNotifyAction(FunctionManagerMeta *fmm, size_t step, std::string varName, std::string triggerMaster, UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
 {
 
     //notify the watcher
@@ -122,6 +122,29 @@ void defaultNotifyAction(FunctionManagerMeta *fmm, size_t step, std::string varN
     }
 
     //todo, ask raw data server to get the metadata then send the block summary back to the watcher
+    return;
+}
+
+//put information of the current step into the group master
+void defaultPutEvent(FunctionManagerMeta *fmm, size_t step, std::string varName, std::string triggerMaster, UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
+{
+    if (fmm->m_dtm == NULL)
+    {
+        throw std::runtime_error("the pointer to the trigger should not be null for defaultPutEvent");
+        return;
+    }
+    
+    if (triggerMaster == "")
+    {
+        throw std::runtime_error("the groupMaster should not be empty string");
+        return;
+    }
+
+    //how to make sure the format of the event (varname, step, lb , ub)
+    EventWrapper event(EVENT_DATA_PUT, varName, step, rde.m_dims, rde.m_indexlb, rde.m_indexub);
+    //todo add triggerName as another parameter
+    std::string triggerName = "testTrigger1";
+    uniclient->putEventIntoQueue(triggerMaster, triggerName, event);
     return;
 }
 
@@ -175,7 +198,7 @@ bool InsituExpCompare(std::string checkResults, std::vector<std::string> paramet
     return false;
 }
 
-void InsituExpAction(FunctionManagerMeta *fmm, size_t step, std::string varName,  UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
+void InsituExpAction(FunctionManagerMeta *fmm, size_t step, std::string varName, std::string triggerMaster, UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
 {
     //write the data into the adios
     //send request to the raw data server and let it execut the adios data writting

@@ -254,7 +254,7 @@ int main(int argc, char **argv)
 
         int anaTime = 4.0 * 1000;
         int detectionTime = 0.5 * 1000;
-        bool ifAna = false;
+        bool ifAna = true;
 
         std::this_thread::sleep_for(std::chrono::milliseconds(detectionTime));
 

@@ -6,8 +6,6 @@
 #SBATCH --licenses=cscratch1
 #SBATCH --constraint=haswell
 
-module load openmpi
-
 # copy metadata server to current dir
 rm unimos_server.conf Gorila_cred_conf gray_scott_pe_* conf* core cred in_situ_sim.log
 

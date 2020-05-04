@@ -40,7 +40,7 @@ typedef void (*actionPtr)(
     FunctionManagerMeta *fmm,
     size_t step,
     std::string varName,
-    std::string triggerGroupMaster;
+    std::string triggerMaster,
     UniClient *uniclient,
     RawDataEndpoint &rde,
     std::vector<std::string> parameters);
@@ -70,6 +70,7 @@ struct FunctionManagerMeta
         registerActionFunc("InsituExpAction", &InsituExpAction);
 
         registerActionFunc("defaultNotifyAction", &defaultNotifyAction);
+        registerActionFunc("defaultPutEvent", &defaultPutEvent);
 
 
         return;

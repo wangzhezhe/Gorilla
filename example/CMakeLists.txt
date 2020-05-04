@@ -6,7 +6,11 @@ add_executable(gray-scott
 )
 
 add_executable(isosurface
-   ./analytics/isosurface.cpp
+   ./analytics/isosurface_pulldata.cpp
+   ./simulation/settings.cpp)
+
+add_executable(isosurface_event
+   ./analytics/isosurface_pullevent.cpp
    ./simulation/settings.cpp)
 
 if(USE_GNI)
@@ -16,10 +20,15 @@ thallium unimos_client metaclient)
   target_link_libraries(isosurface ${DRC_LIBRARIES} MPI::MPI_C ${VTK_LIBRARIES}
 thallium unimos_client metaclient)
 
+  target_link_libraries(isosurface_event ${DRC_LIBRARIES} MPI::MPI_C ${VTK_LIBRARIES}
+thallium unimos_client metaclient)
+
 else()
   target_link_libraries(gray-scott MPI::MPI_C ${VTK_LIBRARIES}
 thallium unimos_client metaclient)
   target_link_libraries(isosurface MPI::MPI_C ${VTK_LIBRARIES}
+thallium unimos_client metaclient)
+  target_link_libraries(isosurface_event MPI::MPI_C ${VTK_LIBRARIES}
 thallium unimos_client metaclient)
 endif()
 

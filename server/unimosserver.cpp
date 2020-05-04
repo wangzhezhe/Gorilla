@@ -707,6 +707,19 @@ void getDataSubregion(const tl::request &req,
     }
 }
 
+void putEvent(const tl::request &req, std::string &triggerName, EventWrapper &event)
+{
+    uniServer->m_dtmanager->putEvent(triggerName, event);
+    return;
+}
+
+void getEvent(const tl::request &req, std::string &triggerName)
+{
+    EventWrapper event = uniServer->m_dtmanager->getEvent(triggerName);
+    req.respond(event);
+    return;
+}
+
 void initDHT()
 {
     int dataDims = gloablSettings.lenArray.size();
@@ -855,6 +868,8 @@ void runRerver(std::string networkingType)
     globalServerEnginePtr->define("putTriggerInfo", putTriggerInfo);
     globalServerEnginePtr->define("executeRawFunc", executeRawFunc);
     globalServerEnginePtr->define("registerWatcher", registerWatcher);
+    globalServerEnginePtr->define("putEvent", putEvent).disable_response();
+    globalServerEnginePtr->define("getEvent", getEvent);
 
     globalServerEnginePtr->define("startTimer", startTimer).disable_response();
     globalServerEnginePtr->define("endTimer", endTimer).disable_response();
@@ -947,7 +962,7 @@ void runRerver(std::string networkingType)
     //call the ADIOS init explicitly
     uniServer->m_frawmanager->m_statefulConfig = sconfig;
     //test if the engine is normal
-    
+
     std::cout << "---debug adios io name in in server: " << uniServer->m_frawmanager->m_statefulConfig->m_io.Name() << std::endl;
     std::cout << "--- debug engine type in server " << uniServer->m_frawmanager->m_statefulConfig->m_engine.Type() << std::endl;
     spdlog::info("init sconfig ok, call margo wait for rank {}", globalRank);

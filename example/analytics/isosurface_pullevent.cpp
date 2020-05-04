@@ -1,3 +1,4 @@
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <mpi.h>
@@ -16,6 +17,8 @@
 #include "../simulation/settings.h"
 #include "../client/unimosclient.h"
 #include "../putgetMeta/metaclient.h"
+#include "../../commondata/metadata.h"
+#include "../../server/json.hpp"
 
 #ifdef USE_GNI
 extern "C"
@@ -107,6 +110,76 @@ void writePolyvtk(const std::string &fname,
     writer->Write();
 }
 
+DynamicTriggerInfo parseTrigger(nlohmann::json &j)
+{
+    std::string funcNameCheck = j.at("funcName_check");
+    std::string funcNameCompare = j.at("funcName_compare");
+    std::string funcNameAction = j.at("funcName_action");
+
+    std::vector<std::string> ParametersCheck;
+    std::vector<std::string> ParametersCompare;
+    std::vector<std::string> ParametersAction;
+
+    j.at("parameters_check").get_to(ParametersCheck);
+    j.at("parameters_compare").get_to(ParametersCompare);
+    j.at("parameters_action").get_to(ParametersAction);
+
+    DynamicTriggerInfo tgInfo(funcNameCheck, ParametersCheck,
+                              funcNameCompare, ParametersCompare,
+                              funcNameAction, ParametersAction);
+
+    return tgInfo;
+}
+
+std::string loadTrigger(UniClient* m_uniclient, std::string fileName)
+{
+    std::ifstream ifs(fileName);
+    nlohmann::json j;
+    ifs >> j;
+
+    //j.at("lenArray").get_to(s.lenArray);
+    //iterate the array
+    std::string triggerMasterAddr;
+    int i = 0;
+    for (nlohmann::json::iterator it = j.begin(); it != j.end(); ++it)
+    {
+        std::cout << "array id " << i << std::endl;
+        //std::cout << *it << '\n';
+        i++;
+        //transfer the content into the structure of the trigger
+        DynamicTriggerInfo dti = parseTrigger(*it);
+
+        std::string triggerName = (*it).at("name_trigger");
+        std::vector<int> lb;
+        std::vector<int> ub;
+        (*it).at("lb").get_to(lb);
+        (*it).at("ub").get_to(ub);
+
+        std::array<int, 3> indexlb;
+        std::array<int, 3> indexub;
+
+        std::cout << "register trigger name: " << triggerName << std::endl;
+        for (int i = 0; i < lb.size(); i++)
+        {
+            std::cout << "dim " << i << std::endl;
+            std::cout << "lb " << lb[i] << " ub " << ub[i] << std::endl;
+            indexlb[i] = lb[i];
+            indexub[i] = ub[i];
+        }
+
+        dti.printInfo();
+
+        int dims = lb.size();
+
+        //only the master server is necessary for the trigger
+        //todo consider this part, different trigger has different trigger master
+        //how to return it in a proper way
+        triggerMasterAddr = m_uniclient->registerTrigger(dims, indexlb, indexub, triggerName, dti);
+    }
+
+    return triggerMasterAddr;
+}
+
 int main(int argc, char *argv[])
 {
     MPI_Init(&argc, &argv);
@@ -125,7 +198,7 @@ int main(int argc, char *argv[])
         if (rank == 0)
         {
             std::cerr << "Too few arguments" << std::endl;
-            std::cout << "Usage: isosurface setting.json steps isovalue protocol" << std::endl;
+            std::cout << "Usage: isosurface setting.json triggerFile.json isovalue protocol" << std::endl;
         }
         MPI_Abort(MPI_COMM_WORLD, -1);
     }
@@ -173,12 +246,12 @@ int main(int argc, char *argv[])
         size_z -= size_z * npz - shape[2];
     }
 
-    const double steps = std::stoi(argv[2]);
+    //the trigger should be loaded before this
+    //integrate the loader process into the analytics for further exmaples
+    std::string triggerFile = std::string(argv[2]);
     const double isovalue = std::stod(argv[3]);
     std::string protocol = argv[4];
-
     std::vector<double> variableU;
-    int step;
 
 #ifdef USE_GNI
     //get the drc id from the shared file
@@ -218,10 +291,72 @@ int main(int argc, char *argv[])
     uniclient->getAllServerAddr();
     uniclient->m_totalServerNum = uniclient->m_serverIDToAddr.size();
 
+    //pull trigger event
+    int finishput = 0;
+    int step = 0;
+    //assume we have already know the varName
     std::string VarNameU = "grascott_u";
-    //gray scott simulation start from 1
-    for (int step = 1; step <= steps; step++)
+    int laststep = -1;
+    std::string triggerMaster;
+    //the triggerName is supposed to be loaded by trigger file
+    std::string triggerName = "testTrigger1";
+    if (rank == 0)
     {
+        //load the trigger file and register it
+        triggerMaster = loadTrigger(uniclient,triggerFile);
+    }
+
+    MPI_Barrier(comm);
+
+    while (true)
+    {
+
+        //use another while to control the event pull
+        while (true)
+        {
+            if (rank == 0)
+            {
+                std::cout << "trigger master is:" << triggerMaster << std::endl;
+                EventWrapper event = uniclient->getEventFromQueue(triggerMaster, triggerName);
+                if (event.m_dims == 0)
+                {
+                    //the event is empty one
+                    std::cout << "wait for event" << std::endl;
+                    usleep(1000000);
+                    continue;
+                }
+                event.printInfo();
+                step = event.m_step;
+                if (step == laststep)
+                {
+                    //the data generated in one step may contains several partitions
+                    //and there are several events, we just need one event for one step for this use case
+                    continue;
+                }
+                laststep = step;
+                MPI_Bcast(&step, 1, MPI_INT, 0, MPI_COMM_WORLD);
+                std::cout << "ok for bcast" << std::endl;
+                if (event.m_type == EVENT_FINISH)
+                {
+                    //set finishput flag as true for all of process
+                    finishput = 1;
+                    MPI_Bcast(&finishput, 1, MPI_INT, 0, MPI_COMM_WORLD);
+                    break;
+                }
+            }
+        }
+
+        if (finishput == 1)
+        {
+            break;
+        }
+
+        //other processes wait the rank 0 to get the event
+        MPI_Barrier(comm);
+
+        std::cout << "rank " << rank << " pull variable " << VarNameU << " for step " << step << std::endl;
+
+        //pull event according to the events generated from the trigger
 
         //read data
 
@@ -243,8 +378,8 @@ int main(int argc, char *argv[])
         double diff;
         clock_gettime(CLOCK_REALTIME, &start); /* mark start time */
 #endif
-        //this API will block there, if no metadata is updated
-        MATRIXTOOL::MatrixView dataView = uniclient->getArbitraryData(step, VarNameU, sizeof(double), 3, indexlb, indexub);
+        //if no metadata is updated, this API will block there
+        //MATRIXTOOL::MatrixView dataView = uniclient->getArbitraryData(step, VarNameU, sizeof(double), 3, indexlb, indexub);
 
 #ifdef ENABLE_TIMERS
         //double time_read = timer_read.stop();

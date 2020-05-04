@@ -79,12 +79,14 @@ target_link_libraries(test_insitu_exp thallium unimos_client)
 add_executable(test_trigger_loader ./Trigger/test_trigger_loader.cpp)
 target_link_libraries(test_trigger_loader thallium unimos_client ${DRC_LIBRARIES})
 
+add_executable(test_putgetevent ./Trigger/test_putgetevent.cpp)
+target_link_libraries(test_putgetevent metatrigger thallium adios2::adios2)
+
 add_executable(test_client_watcher ./Client/test_watcher.cpp)
 target_link_libraries(test_client_watcher thallium unimos_client)
 
 add_executable(adiosthread ./thalimtest/adiosthread.cpp)
 target_link_libraries(adiosthread adios2::adios2)
-
 
 add_subdirectory(mock)
 
@@ -106,3 +108,4 @@ add_test( NAME test_setting COMMAND test_setting)
 
 add_test( NAME test_meta_bbxcover COMMAND test_meta_bbxcover)
 
+add_test( NAME test_putgetevent COMMAND test_putgetevent)

@@ -5,15 +5,19 @@
 #include <unistd.h>
 #define BILLION 1000000000L
 
-tl::endpoint UniClient::lookup(
-    const std::string &address) const
+tl::endpoint UniClient::lookup(std::string &address)
 {
 
     auto it = m_serverToEndpoints.find(address);
     if (it == m_serverToEndpoints.end())
     {
         //do not lookup here to avoid the potential mercury race condition
-        throw std::runtime_error("failed to find addr, cache the endpoint at the constructor\n");
+        //throw std::runtime_error("failed to find addr, cache the endpoint at the constructor\n");
+        auto endpoint = this->m_clientEnginePtr->lookup(address);
+        std::string tempAddr = address;
+        this->m_serverToEndpoints[tempAddr] = endpoint;
+        std::cout << "add new endpoints into the address cache" << std::endl;
+        return endpoint;
     }
 
     return it->second;
@@ -376,7 +380,7 @@ void UniClient::registerWatcher(std::vector<std::string> triggerNameList)
 //TODO, add the identity for different group
 //only the master will send the notify information back to the client
 //when put trigger, it is necessary to put identity
-int UniClient::registerTrigger(
+std::string UniClient::registerTrigger(
     size_t dims,
     std::array<int, 3> indexlb,
     std::array<int, 3> indexub,
@@ -393,22 +397,25 @@ int UniClient::registerTrigger(
     }
 
     std::vector<MATRIXTOOL::MatrixView> matrixViewList;
-    std::string metaServerAddr = metaList[0];
+    // TODO currently, use the first one as the master of the task execution group
+    // if there are multiple variables
+    // then use the hashvalue of the variable name to determine the metaServer
+    std::string groupMasterAddr = metaList[0];
     //TODO add information about the metaserver when registering
     for (auto it = metaList.begin(); it != metaList.end(); it++)
     {
         //send request to coresponding metadata server
-        //and add the trigger
-        //set the master addr of the trigger group
+        //datastruct of the triggerInfo should know its masteraddr
+        dti.m_masterAddr = groupMasterAddr;
         int status = putTriggerInfo(*it, triggerName, dti);
         if (status != 0)
         {
-            throw std::runtime_error("failed to putTriggerInfo for metaServer " + metaServerAddr);
+            throw std::runtime_error("failed to putTriggerInfo for metaServer " + groupMasterAddr);
         }
     }
 
     //return number of the metaserve, know how many notification in total for each step
-    return metaList.size();
+    return groupMasterAddr;
 }
 
 std::string UniClient::executeRawFunc(
@@ -432,7 +439,26 @@ void UniClient::notifyBack(std::string watcherAddr, BlockSummary &bs)
     std::string result = remotenotifyBack.on(serverEndpoint)(bs);
     return;
 }
+//these will be called by analytics
+//put the event into the coresponding master server of the task groups
+void UniClient::putEventIntoQueue(std::string groupMasterAddr, std::string triggerName, EventWrapper &event)
+{
+    tl::remote_procedure remoteputEvent = this->m_clientEnginePtr->define("putEvent").disable_response();
+    tl::endpoint serverEndpoint = this->lookup(groupMasterAddr);
+    remoteputEvent.on(serverEndpoint)(triggerName, event);
+    return;
+}
 
+//get a event from the event queue in task trigger
+EventWrapper UniClient::getEventFromQueue(std::string groupMasterAddr, std::string triggerName)
+{
+    tl::remote_procedure remotegetEvent = this->m_clientEnginePtr->define("getEvent");
+    tl::endpoint serverEndpoint = this->lookup(groupMasterAddr);
+    EventWrapper event = remotegetEvent.on(serverEndpoint)(triggerName);
+    return event;
+}
+
+//todo
 //start a server that could listen to the notification from the server
 //this server can be started by a sepatate xstream by using the lamda expression
 //this only need to be started on specific rank such as rank=0

@@ -94,8 +94,7 @@ struct MetaAddrWrapper
   }
 };
 
-// the Block Summary for every data block, this info is stored at the raw data
-// server
+// the Block Summary for every data block, this info is stored at the raw data server
 struct BlockSummary
 {
   // for empty meta data, the initial value is 0
@@ -315,6 +314,8 @@ struct DynamicTriggerInfo
     {
       std::cout << "parameter " << i << " " << m_actionFuncPara[i] << std::endl;
     }
+
+    std::cout << "group master is " << m_masterAddr << std::endl;
   }
 
   std::string m_checkFunc = "default";
@@ -323,6 +324,7 @@ struct DynamicTriggerInfo
   std::vector<std::string> m_comparisonFuncPara;
   std::string m_actionFunc = "default";
   std::vector<std::string> m_actionFuncPara;
+  std::string m_masterAddr = "";
 
   template <typename A>
   void serialize(A &ar)
@@ -334,6 +336,52 @@ struct DynamicTriggerInfo
     ar &m_actionFunc;
     ar &m_actionFuncPara;
     ar &m_masterAddr;
+  }
+};
+
+const std::string EVENT_DATA_PUT = "DATA_PUT";
+const std::string EVENT_FINISH = "FINISH_PUT";
+
+//TODO add event type, such as data_put, data_put_finish, etc
+struct EventWrapper{
+  EventWrapper(){};
+  EventWrapper(
+  std::string type,
+  std::string varName, 
+  size_t step,  
+  int dims,
+  std::array<int, 3> indexlb,
+  std::array<int, 3> indexub):
+  m_type(type), m_varName(varName), m_step(step),m_dims(dims),m_indexlb(indexlb), m_indexub(indexub){};
+
+  std::string m_type = EVENT_DATA_PUT;
+  std::string m_varName="NULL";
+  
+  size_t m_step=0;
+  int m_dims = 0;
+  std::array<int, 3> m_indexlb{{0, 0, 0}};
+  std::array<int, 3> m_indexub{{0, 0, 0}};
+
+  ~EventWrapper(){};
+
+  void printInfo()
+  {
+    std::cout << "m_varName " << m_varName << " m_step "
+              << m_step << " m_type " << m_type <<  " m_dims " << m_dims
+              << ", m_indexlb " << m_indexlb[0] << " " << m_indexlb[1] << " "
+              << m_indexlb[2] << ", m_indexub " << m_indexub[0] << " "
+              << m_indexub[1] << " " << m_indexub[2] << std::endl;
+  }
+
+  template <typename A>
+  void serialize(A &ar)
+  {
+    ar &m_type; 
+    ar &m_varName;
+    ar &m_step;
+    ar &m_dims;
+    ar &m_indexlb;
+    ar &m_indexub;
   }
 };
 

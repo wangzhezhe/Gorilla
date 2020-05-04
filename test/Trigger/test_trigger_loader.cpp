@@ -137,7 +137,8 @@ int main(int argc, char **argv)
 
         int dims = lb.size();
         //only the master server is necessary for the trigger
-        m_uniclient->registerTrigger(dims, indexlb, indexub, triggerName, dti);
+        std::string triggerMasterAddr = m_uniclient->registerTrigger(dims, indexlb, indexub, triggerName, dti);
+        std::cout << "trigger master addr is: " << triggerMasterAddr << std::endl;
     }
 
     delete m_uniclient;

@@ -28,7 +28,7 @@ struct statefulConfig
                     this->Adios.reset(new adios2::ADIOS);
                 }
                 this->m_io = this->Adios->DeclareIO("gorilla_gs");
-                this->m_io.SetEngine("BP4");
+                //this->m_io.SetEngine("BP4");
 
 
                 //define varaible, it doesn't matter about the start and count since it will be udpated by setselection
@@ -37,6 +37,7 @@ struct statefulConfig
                 this->m_io.DefineVariable<int>("step");
 
                 this->m_engine = m_io.Open("gorilla_gs.bp", adios2::Mode::Write);
+                //the close engine should be called when every thing (file writing) finish
                 
                 std::cout << "---debug adios io name in init: " <<  this->m_io.Name() << std::endl;
                 std::cout << "---debug adios engine type in init: " <<  this->m_engine.Type() << std::endl;

@@ -62,7 +62,7 @@ struct UniClient
     //caculate this at the beginning when init the client to avoid the potential mercury mistakes
     std::map<std::string, tl::endpoint> m_serverToEndpoints;
 
-    tl::endpoint lookup(const std::string &address) const;
+    tl::endpoint lookup(std::string &address);
 
     std::string m_masterAddr;
     tl::endpoint m_masterEndpoint;
@@ -144,7 +144,7 @@ struct UniClient
         std::string triggerName,
         DynamicTriggerInfo &dti);
 
-    int registerTrigger(
+    std::string registerTrigger(
         size_t dims,
         std::array<int, 3> indexlb,
         std::array<int, 3> indexub,
@@ -171,6 +171,9 @@ struct UniClient
 
     void notifyBack(std::string watcherAddr, BlockSummary& bs);
 
+    void putEventIntoQueue(std::string groupMasterAddr, std::string triggerName, EventWrapper &event);
+
+    EventWrapper getEventFromQueue(std::string groupMasterAddr, std::string triggerName);
 };
 
 #endif

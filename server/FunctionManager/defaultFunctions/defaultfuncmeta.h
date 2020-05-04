@@ -40,6 +40,7 @@ void defaultAction(
 FunctionManagerMeta*fmm,
 size_t step, 
 std::string varName,
+std::string triggerMaster,
 UniClient* uniclient,
 RawDataEndpoint& rde,
 std::vector<std::string> parameters);
@@ -47,7 +48,17 @@ std::vector<std::string> parameters);
 void defaultNotifyAction(
 FunctionManagerMeta *fmm, 
 size_t step, 
-std::string varName, 
+std::string varName,
+std::string triggerMaster,
+UniClient *uniclient, 
+RawDataEndpoint &rde, 
+std::vector<std::string> parameters);
+
+void defaultPutEvent(
+FunctionManagerMeta *fmm, 
+size_t step, 
+std::string varName,
+std::string triggerMaster,
 UniClient *uniclient, 
 RawDataEndpoint &rde, 
 std::vector<std::string> parameters);
@@ -61,9 +72,12 @@ std::vector<std::string> parameters);
 void InsituExpAction(
 FunctionManagerMeta *fmm,    
 size_t step, 
-std::string varName, 
+std::string varName,
+std::string triggerMaster,
 UniClient *uniclient, 
 RawDataEndpoint &rde, 
 std::vector<std::string> parameters);
+
+
 
 #endif
