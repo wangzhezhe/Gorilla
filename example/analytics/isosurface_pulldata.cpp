@@ -243,6 +243,8 @@ int main(int argc, char *argv[])
         double diff;
         clock_gettime(CLOCK_REALTIME, &start); /* mark start time */
 #endif
+        std::cout << "debug " << "id " << rank << " indexlb " << indexlb[0] << ","<< indexlb[1] << ","<< indexlb[2]<< " indexub " << indexub[0] << ","<< indexub[1] << ","<< indexub[2] << std::endl;
+
         //if no metadata is updated, this API will block there 
         MATRIXTOOL::MatrixView dataView = uniclient->getArbitraryData(step, VarNameU, sizeof(double), 3, indexlb, indexub);
 

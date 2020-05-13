@@ -169,7 +169,7 @@ void gatherIP(std::string endpoint)
         spdlog::debug("rank {} add raw data server {}", globalRank, ipList[i]);
         uniServer->m_addrManager->m_endPointsLists.push_back(ipList[i]);
     }
-
+    free(sendipStr);
     free(rcvString);
 }
 
@@ -280,6 +280,7 @@ void putmetadata(const tl::request &req, size_t &step, std::string &varName, Raw
         if (gloablSettings.logLevel > 0)
         {
             rde.printInfo();
+            uniServer->m_metaManager->printInfo(globalRank, step, varName);
         }
         uniServer->m_metaManager->updateMetaData(step, varName, rde);
     }
@@ -405,7 +406,7 @@ void putrawdata(const tl::request &req, int clientID, size_t &step, std::string 
         //put into the Block Manager
 
         //get the meta server according to bbx
-        BBXTOOL::BBX *BBXQuery = new BBXTOOL::BBX(blockSummary.m_dims, blockSummary.m_indexlb, blockSummary.m_indexub);
+        BBXTOOL::BBX BBXQuery(blockSummary.m_dims, blockSummary.m_indexlb, blockSummary.m_indexub);
 
         std::vector<ResponsibleMetaServer> metaserverList = uniServer->m_dhtManager->getMetaServerID(BBXQuery);
 
@@ -418,10 +419,6 @@ void putrawdata(const tl::request &req, int clientID, size_t &step, std::string 
                 std::cout << "metaserver index " << metaserverList[i].m_metaServerID << std::endl;
                 metaserverList[i].m_bbx->printBBXinfo();
             }
-        }
-        if (BBXQuery != NULL)
-        {
-            free(BBXQuery);
         }
 
         //TODO, update the metaManager
@@ -554,7 +551,7 @@ void getmetaServerList(const tl::request &req, size_t &dims, std::array<int, 3> 
     std::vector<std::string> metaServerAddr;
     try
     {
-        BBXTOOL::BBX *BBXQuery = new BBXTOOL::BBX(dims, indexlb, indexub);
+        BBXTOOL::BBX BBXQuery(dims, indexlb, indexub);
         std::vector<ResponsibleMetaServer> metaserverList = uniServer->m_dhtManager->getMetaServerID(BBXQuery);
         for (auto it = metaserverList.begin(); it != metaserverList.end(); it++)
         {
@@ -565,7 +562,7 @@ void getmetaServerList(const tl::request &req, size_t &dims, std::array<int, 3> 
             }
             metaServerAddr.push_back(uniServer->m_dhtManager->metaServerIDToAddr[metaServerId]);
         }
-        free(BBXQuery);
+
         req.respond(metaServerAddr);
     }
     catch (std::exception &e)
@@ -585,13 +582,14 @@ void getRawDataEndpointList(const tl::request &req,
     std::vector<RawDataEndpoint> rawDataEndpointList;
     try
     {
-        BBXTOOL::BBX *BBXQuery = new BBXTOOL::BBX(dims, indexlb, indexub);
+        BBXTOOL::BBX BBXQuery(dims, indexlb, indexub);
 
         //check if all required partition is avalible, get raw endpoint first then execute check operation
         std::vector<RawDataEndpoint> rdeplist = uniServer->m_metaManager->getRawEndpoints(step, varName);
 
         //get overlap between the query and the boundry that this process respond to
         BBX queryBBX(dims, indexlb, indexub);
+
         BBX *overlap = getOverlapBBX(queryBBX, *(uniServer->m_dhtManager->metaServerIDToBBX[globalRank]));
         if (overlap == NULL)
         {
@@ -603,12 +601,20 @@ void getRawDataEndpointList(const tl::request &req,
         if (ifcover == false)
         {
             //return a none array if it is not covered
+            if (overlap != NULL)
+            {
+                delete overlap;
+            }
             req.respond(rawDataEndpointList);
             return;
         }
         rawDataEndpointList = uniServer->m_metaManager->getOverlapEndpoints(step, varName, BBXQuery);
-        free(BBXQuery);
+        if (overlap != NULL)
+        {
+            delete overlap;
+        }
         req.respond(rawDataEndpointList);
+        return;
     }
     catch (std::exception &e)
     {
@@ -679,8 +685,8 @@ void getDataSubregion(const tl::request &req,
         }
         BlockSummary bs = uniServer->m_blockManager->getBlockSummary(blockID);
         size_t elemSize = bs.m_elemSize;
-        BBXTOOL::BBX *bbx = new BBXTOOL::BBX(dims, subregionlb, subregionub);
-        size_t allocSize = elemSize * bbx->getElemNum();
+        BBXTOOL::BBX bbx(dims, subregionlb, subregionub);
+        size_t allocSize = elemSize * bbx.getElemNum();
         spdlog::debug("alloc size at server {} is {}", globalRank, allocSize);
 
         uniServer->m_blockManager->getBlockSubregion(blockID, dims, subregionlb, subregionub, dataContainer);
@@ -694,7 +700,6 @@ void getDataSubregion(const tl::request &req,
         tl::endpoint ep = req.get_endpoint();
         clientBulk.on(ep) << returnBulk;
 
-        free(bbx);
         req.respond(0);
     }
     catch (std::exception &e)
@@ -963,8 +968,8 @@ void runRerver(std::string networkingType)
     uniServer->m_frawmanager->m_statefulConfig = sconfig;
     //test if the engine is normal
 
-    std::cout << "---debug adios io name in in server: " << uniServer->m_frawmanager->m_statefulConfig->m_io.Name() << std::endl;
-    std::cout << "--- debug engine type in server " << uniServer->m_frawmanager->m_statefulConfig->m_engine.Type() << std::endl;
+    //std::cout << "---debug adios io name in in server: " << uniServer->m_frawmanager->m_statefulConfig->m_io.Name() << std::endl;
+    //std::cout << "--- debug engine type in server " << uniServer->m_frawmanager->m_statefulConfig->m_engine.Type() << std::endl;
     spdlog::info("init sconfig ok, call margo wait for rank {}", globalRank);
 
 #ifdef USE_GNI
@@ -980,6 +985,10 @@ void signalHandler(int signal_num)
 {
     std::cout << "The interrupt signal is (" << signal_num << "),"
               << " call finalize manually.\n";
+
+    //finalize client and server
+    delete uniClient;
+    delete uniServer;
     globalServerEnginePtr->finalize();
     exit(signal_num);
 }

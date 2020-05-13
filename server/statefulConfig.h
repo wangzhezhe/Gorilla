@@ -39,8 +39,8 @@ struct statefulConfig
                 this->m_engine = m_io.Open("gorilla_gs.bp", adios2::Mode::Write);
                 //the close engine should be called when every thing (file writing) finish
                 
-                std::cout << "---debug adios io name in init: " <<  this->m_io.Name() << std::endl;
-                std::cout << "---debug adios engine type in init: " <<  this->m_engine.Type() << std::endl;
+                //std::cout << "---debug adios io name in init: " <<  this->m_io.Name() << std::endl;
+                //std::cout << "---debug adios engine type in init: " <<  this->m_engine.Type() << std::endl;
         }
 
         void initTimer()

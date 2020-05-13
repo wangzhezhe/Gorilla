@@ -57,7 +57,7 @@ struct UniServer
         //TODO, control the thread number based on if the trigger is enabled
         //the number for the in-situ thread pool should be small for scale
 
-        m_dtmanager = new DynamicTriggerManager(16, client);
+        m_dtmanager = new DynamicTriggerManager(8, client);
         
         m_fmetamanager = new FunctionManagerMeta();
         m_fmetamanager->m_dtm = m_dtmanager;
@@ -74,6 +74,12 @@ struct UniServer
 
     ~UniServer(){
         //delete the m_dataContainerList
+        delete m_addrManager;
+        delete m_blockManager;
+        delete m_metaManager;
+        delete m_fmetamanager;
+        delete m_dtmanager;
+        delete m_frawmanager;
     };
 };
 

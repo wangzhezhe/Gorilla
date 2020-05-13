@@ -143,7 +143,7 @@ std::vector<MetaDataWrapper> mockAPIPutrawdata(UniServer *uniServer,
     //put into the Block Manager
 
     //get the meta server according to bbx
-    BBXTOOL::BBX *BBXQuery = new BBXTOOL::BBX(blockSummary.m_dims, blockSummary.m_indexlb, blockSummary.m_indexub);
+    BBXTOOL::BBX BBXQuery (blockSummary.m_dims, blockSummary.m_indexlb, blockSummary.m_indexub);
 
     std::vector<ResponsibleMetaServer> metaserverList = uniServer->m_dhtManager->getMetaServerID(BBXQuery);
 
@@ -157,10 +157,7 @@ std::vector<MetaDataWrapper> mockAPIPutrawdata(UniServer *uniServer,
             metaserverList[i].m_bbx->printBBXinfo();
         }
     }
-    if (BBXQuery != NULL)
-    {
-        free(BBXQuery);
-    }
+
 
     //update the meta data by async way to improve the performance of the put operation
     //the return value should be a vector of the metaDataWrapper
@@ -216,7 +213,7 @@ std::vector<std::string> mockServergetmetaServerList(UniServer *uniServer, size_
 {
     std::vector<std::string> metaServerAddr;
 
-    BBXTOOL::BBX *BBXQuery = new BBXTOOL::BBX(dims, indexlb, indexub);
+    BBXTOOL::BBX BBXQuery(dims, indexlb, indexub);
     std::vector<ResponsibleMetaServer> metaserverList = uniServer->m_dhtManager->getMetaServerID(BBXQuery);
     for (auto it = metaserverList.begin(); it != metaserverList.end(); it++)
     {
@@ -227,7 +224,6 @@ std::vector<std::string> mockServergetmetaServerList(UniServer *uniServer, size_
         }
         metaServerAddr.push_back(uniServer->m_dhtManager->metaServerIDToAddr[metaServerId]);
     }
-    free(BBXQuery);
     return metaServerAddr;
 }
 
@@ -239,9 +235,8 @@ std::vector<RawDataEndpoint> mockServergetrawDataEndpointList(UniServer *uniServ
                                                               std::array<int, 3> indexub)
 {
     std::vector<RawDataEndpoint> rawDataEndpointList;
-    BBXTOOL::BBX *BBXQuery = new BBXTOOL::BBX(dims, indexlb, indexub);
+    BBXTOOL::BBX BBXQuery(dims, indexlb, indexub);
     rawDataEndpointList = uniServer->m_metaManager->getOverlapEndpoints(step, varName, BBXQuery);
-    free(BBXQuery);
     return rawDataEndpointList;
 }
 
@@ -425,7 +420,6 @@ void print_settings(const SingleSettings &s)
 
 int main(int argc, char **argv)
 {
-
     //get the config file
     if (argc != 3)
     {

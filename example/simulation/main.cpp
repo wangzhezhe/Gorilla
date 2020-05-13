@@ -252,11 +252,11 @@ int main(int argc, char **argv)
 
         bool ifStage = true;
 
-        int anaTime = 4.0 * 1000;
+        int anaTime = 5.0 * 1000;
         int detectionTime = 0.5 * 1000;
-        bool ifAna = true;
+        bool ifAna = false;
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(detectionTime));
+        //std::this_thread::sleep_for(std::chrono::milliseconds(detectionTime));
 
         //if (step % 5 == 1 || step % 5 == 2 || step % 5 == 3 || step % 5 == 4)
         //{

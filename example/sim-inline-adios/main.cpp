@@ -135,10 +135,10 @@ int main(int argc, char **argv)
         //10 steps in total
         //if 20% data is interesting
 
-        if (step % 5 == 0)
-        {
-            ifQualified = true;
-        }
+        //if (step % 5 == 0)
+        //{
+        //    ifQualified = true;
+        //}
 
         //if 80% data is interesting
         //if (step % 5 > 0)

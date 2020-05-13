@@ -28,7 +28,7 @@ struct DHTManager {
   void initDHTManually(std::vector<int> &lenArray, std::vector<int> &partitionLayout);
   
   // get the corresponding metaserver according to the input bbox
-  std::vector<ResponsibleMetaServer> getMetaServerID(BBX *BBXQuery);
+  std::vector<ResponsibleMetaServer> getMetaServerID(BBX& BBXQuery);
 
   std::map<int, BBX *> metaServerIDToBBX;
 

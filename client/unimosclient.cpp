@@ -172,7 +172,7 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
     tl::remote_procedure remotePutMetaData = this->m_clientEnginePtr->define("putmetadata");
     for (auto it = mdwList.begin(); it != mdwList.end(); it++)
     {
-        std::cout << "debug mdwlist position" << this->m_position << it->m_destAddr << std::endl;
+        //std::cout << "debug mdwlist position" << this->m_position << it->m_destAddr << std::endl;
         tl::endpoint metaserverEndpoint = this->lookup(it->m_destAddr);
         int status = remotePutMetaData.on(metaserverEndpoint)(it->m_step, it->m_varName, it->m_rde);
         if (status != 0)
@@ -260,7 +260,8 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
         while (true)
         {
             rweList = this->getrawDataEndpointList(metaServerAddr, step, varName, dims, indexlb, indexub);
-            //std::cout << "metadata server " << metaServerAddr << " size of rweList " << rweList.size() << std::endl;
+            //std::cout <<"step " << step << " indexlb " << indexlb[0] << ","<< indexlb[1] << ","<< indexlb[2]<< " indexub " << indexub[0] << ","<< indexub[1] << ","<< indexub[2] << std::endl;
+            //std::cout << "metaServerAddr " << metaServerAddr << " size of rweList " << rweList.size() << std::endl;
             if (rweList.size() == 0)
             {
                 //the metadata is not updated on this server, waiting

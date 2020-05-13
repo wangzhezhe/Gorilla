@@ -27,7 +27,7 @@ void testMetaDataOverlap()
   std::array<int, DEFAULT_MAX_DIM> indexlb = {{3, 3, 0}};
   std::array<int, DEFAULT_MAX_DIM> indexub = {{8, 8, 0}};
 
-  BBX *queryBBX = new BBX(2, indexlb, indexub);
+  BBX queryBBX(2, indexlb, indexub);
 
   std::vector<RawDataEndpoint> endpointList =
       metam.getOverlapEndpoints(0, varname, queryBBX);
@@ -44,7 +44,7 @@ void testMetaDataOverlap()
   std::cout << "---testMetaDataOverlap2---" << std::endl;
   indexlb = {{0, 0, 0}};
   indexub = {{3, 3, 0}};
-  BBX *queryBBX2 = new BBX(2, indexlb, indexub);
+  BBX queryBBX2(2, indexlb, indexub);
 
   std::vector<RawDataEndpoint> endpointList2 =
       metam.getOverlapEndpoints(0, varname, queryBBX2);
@@ -93,14 +93,14 @@ void testMetaData()
     while (innerit != it->second.end())
     {
       // range vector
-      int size = innerit->second->m_metadataBlock["rawdata"].size();
+      int size = innerit->second.m_metadataBlock["rawdata"].size();
       std::cout << "varName " << innerit->first << " vector size " << size
                 << std::endl;
       for (int i = 0; i < size; i++)
       {
         std::cout << innerit->first << " "
-                  << innerit->second->m_metadataBlock["rawdata"][i].m_rawDataServerAddr << " "
-                  << innerit->second->m_metadataBlock["rawdata"][i].m_rawDataID << std::endl;
+                  << innerit->second.m_metadataBlock["rawdata"][i].m_rawDataServerAddr << " "
+                  << innerit->second.m_metadataBlock["rawdata"][i].m_rawDataID << std::endl;
       }
 
       innerit++;
@@ -168,34 +168,34 @@ void testMetaDataType()
     while (innerit != it->second.end())
     {
       // range vector
-      int size = innerit->second->m_metadataBlock["type1"].size();
+      int size = innerit->second.m_metadataBlock["type1"].size();
       std::cout << "varName " << innerit->first << " vector size " << size
                 << std::endl;
       for (int i = 0; i < size; i++)
       {
         std::cout << innerit->first << " "
-                  << innerit->second->m_metadataBlock["type1"][i].m_rawDataServerAddr << " "
-                  << innerit->second->m_metadataBlock["type1"][i].m_rawDataID << std::endl;
+                  << innerit->second.m_metadataBlock["type1"][i].m_rawDataServerAddr << " "
+                  << innerit->second.m_metadataBlock["type1"][i].m_rawDataID << std::endl;
       }
 
-      size = innerit->second->m_metadataBlock["type2"].size();
+      size = innerit->second.m_metadataBlock["type2"].size();
       std::cout << "varName " << innerit->first << " vector size " << size
                 << std::endl;
       for (int i = 0; i < size; i++)
       {
         std::cout << innerit->first << " "
-                  << innerit->second->m_metadataBlock["type2"][i].m_rawDataServerAddr << " "
-                  << innerit->second->m_metadataBlock["type2"][i].m_rawDataID << std::endl;
+                  << innerit->second.m_metadataBlock["type2"][i].m_rawDataServerAddr << " "
+                  << innerit->second.m_metadataBlock["type2"][i].m_rawDataID << std::endl;
       }
 
-      size = innerit->second->m_metadataBlock["type3"].size();
+      size = innerit->second.m_metadataBlock["type3"].size();
       std::cout << "varName " << innerit->first << " vector size " << size
                 << std::endl;
       for (int i = 0; i < size; i++)
       {
         std::cout << innerit->first << " "
-                  << innerit->second->m_metadataBlock["type3"][i].m_rawDataServerAddr << " "
-                  << innerit->second->m_metadataBlock["type3"][i].m_rawDataID << std::endl;
+                  << innerit->second.m_metadataBlock["type3"][i].m_rawDataServerAddr << " "
+                  << innerit->second.m_metadataBlock["type3"][i].m_rawDataID << std::endl;
       }
 
       innerit++;

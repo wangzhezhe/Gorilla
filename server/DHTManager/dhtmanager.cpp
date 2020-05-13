@@ -324,7 +324,7 @@ void DHTManager::initDHTManually(std::vector<int> &lenArray, std::vector<int> &p
 
 // get the corresponding metaserver according to the input bbox
 
-std::vector<ResponsibleMetaServer> DHTManager::getMetaServerID(BBX *BBXQuery)
+std::vector<ResponsibleMetaServer> DHTManager::getMetaServerID(BBX& BBXQuery)
 {
   // go through the metaServerIDToBBX
   // save the corresponding BBX
@@ -333,7 +333,7 @@ std::vector<ResponsibleMetaServer> DHTManager::getMetaServerID(BBX *BBXQuery)
        it != this->metaServerIDToBBX.end(); ++it)
   {
     // compare the BBXQuery with every item and store the overlapping part into list
-    BBX *overlapBBX = getOverlapBBX(*BBXQuery, *(it->second));
+    BBX *overlapBBX = getOverlapBBX(BBXQuery, *(it->second));
     if (overlapBBX != NULL)
     {
       ResponsibleMetaServer rbm(it->first, overlapBBX);

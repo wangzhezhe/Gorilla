@@ -2,7 +2,7 @@
 #define METAMANAGER_H
 
 #include "../../utils/bbxtool.h"
-#include <map>
+#include <unordered_map>
 #include <string>
 #include <thallium.hpp>
 #include <vector>
@@ -19,7 +19,8 @@ namespace tl = thallium;
 struct MetaDataBlock
 {
   MetaDataBlock(){};
-
+  
+  //the mutex is applied by caller
   void insertRDEP(std::string dataType, RawDataEndpoint&rde){
 
     if(m_metadataBlock.find(dataType)==m_metadataBlock.end()){
@@ -27,9 +28,7 @@ struct MetaDataBlock
       m_metadataBlock[dataType] = rdelist;
     }
 
-    m_metaDataBlockMutex.lock();
     m_metadataBlock[dataType].push_back(rde);
-    m_metaDataBlockMutex.unlock();
     return;
   }
 
@@ -40,12 +39,20 @@ struct MetaDataBlock
     return false;
   }
 
-  tl::mutex m_metaDataBlockMutex;
-  std::map<std::string, std::vector<RawDataEndpoint>> m_metadataBlock;
+  std::unordered_map<std::string, std::vector<RawDataEndpoint>> m_metadataBlock;
 
   ~MetaDataBlock(){
     std::cout << "destroy MetaDataBlock" << std::endl;
   };
+
+  void printInfo(int rank){
+    for (auto& kv : m_metadataBlock) {
+        int value = kv.second.size();
+        char str[256];
+        sprintf(str, "rank %d metaBlockSize %d",rank,value);
+        std::cout << std::string(str) << std::endl;
+    }
+  }
 };
 
 struct MetaDataManager
@@ -69,13 +76,13 @@ struct MetaDataManager
   // one step contains multiple varaible
   // one variable contains multiple data partitions
   // one data partition is associated with multiple versions
-  std::map<size_t, std::map<std::string, MetaDataBlock*>> m_metaDataMap;
+  std::unordered_map<size_t, std::unordered_map<std::string, MetaDataBlock>> m_metaDataMap;
 
   void updateMetaData(size_t step, std::string varName, RawDataEndpoint &rde, std::string dataType = DRIVERTYPE_RAWMEM);
 
   // the bounding box of the RawDataEndpoints is adjusted
   std::vector<RawDataEndpoint> getOverlapEndpoints(size_t, std::string varName,
-                                                   BBX *bbx, std::string dataType = DRIVERTYPE_RAWMEM);
+                                                   BBX &querybbx, std::string dataType = DRIVERTYPE_RAWMEM);
 
   std::vector<RawDataEndpoint> getRawEndpoints(size_t step, std::string varName, std::string dataType = DRIVERTYPE_RAWMEM);
   
@@ -84,6 +91,21 @@ struct MetaDataManager
   ~MetaDataManager(){
      std::cout << "destroy MetaDataManager" << std::endl;
   };
+
+  void printInfo(int rank, int step, std::string varName){
+    m_metaDataMapMutex.lock();
+    if(m_metaDataMap.count(step)==0){
+      m_metaDataMapMutex.unlock();
+      return;
+    }
+    if(m_metaDataMap[step].count(varName)==0){
+      m_metaDataMapMutex.unlock();
+      return;
+    }
+    m_metaDataMap[step][varName].printInfo(rank);
+    m_metaDataMapMutex.unlock();
+
+  }
 };
 
 #endif

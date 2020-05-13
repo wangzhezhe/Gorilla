@@ -1,12 +1,10 @@
 #!/bin/bash
 #SBATCH --qos=debug
-#SBATCH --nodes=4
+#SBATCH --nodes=32
 #SBATCH --tasks-per-node=32
 #SBATCH --time=10:00
 #SBATCH --licenses=cscratch1
 #SBATCH --constraint=haswell
-
-module load openmpi
 
 # copy metadata server to current dir
 rm unimos_server.conf Gorila_cred_conf gray_scott_pe_* conf* core cred in_situ_sim.log
@@ -20,9 +18,9 @@ rm -rf ./vtkdataraw/*
 
 # config the dataspace
 PJSRC=
-CONF_DIMS=1288
-SIMTASK=128
-SIMNODE=4
+CONF_DIMS=1024
+SIMTASK=1024
+SIMNODE=32
 
 source ~/.gorilla
 

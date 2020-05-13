@@ -119,14 +119,14 @@ void testgetMetaServerID() {
   dhtm->initDHTBySFC(2, 4, globalDomain);
 
   Bound b (4, 10);
-  BBX *queryDomain1 = new BBX(2);
-  queryDomain1->BoundList.push_back(b);
-  queryDomain1->BoundList.push_back(b);
+  BBX queryDomain1(2);
+  queryDomain1.BoundList.push_back(b);
+  queryDomain1.BoundList.push_back(b);
 
   Bound c (4, 6);
-  BBX *queryDomain2 = new BBX(2);
-  queryDomain2->BoundList.push_back(c);
-  queryDomain2->BoundList.push_back(c);
+  BBX queryDomain2(2);
+  queryDomain2.BoundList.push_back(c);
+  queryDomain2.BoundList.push_back(c);
 
   std::vector<ResponsibleMetaServer> rbs = dhtm->getMetaServerID(queryDomain1);
 

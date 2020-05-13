@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --qos=debug
-#SBATCH --nodes=20
+#SBATCH --nodes=38
 #SBATCH --tasks-per-node=32
 #SBATCH --time=10:00
 #SBATCH --licenses=cscratch1
@@ -14,13 +14,13 @@ rm unimos_server.conf Gorila_cred_conf gorilla.log gray_scott_pe_* conf* core cr
 
 # config the dataspace
 PJSRC=
-CONF_DIMS=1288
-DSTASK=16
-DSNODE=4
-SIMTASK=512
-SIMNODE=16
-ANATASK=64
-ANANODE=2
+CONF_DIMS=1280
+DSTASK=8
+DSNODE=2
+SIMTASK=1024
+SIMNODE=32
+ANATASK=128
+ANANODE=4
 
 source ~/.gorilla
 
@@ -39,6 +39,6 @@ srun -N $SIMNODE -n $SIMTASK -c 1 --cpu_bind=cores ./example/gray-scott ~/cworks
 
 sleep 1
 
-srun -N $ANANODE -n $ANATASK -c 1 --cpu_bind=cores ./example/isosurface ~/cworkspace/src/Gorilla/example/simulation/settings.json 10 0.5 gni &> iso.log 
+srun -N $ANANODE -n $ANATASK -c 1 --cpu_bind=cores ./example/isosurface ~/cworkspace/src/Gorilla/example/simulation/settings.json 5 0.5 gni &> iso.log 
 
 wait
