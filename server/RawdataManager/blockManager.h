@@ -33,6 +33,8 @@ struct DataBlockInterface
   // put data into coresponding data structure for specific implementation
   virtual int putData(void *dataSourcePtr) = 0;
 
+  virtual int eraseData() = 0;
+  
   virtual BlockSummary getDataSubregion(
       size_t dims,
       std::array<int, 3> subregionlb,
@@ -58,6 +60,8 @@ public:
 
   int putBlock(std::string blockID,
                BlockSummary &m_blockSummary, void *dataPointer);
+
+  int eraseBlock(std::string blockID);
 
   // this function can be called when the blockid is accuired from the metadata
   // service this is just get the summary information of block data

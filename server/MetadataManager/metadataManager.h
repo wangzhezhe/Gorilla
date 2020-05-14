@@ -38,7 +38,8 @@ struct MetaDataBlock
     }
     return false;
   }
-
+  //the key is the type/version of the data such as raw mem or vtk or compressed data
+  //the value is the endpoints related with the type
   std::unordered_map<std::string, std::vector<RawDataEndpoint>> m_metadataBlock;
 
   ~MetaDataBlock(){
@@ -59,12 +60,18 @@ struct MetaDataManager
 {
 
   MetaDataManager(){};
-  MetaDataManager(int stepNum) : m_stepNum(stepNum){};
+  MetaDataManager(size_t bufferNum, size_t deletedNum) : m_bufferNum(bufferNum), m_deletedNum(deletedNum){};
 
   // number of step maintained by metaserver
-  size_t m_stepNum = 1024;
-  int m_windowlb = 0;
-  int m_windowub = 0;
+  size_t m_bufferNum = 10;
+  //deleted Num should less than bufferNum
+  size_t m_deletedNum = 5;
+  //TODO, the windlow lb and ub should bounded with each varName for future
+  //currently, when we delete the step, we delete all related varaibles
+  tl::mutex m_boundMutex;
+  //assume first step sart with 1
+  size_t m_windowlb = 1;
+  size_t m_windowub = 1;
 
   // the first index is the step
   // the second index is the variable name
@@ -91,6 +98,8 @@ struct MetaDataManager
   ~MetaDataManager(){
      std::cout << "destroy MetaDataManager" << std::endl;
   };
+
+
 
   void printInfo(int rank, int step, std::string varName){
     m_metaDataMapMutex.lock();

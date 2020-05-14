@@ -61,7 +61,7 @@ void testMetaDataOverlap()
 void testMetaData()
 {
   tl::abt scope;
-  MetaDataManager metam(10);
+  MetaDataManager metam(10,1);
   for (int i = 0; i < 15; i++)
   {
     std::string varname = "testVarName" + std::to_string(i);
@@ -136,7 +136,7 @@ void testMetaDataType()
 {
 
   tl::abt scope;
-  MetaDataManager metam(10);
+  MetaDataManager metam(10,1);
   for (int i = 0; i < 15; i++)
   {
     std::string varname = "testVarName" + std::to_string(i);

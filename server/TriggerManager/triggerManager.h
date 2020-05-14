@@ -71,8 +71,6 @@ struct DynamicTriggerManager
         {
             delete this->m_threadPool;
         }
-
-
     };
 };
 

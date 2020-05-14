@@ -74,12 +74,13 @@ struct UniServer
 
     ~UniServer(){
         //delete the m_dataContainerList
+        //TODO there is double free issue here
         delete m_addrManager;
         delete m_blockManager;
         delete m_metaManager;
-        delete m_fmetamanager;
-        delete m_dtmanager;
-        delete m_frawmanager;
+        //delete m_fmetamanager;
+        //delete m_dtmanager;
+        //delete m_frawmanager;
     };
 };
 

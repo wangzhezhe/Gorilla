@@ -174,6 +174,8 @@ struct UniClient
     void putEventIntoQueue(std::string groupMasterAddr, std::string triggerName, EventWrapper &event);
 
     EventWrapper getEventFromQueue(std::string groupMasterAddr, std::string triggerName);
+
+    void eraseRawData(std::string serverAddr, std::string blockID);
 };
 
 #endif

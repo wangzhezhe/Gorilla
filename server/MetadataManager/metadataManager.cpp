@@ -14,35 +14,8 @@ void MetaDataManager::updateMetaData(size_t step, std::string varName,
     m_metaDataMap[step] = innermap;
   }
 
-  //if there is no coresponding variable
-  //if (this->m_metaDataMap[step].find(varName) == this->m_metaDataMap[step].end())
-  //{
-  //init the data block
-  // MetaDataBlock mdb;
-  // m_metaDataMap[step][varName] = mdb;
-  //}
-
   m_metaDataMap[step][varName].insertRDEP(dataType, rde);
   this->m_metaDataMapMutex.unlock();
-
-  if (step > m_windowub)
-  {
-    this->m_windowub = step;
-  }
-
-  // erase the lower bound data when step window is larger than threshold
-  if (this->m_windowub - this->m_windowlb + 1 > m_stepNum)
-  {
-    m_metaDataMapMutex.lock();
-    if (this->m_metaDataMap.find(this->m_windowlb) !=
-        this->m_metaDataMap.end())
-    {
-      //TODO, need to call the rawdata manager
-      //this->m_metaDataMap.erase(this->m_windowlb);
-    }
-    m_metaDataMapMutex.unlock();
-    this->m_windowlb++;
-  }
 }
 
 std::vector<RawDataEndpoint>
@@ -131,7 +104,6 @@ MetaDataManager::getOverlapEndpoints(size_t step, std::string varName,
   //store for key point
   // go through vector of raw data pointer to check the overlapping part
 
-
   for (int i = 0; i < size; i++)
   {
     m_metaDataMapMutex.lock();
@@ -152,7 +124,7 @@ MetaDataManager::getOverlapEndpoints(size_t step, std::string varName,
 
       m_metaDataMapMutex.lock();
       std::string rawDataServerAddr = m_metaDataMap[step][varName].m_metadataBlock[dataType][i].m_rawDataServerAddr;
-      std::string rawDataID =  m_metaDataMap[step][varName].m_metadataBlock[dataType][i].m_rawDataID;
+      std::string rawDataID = m_metaDataMap[step][varName].m_metadataBlock[dataType][i].m_rawDataID;
       m_metaDataMapMutex.unlock();
 
       RawDataEndpoint rde(rawDataServerAddr,
@@ -162,7 +134,6 @@ MetaDataManager::getOverlapEndpoints(size_t step, std::string varName,
       endpointList.push_back(rde);
       delete overlapbbx;
     }
-
   }
 
   return endpointList;

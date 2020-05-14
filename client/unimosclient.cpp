@@ -463,3 +463,11 @@ EventWrapper UniClient::getEventFromQueue(std::string groupMasterAddr, std::stri
 //start a server that could listen to the notification from the server
 //this server can be started by a sepatate xstream by using the lamda expression
 //this only need to be started on specific rank such as rank=0
+
+void UniClient::eraseRawData(std::string serverAddr, std::string blockID)
+{
+    tl::remote_procedure remoteeraserawdata = this->m_clientEnginePtr->define("eraserawdata");
+    tl::endpoint serverEndpoint = this->lookup(serverAddr);
+    remoteeraserawdata.on(serverEndpoint)(blockID);
+    return;
+}

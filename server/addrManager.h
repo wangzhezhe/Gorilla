@@ -44,6 +44,8 @@ struct AddrManager
     tl::mutex m_rrbinMutex;
 
     size_t m_rrobinValue=0;
+    
+    ~AddrManager(){};
 };
 
 

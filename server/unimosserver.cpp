@@ -272,6 +272,60 @@ void getaddrbyrrb(const tl::request &req)
     req.respond(serverAddr);
 }
 
+//be careful about the setting the lb and the ub of the window here
+void eraseMetaAndRaw(size_t step)
+{
+    uniServer->m_metaManager->m_boundMutex.lock();
+    uniServer->m_metaManager->m_windowub = step;
+
+    bool ifOutOfBuffer = ((uniServer->m_metaManager->m_windowub - uniServer->m_metaManager->m_windowlb + 1) > uniServer->m_metaManager->m_bufferNum);
+    size_t currentlb = uniServer->m_metaManager->m_windowlb;
+    size_t currentub = uniServer->m_metaManager->m_windowub;
+    if (ifOutOfBuffer)
+    {
+        uniServer->m_metaManager->m_windowlb = uniServer->m_metaManager->m_windowlb + uniServer->m_metaManager->m_deletedNum;
+        std::cout << "debug windowlb windowub " << uniServer->m_metaManager->m_windowlb << " " << uniServer->m_metaManager->m_windowub << std::endl;
+    }
+    uniServer->m_metaManager->m_boundMutex.unlock();
+
+    // erase the lower bound data when step window is larger than threshold
+    // only modify lb when the window is larger than buffer
+    if (ifOutOfBuffer)
+    {
+        for (int i = 0; i < uniServer->m_metaManager->m_deletedNum; i++)
+        {
+            //delete coresponding rawdata in async way
+            uniServer->m_metaManager->m_metaDataMapMutex.lock();
+
+            //traverse the map and release memory for old data
+            std::cout <<"rank " << globalRank << " delete metadata step " << currentlb << std::endl;
+
+            for (auto &kv : uniServer->m_metaManager->m_metaDataMap[currentlb])
+            {
+                std::string varName = kv.first;
+                //std::cout << "delete metadata varName " << varName << std::endl;
+
+                for (auto &kvinner : kv.second.m_metadataBlock)
+                {
+                    std::string varType = kvinner.first;
+                    //std::cout << "delete metadata varType " << varType << " size " << kvinner.second.size() << std::endl;
+                    for (auto &it : kvinner.second)
+                    {
+                        RawDataEndpoint rde = it;
+                        //rde.printInfo();
+                        uniClient->eraseRawData(rde.m_rawDataServerAddr, rde.m_rawDataID);
+                    }
+                }
+            }
+
+            currentlb++;
+            uniServer->m_metaManager->m_metaDataMapMutex.unlock();
+        }
+    }
+    return;
+}
+
+// the manager of the matadata controller should be maintained at this level
 void putmetadata(const tl::request &req, size_t &step, std::string &varName, RawDataEndpoint rde)
 {
     try
@@ -318,7 +372,17 @@ void putmetadata(const tl::request &req, size_t &step, std::string &varName, Raw
         spdlog::info("exception for init trigger step {} varname {}: {}", step, varName, std::string(e.what()));
         rde.printInfo();
     }
+    req.respond(0);
+    // check meta to figure out if there is enough space by calling eraseMetaAndRaw();
+    //delete raw data related with current metaserver
+    eraseMetaAndRaw(step);
 
+    return;
+}
+
+void eraserawdata(const tl::request &req, std::string &blockID)
+{
+    uniServer->m_blockManager->eraseBlock(blockID);
     req.respond(0);
     return;
 }
@@ -866,6 +930,7 @@ void runRerver(std::string networkingType)
     //globalServerEnginePtr->define("getaddrbyID", getaddrbyID);
     globalServerEnginePtr->define("getaddrbyrrb", getaddrbyrrb);
     globalServerEnginePtr->define("putrawdata", putrawdata);
+    globalServerEnginePtr->define("eraserawdata", eraserawdata);
     globalServerEnginePtr->define("putmetadata", putmetadata);
     globalServerEnginePtr->define("getmetaServerList", getmetaServerList);
     globalServerEnginePtr->define("getRawDataEndpointList", getRawDataEndpointList);

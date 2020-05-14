@@ -18,6 +18,8 @@ struct RawMemObj : public DataBlockInterface
   // put data into coresponding data structure for specific implementation
   int putData(void *dataSourcePtr);
 
+  int eraseData();
+
   BlockSummary getDataSubregion(
       size_t dims,
       std::array<int, 3> subregionlb,

@@ -7,7 +7,8 @@
 #SBATCH --constraint=haswell
 
 # copy metadata server to current dir
-rm unimos_server.conf Gorila_cred_conf gray_scott_pe_* conf* core cred in_situ_sim.log
+rm unimos_server.conf Gorila_cred_conf
+rm gray_scott_pe_* conf* core cred in_situ_sim.log
 
 PJSRC=
 # IMPORTANT CONF_DIMS should be divided by ANATASK(128) for partition reason!!!
@@ -22,6 +23,7 @@ ANATASK=128
 source ~/.gorilla
 
 # start staging service
+# only start trigger that send the event without the detection
 srun -N $DSNODE -n $DSTASK -c 8 --cpu_bind=cores --time=00:10:00 ./unimos_server ~/cworkspace/src/Gorilla/server/settings_gni.json &> gorilla.log &
 
 while [ ! -f ./unimos_server.conf ]
@@ -29,12 +31,12 @@ do
     sleep 0.01
 done
 
-sleep 10
+sleep 5
 
 # start anavis pull data
 srun -N $ANANODE -n $ANATASK -c 1 --cpu_bind=cores --time=00:10:00 ./example/isosurface ~/cworkspace/src/Gorilla/example/simulation/settings.json 5 0.5 gni &> diso.log &
 
-#sleep 5
+sleep 5
 
 # start sim with inline detect
 # do not use gni to avoid the drc since we do not need staging service for this pattern

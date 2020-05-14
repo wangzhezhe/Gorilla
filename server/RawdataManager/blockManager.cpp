@@ -82,3 +82,12 @@ bool BlockManager::checkDataExistance(std::string blockID)
     return false;
   }
 }
+
+int BlockManager::eraseBlock(std::string blockID)
+{
+  this->m_DataBlockMapMutex.lock();
+  DataBlockMap[blockID]->eraseData();
+  DataBlockMap.erase(blockID);
+  this->m_DataBlockMapMutex.unlock();
+  return 0;
+}

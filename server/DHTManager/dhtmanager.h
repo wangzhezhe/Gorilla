@@ -20,6 +20,7 @@ struct ResponsibleMetaServer {
 struct DHTManager {
 
   DHTManager(){};
+  ~DHTManager(){};
   // init the metaServerBBOXList according to the partitionNum and the bbox of
   // the global domain
   void initDHTBySFC(size_t ndim, size_t metaServerNum, BBX* globalBBX);

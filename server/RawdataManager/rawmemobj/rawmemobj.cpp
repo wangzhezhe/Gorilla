@@ -1,18 +1,27 @@
 #include "rawmemobj.h"
 #include "../../../utils/matrixtool.h"
 
+int RawMemObj::eraseData()
+{
+  if (this->m_rawMemPtr != NULL)
+  {
+    free(m_rawMemPtr);
+  }
+  return 0;
+}
+
 int RawMemObj::putData(void *dataSourcePtr)
 {
   int memSize =
       this->m_blockSummary.m_elemSize * this->m_blockSummary.m_elemNum;
-  
+
   this->m_rawMemPtr = (void *)malloc(memSize);
   if (m_rawMemPtr == NULL)
   {
     throw std::runtime_error("failed to allocate the memroy for RawMemObj");
   }
   std::memcpy(m_rawMemPtr, dataSourcePtr, memSize);
-  
+
   //the space allocated by this point is set at the data put RPC
   //this->m_rawMemPtr =  dataSourcePtr;
   return 0;

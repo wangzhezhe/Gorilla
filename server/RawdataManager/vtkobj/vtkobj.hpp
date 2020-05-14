@@ -32,6 +32,8 @@ struct VTKObj : public DataBlockInterface
 
     void *getrawMemPtr();
 
+    int eraseData(){std::cout << "todo, erase vtk data"<< std::endl; return 0;};
+
     vtkDataSet *m_vtkDataSet = NULL;
 
     ~VTKObj()
