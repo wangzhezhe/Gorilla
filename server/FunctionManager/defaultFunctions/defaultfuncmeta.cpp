@@ -133,7 +133,7 @@ void defaultPutEvent(FunctionManagerMeta *fmm, size_t step, std::string varName,
         throw std::runtime_error("the pointer to the trigger should not be null for defaultPutEvent");
         return;
     }
-    
+
     if (triggerMaster == "")
     {
         throw std::runtime_error("the groupMaster should not be empty string");
@@ -144,6 +144,7 @@ void defaultPutEvent(FunctionManagerMeta *fmm, size_t step, std::string varName,
     EventWrapper event(EVENT_DATA_PUT, varName, step, rde.m_dims, rde.m_indexlb, rde.m_indexub);
     //todo add triggerName as another parameter
     std::string triggerName = "testTrigger1";
+    //std::cout << "put event to triggerMaster " << std::endl;
     uniclient->putEventIntoQueue(triggerMaster, triggerName, event);
     return;
 }
@@ -175,7 +176,14 @@ bool InsituExpCompare(std::string checkResults, std::vector<std::string> paramet
 
     if (parameters[0].compare("2") == 0)
     {
-        if (step % 5 == 0)
+        if (step % 5 == 1)
+        {
+            return true;
+        }
+    }
+    else if (parameters[0].compare("6") == 0)
+    {
+        if (step % 5 == 1 || step % 5 == 2 || step % 5 == 3)
         {
             return true;
         }

@@ -14,7 +14,6 @@ struct ArgoThreadPool
         if(esNumber<=0){
             throw std::runtime_error("pool number should larger than 0");
         }
-        m_threadNumer = m_poolSize*2;
         for (int i = 0; i < esNumber; i++)
         {
             tl::managed<tl::xstream> es = tl::xstream::create();
@@ -29,8 +28,6 @@ struct ArgoThreadPool
     int m_poolSize=0;
     
     tl::mutex m_Mutex;
-    //the user level thread number
-    int m_threadNumer = 0;
 
     int m_currentUserThreadId = 0;
 

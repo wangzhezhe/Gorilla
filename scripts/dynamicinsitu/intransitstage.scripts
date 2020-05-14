@@ -1,0 +1,45 @@
+#!/bin/bash
+#SBATCH --qos=debug
+#SBATCH --nodes=38
+#SBATCH --tasks-per-node=32
+#SBATCH --time=10:00
+#SBATCH --licenses=cscratch1
+#SBATCH --constraint=haswell
+
+# copy metadata server to current dir
+rm unimos_server.conf Gorila_cred_conf
+rm diso.log dsim.log gorilla.log gray_scott_pe_* conf* core cred in_situ_sim.log
+
+PJSRC=
+# IMPORTANT CONF_DIMS should be divided by ANATASK(128) for partition reason!!!
+CONF_DIMS=1280
+SIMTASK=1024
+SIMNODE=32
+DSNODE=2
+DSTASK=8
+ANANODE=4
+ANATASK=128
+
+source ~/.gorilla
+
+# start staging service
+# only start start ana in staging, set the pool size and the trigger info
+srun -N $DSNODE -n $DSTASK -c 8 --cpu_bind=cores --time=00:10:00 ./unimos_server ~/cworkspace/src/Gorilla/server/settings_gni.json &> gorilla.log &
+
+while [ ! -f ./unimos_server.conf ]
+do
+    sleep 0.01
+done
+
+sleep 5
+
+# start anavis pull data
+srun -N $ANANODE -n $ANATASK -c 1 --cpu_bind=cores --time=00:10:00 ./example/isosurface_event ~/cworkspace/src/Gorilla/example/simulation/settings.json ~/cworkspace/src/Gorilla/server/trigger_test_stg.json 0.5 gni &> diso.log &
+
+# start sim with inline detect
+# do not use gni to avoid the drc since we do not need staging service for this pattern
+srun -N $SIMNODE -n $SIMTASK -c 1 --cpu_bind=cores --time=00:10:00 ./example/gray-scott-stg ~/cworkspace/src/Gorilla/example/simulation/settings.json gni &> dsim.log 
+
+sleep 1
+
+wait

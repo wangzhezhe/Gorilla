@@ -19,7 +19,7 @@ struct statefulConfig
 {
         statefulConfig()
         {
-                this->initADIOS();
+                //this->initADIOS();
         };
         void initADIOS()
         {       //TODO, update this part
@@ -60,7 +60,7 @@ struct statefulConfig
                 double timespan =
                     (timestick.tv_sec - m_global_start.tv_sec) * 1.0 +
                     (timestick.tv_nsec - m_global_start.tv_nsec) * 1.0 / BILLION;
-                std::cout << "wf time end: " << timespan << std::endl;
+                std::cout << "time tick: " << timespan << std::endl;
                 return;
         }
 

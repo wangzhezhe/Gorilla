@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include <mpi.h>
+#include <thread>
 
 #include <vtkImageData.h>
 #include <vtkImageImport.h>
@@ -131,7 +132,7 @@ DynamicTriggerInfo parseTrigger(nlohmann::json &j)
     return tgInfo;
 }
 
-std::string loadTrigger(UniClient* m_uniclient, std::string fileName)
+std::string loadTrigger(UniClient *m_uniclient, std::string fileName)
 {
     std::ifstream ifs(fileName);
     nlohmann::json j;
@@ -167,7 +168,7 @@ std::string loadTrigger(UniClient* m_uniclient, std::string fileName)
             indexub[i] = ub[i];
         }
 
-        dti.printInfo();
+        //dti.printInfo();
 
         int dims = lb.size();
 
@@ -303,7 +304,7 @@ int main(int argc, char *argv[])
     if (rank == 0)
     {
         //load the trigger file and register it
-        triggerMaster = loadTrigger(uniclient,triggerFile);
+        triggerMaster = loadTrigger(uniclient, triggerFile);
     }
 
     MPI_Barrier(comm);
@@ -316,16 +317,16 @@ int main(int argc, char *argv[])
         {
             if (rank == 0)
             {
-                std::cout << "trigger master is:" << triggerMaster << std::endl;
+                //std::cout << "trigger master is:" << triggerMaster << std::endl;
                 EventWrapper event = uniclient->getEventFromQueue(triggerMaster, triggerName);
                 if (event.m_dims == 0)
                 {
                     //the event is empty one
-                    std::cout << "wait for event" << std::endl;
-                    usleep(1000000);
+                    //std::cout << "wait for event" << std::endl;
+                    usleep(500000);
                     continue;
                 }
-                event.printInfo();
+                //event.printInfo();
                 step = event.m_step;
                 if (step == laststep)
                 {
@@ -334,75 +335,78 @@ int main(int argc, char *argv[])
                     continue;
                 }
                 laststep = step;
-                MPI_Bcast(&step, 1, MPI_INT, 0, MPI_COMM_WORLD);
-                std::cout << "ok for bcast" << std::endl;
-                if (event.m_type == EVENT_FINISH)
-                {
-                    //set finishput flag as true for all of process
-                    finishput = 1;
-                    MPI_Bcast(&finishput, 1, MPI_INT, 0, MPI_COMM_WORLD);
-                    break;
-                }
+            }
+
+            MPI_Bcast(&step, 1, MPI_INT, 0, MPI_COMM_WORLD);
+            if (rank < 5)
+            {
+                std::cout << "sample, rank " << rank << " pull variable " << VarNameU << " for step " << step << std::endl;
+            }
+
+            //pull event according to the events generated from the trigger
+
+            //read data
+
+            //get blockMeta, extract the shape, offset, variableName
+            //get variable
+            /*
+        std::array<int, 3> indexlb = {{15,15,15}};
+        std::array<int, 3> indexub = {{47,47,47}};
+        */
+            std::array<int, 3> indexlb = {{offset_x, offset_y, offset_z}};
+            std::array<int, 3> indexub = {{offset_x + size_x - 1, offset_y + size_y - 1, offset_z + size_z - 1}};
+
+#ifdef ENABLE_TIMERS
+            MPI_Barrier(comm);
+            //timer_total.start();
+            //timer_read.start();
+
+            struct timespec start, end;
+            double diff;
+            clock_gettime(CLOCK_REALTIME, &start); /* mark start time */
+#endif
+            //if no metadata is updated, this API will block there
+            MATRIXTOOL::MatrixView dataView = uniclient->getArbitraryData(step, VarNameU, sizeof(double), 3, indexlb, indexub);
+            int anaTime = 5.0 * 1000;
+            std::this_thread::sleep_for(std::chrono::milliseconds(anaTime));
+
+            //free space
+            if(dataView.m_data!=NULL){
+                free(dataView.m_data);
+            }
+            if(dataView.m_bbx!=NULL){
+                free(dataView.m_bbx);
+            }
+#ifdef ENABLE_TIMERS
+            //double time_read = timer_read.stop();
+            MPI_Barrier(comm);
+            //some functions here
+            clock_gettime(CLOCK_REALTIME, &end); /* mark end time */
+            diff = (end.tv_sec - start.tv_sec) * 1.0 + (end.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+
+            //caculate the avg
+            double time_sum_read;
+            MPI_Reduce(&diff, &time_sum_read, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+            if (rank == 0)
+            {
+                std::cout << "step " << step << " avg read " << time_sum_read / procs << std::endl;
+            }
+#endif
+
+            if (rank == 0)
+            {
+                //std::string recordKey = "Trigger_" + std::to_string(step);
+                //MetaClient *metaclient = new MetaClient(&clientEngine);
+                //metaclient->Recordtime(recordKey);
+                std::cout << "read ok for step " << step << std::endl;
+                //set time tick to stage here
+                uniclient->endTimer();
             }
         }
 
         if (finishput == 1)
         {
             break;
-        }
-
-        //other processes wait the rank 0 to get the event
-        MPI_Barrier(comm);
-
-        std::cout << "rank " << rank << " pull variable " << VarNameU << " for step " << step << std::endl;
-
-        //pull event according to the events generated from the trigger
-
-        //read data
-
-        //get blockMeta, extract the shape, offset, variableName
-        //get variable
-        /*
-        std::array<int, 3> indexlb = {{15,15,15}};
-        std::array<int, 3> indexub = {{47,47,47}};
-        */
-        std::array<int, 3> indexlb = {{offset_x, offset_y, offset_z}};
-        std::array<int, 3> indexub = {{offset_x + size_x - 1, offset_y + size_y - 1, offset_z + size_z - 1}};
-
-#ifdef ENABLE_TIMERS
-        MPI_Barrier(comm);
-        //timer_total.start();
-        //timer_read.start();
-
-        struct timespec start, end;
-        double diff;
-        clock_gettime(CLOCK_REALTIME, &start); /* mark start time */
-#endif
-        //if no metadata is updated, this API will block there
-        //MATRIXTOOL::MatrixView dataView = uniclient->getArbitraryData(step, VarNameU, sizeof(double), 3, indexlb, indexub);
-
-#ifdef ENABLE_TIMERS
-        //double time_read = timer_read.stop();
-        MPI_Barrier(comm);
-        //some functions here
-        clock_gettime(CLOCK_REALTIME, &end); /* mark end time */
-        diff = (end.tv_sec - start.tv_sec) * 1.0 + (end.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
-
-        //caculate the avg
-        double time_sum_read;
-        MPI_Reduce(&diff, &time_sum_read, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
-        if (rank == 0)
-        {
-            std::cout << "step " << step << " avg read " << time_sum_read / procs << std::endl;
-        }
-#endif
-
-        if (rank == 0)
-        {
-            //std::string recordKey = "Trigger_" + std::to_string(step);
-            //MetaClient *metaclient = new MetaClient(&clientEngine);
-            //metaclient->Recordtime(recordKey);
-            std::cout << "read ok for step " << step << std::endl;
         }
 
         //todo add the checking operation for the pdf

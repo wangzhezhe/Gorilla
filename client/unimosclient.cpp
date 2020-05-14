@@ -301,6 +301,7 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
 
             if (status != 0)
             {
+                std::cerr << "error to get data for step " << step << std::endl;
                 throw std::runtime_error("failed for get subrigion data for current raw data endpoint");
             }
 

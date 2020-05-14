@@ -44,7 +44,7 @@ struct UniClient
         m_clientEnginePtr = clientEnginePtr;
         m_masterAddr = loadMasterAddr(masterConfigFile);
         m_position = rrbStartPosition;
-        std::cout << "load master Addr: " << m_masterAddr << std::endl;
+        //std::cout << "load master Addr: " << m_masterAddr << std::endl;
         this->initMaster(m_masterAddr);
     };
 

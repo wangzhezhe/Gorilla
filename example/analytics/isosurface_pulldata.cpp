@@ -2,6 +2,7 @@
 #include <sstream>
 #include <mpi.h>
 
+
 #include <vtkImageData.h>
 #include <vtkImageImport.h>
 #include <vtkMarchingCubes.h>
@@ -11,6 +12,7 @@
 #include <vtkXMLPolyDataWriter.h>
 #include <vtkXMLImageDataWriter.h>
 #include <vtkXMLDataSetWriter.h>
+
 
 #include "../simulation/timer.hpp"
 #include "../simulation/settings.h"

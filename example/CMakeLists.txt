@@ -1,5 +1,12 @@
-add_executable(gray-scott
-  ./simulation/main.cpp
+add_executable(gray-scott-inline
+  ./simulation/main_inline.cpp
+  ./simulation/gray-scott.cpp
+  ./simulation/writer.cpp
+  ./simulation/settings.cpp
+)
+
+add_executable(gray-scott-stg
+  ./simulation/main_stg.cpp
   ./simulation/gray-scott.cpp
   ./simulation/writer.cpp
   ./simulation/settings.cpp
@@ -14,7 +21,10 @@ add_executable(isosurface_event
    ./simulation/settings.cpp)
 
 if(USE_GNI)
-  target_link_libraries(gray-scott ${DRC_LIBRARIES} MPI::MPI_C ${VTK_LIBRARIES}
+  target_link_libraries(gray-scott-inline ${DRC_LIBRARIES} MPI::MPI_C ${VTK_LIBRARIES}
+thallium unimos_client metaclient)
+
+  target_link_libraries(gray-scott-stg ${DRC_LIBRARIES} MPI::MPI_C ${VTK_LIBRARIES}
 thallium unimos_client metaclient)
 
   target_link_libraries(isosurface ${DRC_LIBRARIES} MPI::MPI_C ${VTK_LIBRARIES}
@@ -24,10 +34,15 @@ thallium unimos_client metaclient)
 thallium unimos_client metaclient)
 
 else()
-  target_link_libraries(gray-scott MPI::MPI_C ${VTK_LIBRARIES}
+  target_link_libraries(gray-scott-inline MPI::MPI_C ${VTK_LIBRARIES}
 thallium unimos_client metaclient)
+
+  target_link_libraries(gray-scott-stg MPI::MPI_C ${VTK_LIBRARIES}
+thallium unimos_client metaclient)
+
   target_link_libraries(isosurface MPI::MPI_C ${VTK_LIBRARIES}
 thallium unimos_client metaclient)
+
   target_link_libraries(isosurface_event MPI::MPI_C ${VTK_LIBRARIES}
 thallium unimos_client metaclient)
 endif()
@@ -39,4 +54,5 @@ add_executable(sim-inline-adios
   ./sim-inline-adios/writer.cpp
   ./sim-inline-adios/settings.cpp
 )
+
 target_link_libraries(sim-inline-adios adios2::adios2 ${VTK_LIBRARIES} MPI::MPI_C)

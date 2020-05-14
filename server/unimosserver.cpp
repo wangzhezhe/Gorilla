@@ -272,6 +272,7 @@ void getaddrbyrrb(const tl::request &req)
     req.respond(serverAddr);
 }
 
+//TODO some data is undeletable, add another parameter, if there is important data, but it needs long time to be consumed, this need to be keeped for some time
 //be careful about the setting the lb and the ub of the window here
 void eraseMetaAndRaw(size_t step)
 {
@@ -356,10 +357,10 @@ void putmetadata(const tl::request &req, size_t &step, std::string &varName, Raw
             tl::managed<tl::thread> th = uniServer->m_dtmanager->m_threadPool->m_ess[essid]->make_thread([=]() {
                 uniServer->m_dtmanager->initstart("InitTrigger", step, varName, rde);
                 //time it
-                if (globalRank == 0)
-                {
-                    uniServer->m_frawmanager->m_statefulConfig->timeit();
-                }
+                //if (globalRank == 0)
+                //{
+                //    uniServer->m_frawmanager->m_statefulConfig->timeit();
+                //}
             });
             uniServer->m_dtmanager->m_threadPool->m_threadmutex.lock();
             uniServer->m_dtmanager->m_threadPool->m_userThreadList.push_back(std::move(th));
@@ -597,7 +598,7 @@ void putTriggerInfo(const tl::request &req, std::string triggerName, DynamicTrig
     try
     {
         uniServer->m_dtmanager->updateTrigger(triggerName, dti);
-        spdlog::debug("add trigger {} for server id {}", triggerName, globalRank);
+        spdlog::info("add trigger {} for server id {}", triggerName, globalRank);
         req.respond(0);
         return;
     }

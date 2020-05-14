@@ -31,6 +31,12 @@ public:
         }
     };
 
+    void startwftimer()
+    {
+        m_uniclient->startTimer();
+        std::cout << "start the timer\n";
+    };
+
     void endwftimer()
     {
         m_uniclient->endTimer();

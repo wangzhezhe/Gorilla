@@ -107,8 +107,8 @@ void DynamicTriggerManager::putEvent(std::string varName, EventWrapper &event)
     //if not exist
     this->m_eventMapQueueMutex.lock();
     this->eventMapQueue[varName].push(event);
-    std::cout << "put event " <<std::endl;
-    event.printInfo();
+    //std::cout << "put event " <<std::endl;
+    //event.printInfo();
     this->m_eventMapQueueMutex.unlock();
     return;
 }

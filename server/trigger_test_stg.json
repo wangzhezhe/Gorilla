@@ -14,11 +14,11 @@
         "name_trigger":"testTrigger1",
         "lb":[0,0,0],
         "ub":[1279,1279,1279],
-        "funcName_check":"defaultCheck",
-        "funcName_compare": "defaultComparison",
+        "funcName_check":"InsituExpCheck",
+        "funcName_compare": "InsituExpCompare",
         "funcName_action":"defaultPutEvent",
-        "parameters_check":[],
-        "parameters_compare":[],
+        "parameters_check":["500000"],
+        "parameters_compare":["2"],
         "parameters_action":[]
     }
 ]
