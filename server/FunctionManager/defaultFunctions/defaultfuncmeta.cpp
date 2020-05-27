@@ -145,7 +145,12 @@ void defaultPutEvent(FunctionManagerMeta *fmm, size_t step, std::string varName,
     //todo add triggerName as another parameter
     std::string triggerName = "testTrigger1";
     //std::cout << "put event to triggerMaster " << std::endl;
-    uniclient->putEventIntoQueue(triggerMaster, triggerName, event);
+    // TODO, use more delegate way here, add condition, only one write
+    // decrease unnecessary event number
+    if (uniclient->m_position == 0)
+    {
+        uniclient->putEventIntoQueue(triggerMaster, triggerName, event);
+    }
     return;
 }
 
@@ -177,6 +182,13 @@ bool InsituExpCompare(std::string checkResults, std::vector<std::string> paramet
     if (parameters[0].compare("2") == 0)
     {
         if (step % 5 == 1)
+        {
+            return true;
+        }
+    }
+    else if (parameters[0].compare("4") == 0)
+    {
+        if (step % 5 == 1 || step % 5 == 2)
         {
             return true;
         }

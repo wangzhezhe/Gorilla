@@ -56,8 +56,8 @@ struct UniServer
 
         //TODO, control the thread number based on if the trigger is enabled
         //the number for the in-situ thread pool should be small for scale
-
-        m_dtmanager = new DynamicTriggerManager(8, client);
+        // 32 is some kind of maximum in this case, other wise, the write will too long
+        m_dtmanager = new DynamicTriggerManager(64, client);
         
         m_fmetamanager = new FunctionManagerMeta();
         m_fmetamanager->m_dtm = m_dtmanager;

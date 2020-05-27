@@ -83,7 +83,7 @@ struct UniClient
         {
             free(m_dataContainer);
         }
-        std::cout << "destroy UniClient"<<std::endl;
+        //std::cout << "destroy UniClient"<<std::endl;
     };
 
     int getIDByRandom()
@@ -176,6 +176,8 @@ struct UniClient
     EventWrapper getEventFromQueue(std::string groupMasterAddr, std::string triggerName);
 
     void eraseRawData(std::string serverAddr, std::string blockID);
+
+    void deleteMetaStep(size_t step);
 };
 
 #endif

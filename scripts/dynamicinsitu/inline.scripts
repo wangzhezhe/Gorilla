@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --qos=debug
-#SBATCH --nodes=38
+#SBATCH --nodes=4
 #SBATCH --tasks-per-node=32
 #SBATCH --time=10:00
 #SBATCH --licenses=cscratch1
@@ -11,8 +11,8 @@ rm dinline.log unimos_server.conf Gorila_cred_conf gray_scott_pe_* conf* core cr
 
 PJSRC=
 CONF_DIMS=1280
-SIMTASK=1216
-SIMNODE=38
+SIMTASK=128
+SIMNODE=4
 
 source ~/.gorilla
 

@@ -255,26 +255,26 @@ int main(int argc, char **argv)
 
         //bool ifStage = true;
 
-        int anaTime = 5.0 * 1000;
+        //int anaTime = 5.0 * 1000;
         int detectionTime = 3.0 * 1000;
-        bool ifAna = false;
+        //bool ifAna = false;
 
         std::this_thread::sleep_for(std::chrono::milliseconds(detectionTime));
 
-        if (step % 5 == 1 || step % 5 == 2 || step % 5 == 3)
-        {
-            ifAna = true;
-        }
+        //if (step % 5 == 1 || step % 5 == 2 || step % 5 == 3)
+        //{
+        //    ifAna = true;
+        //}
 
-        if (ifAna)
-        {
-            if (rank == 0)
-            {
-                std::cout << "inline ana/vis for step " << step << std::endl;
-            }
+        //if (ifAna)
+        //{
+        //    if (rank == 0)
+        //    {
+        //        std::cout << "inline ana/vis for step " << step << std::endl;
+        //    }
             //execute the analytics
-            std::this_thread::sleep_for(std::chrono::milliseconds(anaTime));
-        }
+        //    std::this_thread::sleep_for(std::chrono::milliseconds(anaTime));
+        //}
 
         //if (ifStage)
         //{

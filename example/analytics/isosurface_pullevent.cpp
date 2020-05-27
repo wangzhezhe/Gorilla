@@ -20,6 +20,7 @@
 #include "../putgetMeta/metaclient.h"
 #include "../../commondata/metadata.h"
 #include "../../server/json.hpp"
+#include "../../utils/ArgothreadPool.h"
 
 #ifdef USE_GNI
 extern "C"
@@ -307,6 +308,9 @@ int main(int argc, char *argv[])
         triggerMaster = loadTrigger(uniclient, triggerFile);
     }
 
+    //thread pool
+    ArgoThreadPool threadPool(4);
+
     MPI_Barrier(comm);
 
     while (true)
@@ -328,7 +332,8 @@ int main(int argc, char *argv[])
                 }
                 //event.printInfo();
                 step = event.m_step;
-                if (step == laststep)
+                //if the event does not follow the sequence such as 1 1 1 6 6 6 1 1 1, the data for step 1 might be pulled for another time
+                if (step == laststep || step < laststep)
                 {
                     //the data generated in one step may contains several partitions
                     //and there are several events, we just need one event for one step for this use case
@@ -367,14 +372,28 @@ int main(int argc, char *argv[])
 #endif
             //if no metadata is updated, this API will block there
             MATRIXTOOL::MatrixView dataView = uniclient->getArbitraryData(step, VarNameU, sizeof(double), 3, indexlb, indexub);
-            int anaTime = 5.0 * 1000;
-            std::this_thread::sleep_for(std::chrono::milliseconds(anaTime));
+            
+            
+            
+            int threadid = threadPool.getEssId();
+            tl::managed<tl::thread> th = threadPool.m_ess[threadid]->make_thread(
+            [] {
+                    int anaTime = 2.0 * 1000;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(anaTime));
+            });
+
+            threadPool.m_threadmutex.lock();
+            threadPool.m_userThreadList.push_back(std::move(th));
+            threadPool.m_threadmutex.unlock();
+            
 
             //free space
-            if(dataView.m_data!=NULL){
+            if (dataView.m_data != NULL)
+            {
                 free(dataView.m_data);
             }
-            if(dataView.m_bbx!=NULL){
+            if (dataView.m_bbx != NULL)
+            {
                 free(dataView.m_bbx);
             }
 #ifdef ENABLE_TIMERS
@@ -401,6 +420,16 @@ int main(int argc, char *argv[])
                 std::cout << "read ok for step " << step << std::endl;
                 //set time tick to stage here
                 uniclient->endTimer();
+                //delete old data
+                uniclient->deleteMetaStep(step);
+            }
+
+            //TODO, use an event (transfer finish) to replace the stop condition
+            //if there is 60% the bound is 18
+            if (step == 16)
+            {
+                finishput = 1;
+                break;
             }
         }
 

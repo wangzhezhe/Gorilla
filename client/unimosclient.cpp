@@ -472,3 +472,15 @@ void UniClient::eraseRawData(std::string serverAddr, std::string blockID)
     remoteeraserawdata.on(serverEndpoint)(blockID);
     return;
 }
+
+void UniClient::deleteMetaStep(size_t step)
+{
+    //range all server and delete metadata for specific step
+    tl::remote_procedure remotedeleteMeta = this->m_clientEnginePtr->define("deleteMetaStep");
+
+    for (auto &kv : m_serverToEndpoints)
+    {
+        remotedeleteMeta.on(kv.second)(step);
+    }
+    return;
+}

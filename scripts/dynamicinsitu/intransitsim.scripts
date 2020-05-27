@@ -18,7 +18,7 @@ SIMNODE=32
 DSNODE=2
 DSTASK=8
 ANANODE=4
-ANATASK=128
+ANATASK=64
 
 source ~/.gorilla
 
@@ -35,7 +35,7 @@ done
 sleep 2
 
 # start anavis pull data
-srun -N $ANANODE -n $ANATASK -c 1 --cpu_bind=cores --time=00:10:00 ./example/isosurface_event ~/cworkspace/src/Gorilla/example/simulation/settings.json ~/cworkspace/src/Gorilla/server/trigger_test.json 0.5 gni &> diso.log &
+srun -N $ANANODE -n $ANATASK -c 2 --cpu_bind=cores --time=00:10:00 ./example/isosurface_event ~/cworkspace/src/Gorilla/example/simulation/settings.json ~/cworkspace/src/Gorilla/server/trigger_test.json 0.5 gni &> diso.log &
 
 # start sim with inline detect
 # do not use gni to avoid the drc since we do not need staging service for this pattern

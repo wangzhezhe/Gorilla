@@ -17,7 +17,7 @@
         "funcName_check":"InsituExpCheck",
         "funcName_compare": "InsituExpCompare",
         "funcName_action":"defaultPutEvent",
-        "parameters_check":["500000"],
+        "parameters_check":["4000000"],
         "parameters_compare":["2"],
         "parameters_action":[]
     }

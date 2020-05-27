@@ -63,9 +63,9 @@ struct MetaDataManager
   MetaDataManager(size_t bufferNum, size_t deletedNum) : m_bufferNum(bufferNum), m_deletedNum(deletedNum){};
 
   // number of step maintained by metaserver
-  size_t m_bufferNum = 12;
+  size_t m_bufferNum = 5;
   //deleted Num should less than bufferNum
-  size_t m_deletedNum = 3;
+  size_t m_deletedNum = 1;
   //TODO, the windlow lb and ub should bounded with each varName for future
   //currently, when we delete the step, we delete all related varaibles
   tl::mutex m_boundMutex;

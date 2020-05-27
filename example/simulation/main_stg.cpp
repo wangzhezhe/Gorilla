@@ -131,10 +131,8 @@ int main(int argc, char **argv)
     tl::engine globalclientEngine(mid);
 #else
 
-
     tl::engine globalclientEngine(protocol, THALLIUM_CLIENT_MODE);
 #endif
-
 
     //TODO broadcast
     /*
@@ -258,28 +256,26 @@ int main(int argc, char **argv)
         //else
         //{
 
-        bool ifStage = true;
+        bool ifStage = false;
         int detectionTime = 0.5 * 1000;
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(detectionTime));
+        //percentage of the in-staging execution
+        if (step % 5 == 1)
+        {
+            ifStage = true;
+        }
+        else
+        {
+            //execute the analytics
+            std::this_thread::sleep_for(std::chrono::milliseconds(detectionTime));
+        }
 
-        //if (step % 5 == 1)
-        //{
-        //    ifStage = true;
-        //}
-        
         //if test the in-staging checking, all step is written into the staging service
         if (ifStage)
         {
             //write to the stage server
             dataWriter.write(sim, step);
         }
-
-        //else
-        //{
-        //execute the analytics
-        //    std::this_thread::sleep_for(std::chrono::milliseconds(anaTime));
-        //}
 
         //}
         //char countstr[50];
@@ -315,8 +311,11 @@ int main(int argc, char **argv)
 
     clock_gettime(CLOCK_REALTIME, &wfend); /* mark end time */
     wfdiff = (wfend.tv_sec - wfstart.tv_sec) * 1.0 + (wfend.tv_nsec - wfstart.tv_nsec) * 1.0 / BILLION;
+
+
     if (rank == 0)
     {
+        std::cout << "wf time " << wfdiff << std::endl;
         //both ana and sim set tick, compare the maximum one
         dataWriter.endwftimer();
     }

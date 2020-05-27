@@ -272,10 +272,53 @@ void getaddrbyrrb(const tl::request &req)
     req.respond(serverAddr);
 }
 
+//this step is particular step
+void eraseMetaAndRawManually(size_t step)
+{
+    for (int i = 0; i < uniServer->m_metaManager->m_deletedNum; i++)
+    {
+        //delete coresponding rawdata in async way
+        uniServer->m_metaManager->m_metaDataMapMutex.lock();
+
+        //traverse the map and release memory for old data
+        std::cout << "rank " << globalRank << " delete metadata step by manual " << step << std::endl;
+
+        for (auto &kv : uniServer->m_metaManager->m_metaDataMap[step])
+        {
+            std::string varName = kv.first;
+            //std::cout << "delete metadata varName " << varName << std::endl;
+
+            for (auto &kvinner : kv.second.m_metadataBlock)
+            {
+                std::string varType = kvinner.first;
+                //std::cout << "delete metadata varType " << varType << " size " << kvinner.second.size() << std::endl;
+                for (auto &it : kvinner.second)
+                {
+                    RawDataEndpoint rde = it;
+                    //rde.printInfo();
+                    uniClient->eraseRawData(rde.m_rawDataServerAddr, rde.m_rawDataID);
+                }
+            }
+        }
+
+        uniServer->m_metaManager->m_metaDataMapMutex.unlock();
+    }
+    return;
+}
+
+//delete the step stored on this server
+void deleteMetaStep(const tl::request &req, size_t step)
+{
+    eraseMetaAndRawManually(step);
+    req.respond(0);
+}
+
 //TODO some data is undeletable, add another parameter, if there is important data, but it needs long time to be consumed, this need to be keeped for some time
 //be careful about the setting the lb and the ub of the window here
+//this step is current step, that is the latest step
 void eraseMetaAndRaw(size_t step)
 {
+
     uniServer->m_metaManager->m_boundMutex.lock();
     uniServer->m_metaManager->m_windowub = step;
 
@@ -295,11 +338,16 @@ void eraseMetaAndRaw(size_t step)
     {
         for (int i = 0; i < uniServer->m_metaManager->m_deletedNum; i++)
         {
+            //TODO make sure do not delete key data, use better way here
+            if (currentlb % 5 == 1 || currentlb % 5 == 2 || currentlb % 5 == 3)
+            {
+                continue;
+            }
             //delete coresponding rawdata in async way
             uniServer->m_metaManager->m_metaDataMapMutex.lock();
 
             //traverse the map and release memory for old data
-            std::cout <<"rank " << globalRank << " delete metadata step " << currentlb << std::endl;
+            std::cout << "rank " << globalRank << " delete metadata step " << currentlb << std::endl;
 
             for (auto &kv : uniServer->m_metaManager->m_metaDataMap[currentlb])
             {
@@ -350,17 +398,20 @@ void putmetadata(const tl::request &req, size_t &step, std::string &varName, Raw
     {
         //execute init trigger
         //if the trigger is true
+        //TODO, add a lable to say if the metadata can be deleted
+        //the trigger need to access the metadata in this way
+        //maybe to notify it by send an RPC call by action operation
         if (gloablSettings.addTrigger == true)
         {
-
+            //create thread on a particular ess id by round robin pattern
             int essid = uniServer->m_dtmanager->m_threadPool->getEssId();
             tl::managed<tl::thread> th = uniServer->m_dtmanager->m_threadPool->m_ess[essid]->make_thread([=]() {
                 uniServer->m_dtmanager->initstart("InitTrigger", step, varName, rde);
                 //time it
-                //if (globalRank == 0)
-                //{
-                //    uniServer->m_frawmanager->m_statefulConfig->timeit();
-                //}
+                if (globalRank == 0)
+                {
+                    uniServer->m_frawmanager->m_statefulConfig->timeit();
+                }
             });
             uniServer->m_dtmanager->m_threadPool->m_threadmutex.lock();
             uniServer->m_dtmanager->m_threadPool->m_userThreadList.push_back(std::move(th));
@@ -941,6 +992,7 @@ void runRerver(std::string networkingType)
     globalServerEnginePtr->define("registerWatcher", registerWatcher);
     globalServerEnginePtr->define("putEvent", putEvent).disable_response();
     globalServerEnginePtr->define("getEvent", getEvent);
+    globalServerEnginePtr->define("deleteMetaStep", deleteMetaStep);
 
     globalServerEnginePtr->define("startTimer", startTimer).disable_response();
     globalServerEnginePtr->define("endTimer", endTimer).disable_response();

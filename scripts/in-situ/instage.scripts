@@ -30,16 +30,23 @@ source ~/.gorilla
 
 sleep 1
 
-srun -N $DSNODE -n $DSTASK -c 8 --cpu_bind=cores --time=00:05:00 ./unimos_server ~/cworkspace/src/Gorilla/server/settings_gni.json &> gorilla.log &
+srun -C haswell -N $DSNODE -n $DSTASK -c 8 --cpu_bind=cores --time=00:10:00 ./unimos_server ~/cworkspace/src/Gorilla/server/settings_gni.json &> gorilla.log &
 
 while [ ! -f ./unimos_server.conf ]
 do
     sleep 0.01
 done
 
-sleep 15
+sleep 5
 
-srun -N $SIMNODE -n $SIMTASK -c 1 --cpu_bind=cores ./example/gray-scott ~/cworkspace/src/Gorilla/example/simulation/settings.json gni &> sim.log 
+srun -C haswell -n 1 ./test/test_trigger_loader gni ~/cworkspace/src/Gorilla/server/trigger_test_insitu.json
+
+# use sbcast for large scale job
+#sbcast --compress=lz4 ./example/gray-scott-stg /tmp/gray-scott-stg
+
+#srun -C haswell -N $SIMNODE -n $SIMTASK -c 1 --cpu_bind=cores /tmp/gray-scott-stg ~/cworkspace/src/Gorilla/example/simulation/settings.json gni &> sim.log 
+
+srun -C haswell -N $SIMNODE -n $SIMTASK -c 1 --cpu_bind=cores ./example/gray-scott-stg ~/cworkspace/src/Gorilla/example/simulation/settings.json gni &> sim.log 
 
 sleep 5
 
