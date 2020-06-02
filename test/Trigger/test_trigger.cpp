@@ -21,10 +21,20 @@ void test_steptrigger()
     actionParameters.push_back(triggerNameb);
 
     FunctionManagerMeta *fmm = new FunctionManagerMeta();
-    DynamicTriggerManager *dtm = new DynamicTriggerManager(5, NULL);
+
+    //the meta data service
+    MetaDataManager *metaManager = new MetaDataManager();
+    //insert metadata item for testing
+    RawDataEndpoint rde;
+
+    metaManager->updateMetaData(0, "testVar", rde);
+    //for the following testing about the trigger
+    metaManager->updateMetaData(5, "testVar", rde);
+    
+    DynamicTriggerManager *dtm = new DynamicTriggerManager(5, metaManager, NULL);
     fmm->m_dtm = dtm;
     dtm->m_funcmanagerMeta = fmm;
-    
+
     DynamicTriggerInfo tgInfo("defaultCheckGetStep", comparisonParameters,
                               "defaultComparisonStep", comparisonParameters,
                               "defaultActionSartDt", actionParameters);
@@ -39,13 +49,11 @@ void test_steptrigger()
     dtm->updateTrigger(triggerName, tgInfo);
     dtm->updateTrigger(triggerNameb, tgInfob);
 
-    RawDataEndpoint rde;
-
     //when there is the update of the metadata call Init
     std::cout << "------test_steptrigger_step_0------" << std::endl;
     dtm->initstart(triggerName, 0, "testVar", rde);
     std::cout << "------test_steptrigger_step_5------" << std::endl;
-    dtm->initstart(triggerName, 6, "testVar", rde);
+    dtm->initstart(triggerName, 5, "testVar", rde);
 }
 
 int main()

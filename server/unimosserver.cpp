@@ -272,44 +272,46 @@ void getaddrbyrrb(const tl::request &req)
     req.respond(serverAddr);
 }
 
-//this step is particular step
-void eraseMetaAndRawManually(size_t step)
+//remove the metadata of specific step
+//even if it is undeletable
+void forceEraseMetaAndRawManually(size_t step)
 {
-    for (int i = 0; i < uniServer->m_metaManager->m_deletedNum; i++)
+    //delete the raw data forcelly, it works for any types
+    //delete coresponding rawdata in async way
+    uniServer->m_metaManager->m_metaDataMapMutex.lock();
+
+    //traverse the map and release memory for old data
+    std::cout << "rank " << globalRank << " delete metadata step by manual " << step << std::endl;
+
+    for (auto &kv : uniServer->m_metaManager->m_metaDataMap[step])
     {
-        //delete coresponding rawdata in async way
-        uniServer->m_metaManager->m_metaDataMapMutex.lock();
+        std::string varName = kv.first;
+        //std::cout << "delete metadata varName " << varName << std::endl;
 
-        //traverse the map and release memory for old data
-        std::cout << "rank " << globalRank << " delete metadata step by manual " << step << std::endl;
-
-        for (auto &kv : uniServer->m_metaManager->m_metaDataMap[step])
+        for (auto &kvinner : kv.second.m_metadataBlock)
         {
-            std::string varName = kv.first;
-            //std::cout << "delete metadata varName " << varName << std::endl;
-
-            for (auto &kvinner : kv.second.m_metadataBlock)
+            std::string varType = kvinner.first;
+            //std::cout << "delete metadata varType " << varType << " size " << kvinner.second.size() << std::endl;
+            for (auto &it : kvinner.second)
             {
-                std::string varType = kvinner.first;
-                //std::cout << "delete metadata varType " << varType << " size " << kvinner.second.size() << std::endl;
-                for (auto &it : kvinner.second)
-                {
-                    RawDataEndpoint rde = it;
-                    //rde.printInfo();
-                    uniClient->eraseRawData(rde.m_rawDataServerAddr, rde.m_rawDataID);
-                }
+                RawDataEndpoint rde = it;
+                //TODO chcek the status here
+                uniClient->eraseRawData(rde.m_rawDataServerAddr, rde.m_rawDataID);
             }
         }
-
-        uniServer->m_metaManager->m_metaDataMapMutex.unlock();
     }
+
+    //remove the outlayer information from the map
+    uniServer->m_metaManager->m_metaDataMap.erase(step);
+    uniServer->m_metaManager->m_metaDataMapMutex.unlock();
+
     return;
 }
 
 //delete the step stored on this server
 void deleteMetaStep(const tl::request &req, size_t step)
 {
-    eraseMetaAndRawManually(step);
+    forceEraseMetaAndRawManually(step);
     req.respond(0);
 }
 
@@ -322,7 +324,7 @@ void eraseMetaAndRaw(size_t step)
     uniServer->m_metaManager->m_boundMutex.lock();
     uniServer->m_metaManager->m_windowub = step;
 
-    bool ifOutOfBuffer = ((uniServer->m_metaManager->m_windowub - uniServer->m_metaManager->m_windowlb + 1) > uniServer->m_metaManager->m_bufferNum);
+    bool ifOutOfBuffer = ((uniServer->m_metaManager->m_windowub - uniServer->m_metaManager->m_windowlb + 1) > uniServer->m_metaManager->m_windowSize);
     size_t currentlb = uniServer->m_metaManager->m_windowlb;
     size_t currentub = uniServer->m_metaManager->m_windowub;
     if (ifOutOfBuffer)
@@ -339,10 +341,11 @@ void eraseMetaAndRaw(size_t step)
         for (int i = 0; i < uniServer->m_metaManager->m_deletedNum; i++)
         {
             //TODO make sure do not delete key data, use better way here
-            if (currentlb % 5 == 1 || currentlb % 5 == 2 || currentlb % 5 == 3)
-            {
-                continue;
-            }
+            //if (currentlb % 5 == 1 || currentlb % 5 == 2 || currentlb % 5 == 3)
+            //{
+            //    continue;
+            //}
+
             //delete coresponding rawdata in async way
             uniServer->m_metaManager->m_metaDataMapMutex.lock();
 
@@ -358,16 +361,65 @@ void eraseMetaAndRaw(size_t step)
                 {
                     std::string varType = kvinner.first;
                     //std::cout << "delete metadata varType " << varType << " size " << kvinner.second.size() << std::endl;
-                    for (auto &it : kvinner.second)
+                    //use the vector conditional iterate and erase
+                    auto iter = kvinner.second.begin();
+                    while (iter != kvinner.second.end())
                     {
-                        RawDataEndpoint rde = it;
-                        //rde.printInfo();
-                        uniClient->eraseRawData(rde.m_rawDataServerAddr, rde.m_rawDataID);
+                        RawDataEndpoint rde = *iter;
+                        //check the status
+                        //raw or after process , delete
+                        //std::cout << "curr status " << rde.m_metaStatus << std::endl;
+                        while (true)
+                        {
+                            if (rde.m_metaStatus == MetaStatus::RAW || rde.m_metaStatus == MetaStatus::AFTERPROCESS)
+                            {
+                                //erase metadata
+                                //TODO update the data structure to make it more efficient here
+
+                                //erase rawdata, and make it points to the next element
+                                iter = kvinner.second.erase(iter);
+                                uniClient->eraseRawData(rde.m_rawDataServerAddr, rde.m_rawDataID);
+                                break;
+                            }
+                            else if (rde.m_metaStatus == MetaStatus::BEFOREPROCESS || rde.m_metaStatus == MetaStatus::INPROCESS)
+                            {
+                                //std::cout << "debug wait the finish of the data with id " << rde.m_rawDataID << std::endl;
+                                //usleep(500000);
+                                //continue;
+                                //TODO neglect these data for this step
+                                //if we use sleep and continue, there will be a deadlock for the trigger process
+                                //since it could not acquire the lock
+                                ++iter;
+                                break;
+                            }
+                            else if (rde.m_metaStatus == MetaStatus::UNDELETABLE)
+                            {
+                                //can not be deleted
+                                ++iter;
+                                break;
+                            }
+                        }
                     }
                 }
+
+                //erase coresponding metadata and the flag if it becomes empty
+                //the current deleted step is i
+                int blockSize = uniServer->m_metaManager->m_metaDataMap[currentlb][varName].getBlockNumberByVersion(DRIVERTYPE_RAWMEM);
+                //std::cout << "debug metablock size for step: " << currentlb << " variable: " << varName << " size: " << blockSize << std::endl;
+                if (blockSize == 0)
+                {
+                    //TODO, only remove the inner data if there are multiple versions in furture
+                    uniServer->m_metaManager->m_metaDataMap[currentlb][varName].eraseBlocks(DRIVERTYPE_RAWMEM);
+                }
+                //std::cout << "debug m_metaDataMap size for step currentlb " << uniServer->m_metaManager->m_metaDataMap.count(currentlb) << std::endl;
             }
 
+            //uniServer->m_metaManager->m_metaDataMap[currentlb] and  uniServer->m_metaManager->m_metaDataMap[currentlb][varName] can not be deleted
+            //since they might be accessed by multiple threads
+            //if we want to check if there are enough data before put opearation, we can use
+            //coresponding data in the moritor manager [todo]
             currentlb++;
+
             uniServer->m_metaManager->m_metaDataMapMutex.unlock();
         }
     }
@@ -377,8 +429,14 @@ void eraseMetaAndRaw(size_t step)
 // the manager of the matadata controller should be maintained at this level
 void putmetadata(const tl::request &req, size_t &step, std::string &varName, RawDataEndpoint rde)
 {
+    //TODO update the status of the RDE here
     try
     {
+
+        if (gloablSettings.addTrigger == true)
+        {
+            rde.m_metaStatus = MetaStatus::BEFOREPROCESS;
+        }
         spdlog::debug("server {} put meta", uniServer->m_addrManager->nodeAddr);
         if (gloablSettings.logLevel > 0)
         {
@@ -406,6 +464,7 @@ void putmetadata(const tl::request &req, size_t &step, std::string &varName, Raw
             //create thread on a particular ess id by round robin pattern
             int essid = uniServer->m_dtmanager->m_threadPool->getEssId();
             tl::managed<tl::thread> th = uniServer->m_dtmanager->m_threadPool->m_ess[essid]->make_thread([=]() {
+                //the rde here is the copy version of the original rde
                 uniServer->m_dtmanager->initstart("InitTrigger", step, varName, rde);
                 //time it
                 if (globalRank == 0)
@@ -524,6 +583,7 @@ void putrawdata(const tl::request &req, int clientID, size_t &step, std::string 
         //get the meta server according to bbx
         BBXTOOL::BBX BBXQuery(blockSummary.m_dims, blockSummary.m_indexlb, blockSummary.m_indexub);
 
+        //TODO, if the query bbx is accoss mamy partitions if there are multiple records in the metaserver
         std::vector<ResponsibleMetaServer> metaserverList = uniServer->m_dhtManager->getMetaServerID(BBXQuery);
 
         //update the coresponding metadata server, send information to corespond meta

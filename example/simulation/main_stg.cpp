@@ -256,19 +256,19 @@ int main(int argc, char **argv)
         //else
         //{
 
-        bool ifStage = false;
+        bool ifStage = true;
         int detectionTime = 0.5 * 1000;
 
         //percentage of the in-staging execution
-        if (step % 5 == 1)
-        {
-            ifStage = true;
-        }
-        else
-        {
+        //if (step % 5 == 1)
+        //{
+        //    ifStage = true;
+        //}
+        //else
+        //{
             //execute the analytics
-            std::this_thread::sleep_for(std::chrono::milliseconds(detectionTime));
-        }
+        //    std::this_thread::sleep_for(std::chrono::milliseconds(detectionTime));
+        //}
 
         //if test the in-staging checking, all step is written into the staging service
         if (ifStage)

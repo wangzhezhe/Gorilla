@@ -3,6 +3,61 @@
 
 std::string rawDataVersrion("rawData");
 
+int MetaDataManager::getMetaDataStatus(size_t step, std::string varName, std::string dataType, std::string rawDataID)
+{
+  this->m_metaDataMapMutex.lock();
+  int stepCount = this->m_metaDataMap.count(step);
+  this->m_metaDataMapMutex.unlock();
+
+  if (stepCount == 0)
+  {
+    throw std::runtime_error("the metadata for step does not exist for getMetaDataStatus");
+    return MetaStatus::ERROR;
+  }
+
+  this->m_metaDataMapMutex.lock();
+  int varCount = this->m_metaDataMap[step].count(varName);
+  this->m_metaDataMapMutex.unlock();
+
+  if (varCount == 0)
+  {
+    throw std::runtime_error("the metadata for varaible does not exist for getMetaDataStatus");
+    return MetaStatus::ERROR;
+  }
+
+  this->m_metaDataMapMutex.lock();
+  int status = m_metaDataMap[step][varName].getMetaBlockStatus(dataType, rawDataID);
+  this->m_metaDataMapMutex.unlock();
+  return status;
+}
+
+void MetaDataManager::updateMetaDataStatus(size_t step, std::string varName, std::string dataType, std::string rawDataID, MetaStatus newstatus)
+{
+  this->m_metaDataMapMutex.lock();
+  int stepCount = this->m_metaDataMap.count(step);
+  this->m_metaDataMapMutex.unlock();
+
+  if (stepCount == 0)
+  {
+    throw std::runtime_error("the metadata for step does not exist for updateMetaDataStatus");
+    return;
+  }
+
+  this->m_metaDataMapMutex.lock();
+  int varCount = this->m_metaDataMap[step].count(varName);
+  this->m_metaDataMapMutex.unlock();
+
+  if (varCount == 0)
+  {
+    throw std::runtime_error("the metadata for varaible does not exist for updateMetaDataStatus");
+    return;
+  }
+
+  this->m_metaDataMapMutex.lock();
+  m_metaDataMap[step][varName].updateMetaBlockStatus(dataType, rawDataID, newstatus);
+  this->m_metaDataMapMutex.unlock();
+}
+
 void MetaDataManager::updateMetaData(size_t step, std::string varName,
                                      RawDataEndpoint &rde, std::string dataType)
 {

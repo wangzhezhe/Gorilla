@@ -101,7 +101,7 @@ add_library(metatrigger
 ${gorilla_SOURCE_DIR}/server/FunctionManager/defaultFunctions/defaultfuncmeta.cpp
 ${gorilla_SOURCE_DIR}/server/TriggerManager/triggerManager.cpp
 )
-target_link_libraries(metatrigger thallium unimos_client adios2::adios2)
+target_link_libraries(metatrigger thallium metadatamanager unimos_client adios2::adios2)
 
 add_library(rawexec 
 ${gorilla_SOURCE_DIR}/server/FunctionManager/defaultFunctions/defaultfuncraw.cpp

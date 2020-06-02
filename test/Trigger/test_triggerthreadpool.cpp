@@ -18,7 +18,7 @@ void hello(int i)
 int main()
 {
     tl::abt scope;
-    DynamicTriggerManager *m_dtmanager = new DynamicTriggerManager(8, NULL);
+    DynamicTriggerManager *m_dtmanager = new DynamicTriggerManager(8, NULL, NULL);
 
     for (int i = 0; i < 128; i++)
     {

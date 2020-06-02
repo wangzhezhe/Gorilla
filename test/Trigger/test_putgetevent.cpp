@@ -30,7 +30,7 @@ void test_putevent()
     EventWrapper event2(EVENT_DATA_PUT, "testVar", 1, 3, {{0, 0, 0}}, {{512, 512, 512}});
     EventWrapper event3(EVENT_DATA_PUT, "testVar", 1, 3, {{0, 0, 0}}, {{512, 512, 512}});
 
-    DynamicTriggerManager dtm(2, NULL);
+    DynamicTriggerManager dtm(2, NULL, NULL);
     dtm.putEvent("testVar", event1);
     dtm.putEvent("testVar", event2);
     dtm.putEvent("testVar", event3);
@@ -43,7 +43,7 @@ void test_getevent()
 {
     std::cout << "---test_getevent---" << std::endl;
 
-    DynamicTriggerManager dtm(2, NULL);
+    DynamicTriggerManager dtm(2, NULL, NULL);
     EventWrapper event = dtm.getEvent("testVarabc");
     if (event.m_dims != 0)
     {
