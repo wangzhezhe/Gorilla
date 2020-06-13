@@ -154,6 +154,8 @@ But there are some issues here. that map is a little bit large and might be acce
 
 Currently, operations that need to update this map includes: (1) after put data, the metadata map is accessed (2) when delete the in-memory data objects, the metadata map is accessed (3) when update the status of the data block, the metadata map is accessed. The next step is try to decrease the concurent operations that access this data structure or to update the data structure here to decrease the overhead caused by the lock.
 
+It seems that the mochi and argobot does not supports the read/write lock well and only the standard mutex lock can be used
+
 ### TODO list
 
 ask the server if the buffer is full before putting the data based on the monitor information

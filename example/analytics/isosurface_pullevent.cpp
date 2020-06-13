@@ -376,15 +376,12 @@ int main(int argc, char *argv[])
             
             
             int threadid = threadPool.getEssId();
-            tl::managed<tl::thread> th = threadPool.m_ess[threadid]->make_thread(
+           threadPool.m_ess[threadid]->make_thread(
             [] {
                     int anaTime = 2.0 * 1000;
                     std::this_thread::sleep_for(std::chrono::milliseconds(anaTime));
-            });
+            },tl::anonymous());
 
-            threadPool.m_threadmutex.lock();
-            threadPool.m_userThreadList.push_back(std::move(th));
-            threadPool.m_threadmutex.unlock();
             
 
             //free space

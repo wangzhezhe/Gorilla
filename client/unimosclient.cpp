@@ -265,7 +265,8 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
             if (rweList.size() == 0)
             {
                 //the metadata is not updated on this server, waiting
-                usleep(500000);
+                //sleep 500ms
+                tl::thread::sleep(*this->m_clientEnginePtr, 500);
                 continue;
             }
             else

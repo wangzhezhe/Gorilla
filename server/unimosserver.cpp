@@ -463,7 +463,7 @@ void putmetadata(const tl::request &req, size_t &step, std::string &varName, Raw
         {
             //create thread on a particular ess id by round robin pattern
             int essid = uniServer->m_dtmanager->m_threadPool->getEssId();
-            tl::managed<tl::thread> th = uniServer->m_dtmanager->m_threadPool->m_ess[essid]->make_thread([=]() {
+            uniServer->m_dtmanager->m_threadPool->m_ess[essid]->make_thread([=]() {
                 //the rde here is the copy version of the original rde
                 uniServer->m_dtmanager->initstart("InitTrigger", step, varName, rde);
                 //time it
@@ -471,11 +471,10 @@ void putmetadata(const tl::request &req, size_t &step, std::string &varName, Raw
                 {
                     uniServer->m_frawmanager->m_statefulConfig->timeit();
                 }
-            });
-            uniServer->m_dtmanager->m_threadPool->m_threadmutex.lock();
-            uniServer->m_dtmanager->m_threadPool->m_userThreadList.push_back(std::move(th));
+            },
+            tl::anonymous());
+            //it is unnecessary to store the thread by using the anonymous pattern
             spdlog::debug("start trigger for var {} step {} data id {}", varName, step, rde.m_rawDataID);
-            uniServer->m_dtmanager->m_threadPool->m_threadmutex.unlock();
         }
     }
     catch (std::exception &e)

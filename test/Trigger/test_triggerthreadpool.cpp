@@ -24,10 +24,9 @@ int main()
     {
         int essid = m_dtmanager->m_threadPool->getEssId();
         std::cout << "essid " << essid << std::endl;
-        tl::managed<tl::thread> th = m_dtmanager->m_threadPool->m_ess[essid]->make_thread([i]() {
+        m_dtmanager->m_threadPool->m_ess[essid]->make_thread([i]() {
             hello(i);
-        });
-        m_dtmanager->m_threadPool->m_userThreadList.push_back(std::move(th));
+        },tl::anonymous());
     }
 
     delete m_dtmanager;

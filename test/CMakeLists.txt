@@ -70,8 +70,8 @@ add_executable(mpinotifyblock ./thalimtest/mpinotifyblock.cpp)
 target_link_libraries(mpinotifyblock thallium MPI::MPI_C)
 
 
-add_executable(thalliumtest_threadpool ./thalimtest/thalliumtest_threadpool.cpp)
-target_link_libraries(thalliumtest_threadpool thallium)
+#add_executable(thalliumtest_threadpool ./thalimtest/thalliumtest_threadpool.cpp)
+#target_link_libraries(thalliumtest_threadpool thallium)
 
 add_executable(test_insitu_exp ./Trigger/test_insitu_exp.cpp)
 target_link_libraries(test_insitu_exp thallium unimos_client)

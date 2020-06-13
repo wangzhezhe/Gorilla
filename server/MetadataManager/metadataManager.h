@@ -153,6 +153,8 @@ struct MetaDataManager
   // one step contains multiple varaible
   // one variable contains multiple data partitions
   // one data partition is associated with multiple versions
+  // TODO use the ptr to the MetaBlock as the inner MetaDataBlock to decrease the overhead caused by one lock
+  // the performance will be degraded if we try to delete metadata of multiple objects but only use one lock
   std::unordered_map<size_t, std::unordered_map<std::string, MetaDataBlock>> m_metaDataMap;
 
   void updateMetaData(size_t step, std::string varName, RawDataEndpoint &rde, std::string dataType = DRIVERTYPE_RAWMEM);
