@@ -22,6 +22,8 @@
 #include "../../server/json.hpp"
 #include "../../utils/ArgothreadPool.h"
 
+#include <thallium.hpp>
+
 #ifdef USE_GNI
 extern "C"
 {

@@ -4,6 +4,7 @@
 #include <iostream>
 #include "../../commondata/metadata.h"
 #include "../../client/unimosclient.h"
+#include <thallium.hpp>
 
 #ifdef USE_GNI
 extern "C"

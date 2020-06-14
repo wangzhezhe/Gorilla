@@ -19,6 +19,8 @@
 #include "../client/unimosclient.h"
 #include "../putgetMeta/metaclient.h"
 
+#include <thallium.hpp>
+
 #ifdef USE_GNI
 extern "C"
 {
