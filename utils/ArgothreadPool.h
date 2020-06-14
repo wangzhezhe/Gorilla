@@ -23,17 +23,14 @@ struct ArgoThreadPool
 
     //put this separately, init this when using the pool
     //tl::abt scope;
-    
     //the system thread number
     int m_poolSize=0;
     
     tl::mutex m_Mutex;
-     
     int m_currentUserThreadId = 0;
 
     //single producer and multiple consumer pattern https://xgitlab.cels.anl.gov/sds/thallium/blob/master/include/thallium/pool.hpp
     //tl::managed<tl::pool> m_myPool = tl::pool::create(tl::pool::access::spmc);
-    
     std::vector<tl::managed<tl::xstream>> m_ess;
 
     //TODO update this part, delete thread when one finish
@@ -68,7 +65,6 @@ struct ArgoThreadPool
 
     int addOneEss(){
         //lock the vector and put one into the vector
-
     }
 
     void essjoin(){
@@ -83,23 +79,6 @@ struct ArgoThreadPool
         std::cout << "delete thread pool\n" << std::endl;
         essjoin();
     }
-    
-
 };
-
-
-
-/*
-
-
-        std::vector<tl::managed<tl::thread>> ths;
-        for (int i = 0; i < 16; i++)
-        {
-            tl::managed<tl::thread> th = ess[i % ess.size()]->make_thread(test);
-
-            ths.push_back(std::move(th));
-        }
-
-*/
 
 #endif
