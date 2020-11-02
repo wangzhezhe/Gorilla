@@ -125,9 +125,9 @@ void UniClient::initPutRawData(size_t dataMallocSize)
 
 int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSummary, void *dataContainerSrc)
 {
-    //struct timespec start, end1, end2;
-    //double diff1, diff2;
-    //clock_gettime(CLOCK_REALTIME, &start);
+    struct timespec start, end1, end2;
+    double diff1, diff2;
+    clock_gettime(CLOCK_REALTIME, &start);
     size_t dataMallocSize = dataSummary.getTotalSize();
     if (this->m_associatedDataServer.compare("") == 0)
     {
@@ -156,9 +156,9 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
     // actually wait on the request and get the result out of it
     //std::vector<MetaDataWrapper> mdwList = request.wait();
 
-    //clock_gettime(CLOCK_REALTIME, &end1);
-    //diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
-    //std::cout << "put stage 1: " << diff1 << std::endl;
+    clock_gettime(CLOCK_REALTIME, &end1);
+    diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+    std::cout << "put stage 1: " << diff1 << std::endl;
 
     //has been updated (data server and metadata server are same)
     //mdw.printInfo();
@@ -183,9 +183,9 @@ int UniClient::putrawdata(size_t step, std::string varName, BlockSummary &dataSu
         }
     }
 
-    //clock_gettime(CLOCK_REALTIME, &end2);
-    //diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
-    //std::cout << "put stage 2: " << diff2 << std::endl;
+    clock_gettime(CLOCK_REALTIME, &end2);
+    diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
+    std::cout << "put stage 2: " << diff2 << std::endl;
 
     return 0;
 }
@@ -265,7 +265,8 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(
             if (rweList.size() == 0)
             {
                 //the metadata is not updated on this server, waiting
-                usleep(500000);
+                //sleep 500ms
+                tl::thread::sleep(*this->m_clientEnginePtr, 500);
                 continue;
             }
             else

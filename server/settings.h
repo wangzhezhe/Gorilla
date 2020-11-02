@@ -30,6 +30,7 @@ struct Settings {
     std::string masterInfo;
     bool addTrigger;
     int logLevel;
+    
     //add the copy function or use the new operator
     static Settings from_json(const std::string &fname);
 

@@ -205,6 +205,16 @@ struct BlockSummary
   }
 };
 
+enum MetaStatus { 
+  ERROR,
+  RAW,
+  BEFOREPROCESS,
+  INPROCESS,
+  AFTERPROCESS,
+  UNDELETABLE,
+ };
+
+//define the equal opertaion for this struct
 
 struct RawDataEndpoint
 {
@@ -217,6 +227,8 @@ struct RawDataEndpoint
         m_dims(dims), m_indexlb(indexlb), m_indexub(indexub){};
   std::string m_rawDataServerAddr;
   std::string m_rawDataID;
+  //use the integer to for the convenience of the serilization
+  int m_metaStatus = MetaStatus::RAW; 
   size_t m_dims = 0;
   std::array<int, 3> m_indexlb{{0, 0, 0}};
   std::array<int, 3> m_indexub{{0, 0, 0}};
@@ -229,6 +241,8 @@ struct RawDataEndpoint
               << "," << m_indexub[1] << "," << m_indexub[2] << std::endl;
   }
 
+
+
   ~RawDataEndpoint(){};
 
   template <typename A>
@@ -236,6 +250,7 @@ struct RawDataEndpoint
   {
     ar &m_rawDataServerAddr;
     ar &m_rawDataID;
+    ar &m_metaStatus;
     ar &m_dims;
     ar &m_indexlb;
     ar &m_indexub;

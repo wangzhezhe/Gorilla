@@ -14,6 +14,7 @@
 #include "../../utils/ArgothreadPool.h"
 #include "../../client/unimosclient.h"
 #include "../FunctionManager/functionManagerMeta.h"
+#include "../MetadataManager/metadataManager.h"
 
 namespace tl = thallium;
 
@@ -21,7 +22,8 @@ struct DynamicTriggerManager
 {
     DynamicTriggerManager( 
         size_t poolSize,
-        UniClient* uniclient):m_uniclient(uniclient)
+        MetaDataManager* metadataManager,
+        UniClient* uniclient): m_metadataManager(metadataManager),m_uniclient(uniclient)
     {
         this->m_threadPool = new ArgoThreadPool(poolSize);
     };
@@ -55,19 +57,21 @@ struct DynamicTriggerManager
     tl::mutex m_watcherSetMutex;
     std::set<std::string> m_registeredWatcherSet;
 
-
     //the place that store the function
-    FunctionManagerMeta* m_funcmanagerMeta = NULL;
+    FunctionManagerMeta* m_funcmanagerMeta = nullptr;
 
     //the function manager may need to send request to specific server
     //it needs to hold a pointer to the client
-    UniClient* m_uniclient = nullptr;
+    UniClient* m_uniclient = nullptr; 
 
-    ArgoThreadPool* m_threadPool = NULL;
+    //hold the pointer to the metadataManager
+    MetaDataManager * m_metadataManager = nullptr;
+
+    ArgoThreadPool* m_threadPool = nullptr;
 
     ~DynamicTriggerManager()
     {
-        if (this->m_threadPool != NULL)
+        if (this->m_threadPool != nullptr)
         {
             delete this->m_threadPool;
         }

@@ -165,7 +165,10 @@ std::string InsituExpCheck(size_t step, std::string varName, RawDataEndpoint &rd
     int anaTime = std::stoi(parameters[0]);
     //std::cout << "usleep: " << anaTime <<std::endl;
     //assume data checking heppens here
+    //Attention! the usleep will hang all the process, use the 
     usleep(anaTime);
+    //the value here is the ms, the engine parameter is needed
+    //tl::thread::sleep(anaTime);
     return std::to_string(step);
 }
 

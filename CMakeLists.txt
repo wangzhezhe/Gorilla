@@ -36,6 +36,7 @@ include_directories(${MERCURY_INCLUDE_DIR})
 xpkg_import_module (argobots REQUIRED argobots)
 xpkg_import_module (margo REQUIRED margo)
 xpkg_import_module (abtio REQUIRED abt-io)
+# for the latest thallium we do not need to link libraries
 find_package (thallium REQUIRED)
 
 # compile the sim-inline-adios
@@ -69,7 +70,6 @@ ${gorilla_SOURCE_DIR}/utils/hilbert/hilbert.c)
 
 add_library(metadatamanager 
 ${gorilla_SOURCE_DIR}/server/MetadataManager/metadataManager.cpp)
-target_link_libraries (metadatamanager thallium)
 
 find_package(VTK COMPONENTS
     FiltersCore
@@ -84,30 +84,29 @@ ${gorilla_SOURCE_DIR}/server/RawdataManager/blockManager.cpp
 ${gorilla_SOURCE_DIR}/server/RawdataManager/rawmemobj/rawmemobj.cpp
 ${gorilla_SOURCE_DIR}/server/RawdataManager/vtkobj/vtkobj.cpp
 )
-target_link_libraries(rawdatamanager thallium abt-io ${VTK_LIBRARIES})
+target_link_libraries(rawdatamanager abt-io ${VTK_LIBRARIES})
 
 
 add_library(metaclient ./putgetMeta/metaclient.cpp)
-target_link_libraries(metaclient thallium)
+target_link_libraries(metaclient)
 
 add_library (unimos_client 
 ${gorilla_SOURCE_DIR}/client/unimosclient.cpp
 ${gorilla_SOURCE_DIR}/client/watcher.cpp
 )
-target_link_libraries (unimos_client thallium)
 
 # there is reference between each other, so it is better to build them together
 add_library(metatrigger 
 ${gorilla_SOURCE_DIR}/server/FunctionManager/defaultFunctions/defaultfuncmeta.cpp
 ${gorilla_SOURCE_DIR}/server/TriggerManager/triggerManager.cpp
 )
-target_link_libraries(metatrigger thallium unimos_client adios2::adios2)
+target_link_libraries(metatrigger metadatamanager unimos_client adios2::adios2)
 
 add_library(rawexec 
 ${gorilla_SOURCE_DIR}/server/FunctionManager/defaultFunctions/defaultfuncraw.cpp
 ${gorilla_SOURCE_DIR}/server/FunctionManager/functionManagerRaw.cpp
 )
-target_link_libraries(rawexec adios2::adios2 thallium ${VTK_LIBRARIES} unimos_client)
+target_link_libraries(rawexec adios2::adios2 ${VTK_LIBRARIES} unimos_client)
 
 # add enable_testing
 # test everything ok before integrating them into a server
@@ -124,9 +123,9 @@ ${gorilla_SOURCE_DIR}/server/settings.cpp
 
 if(USE_GNI)
 target_link_libraries (unimos_server
+thallium
  ${DRC_LIBRARIES}
  adios2::adios2
- thallium
  MPI::MPI_C 
  unimos_client 
  dhtmanager rawdatamanager metadatamanager 
@@ -137,8 +136,8 @@ target_link_libraries (unimos_server
  )
 else()
  target_link_libraries (unimos_server
- adios2::adios2
  thallium
+ adios2::adios2
  MPI::MPI_C 
  unimos_client 
  dhtmanager 
