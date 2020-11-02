@@ -3,6 +3,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <thallium.hpp>
 #define BILLION 1000000000L
 
 void testInit1d() {

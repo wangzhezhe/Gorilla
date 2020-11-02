@@ -61,10 +61,12 @@ struct ArgoThreadPool
     int deleteOneEss(){
         //maybe just delete one (maybe use a queue)
         //delete which
+        return 0;
     }
 
     int addOneEss(){
         //lock the vector and put one into the vector
+        return 0;
     }
 
     void essjoin(){

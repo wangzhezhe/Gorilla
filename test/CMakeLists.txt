@@ -1,7 +1,7 @@
 
 
 add_executable(test_dhtmanager ./DHTManager/test_dhtmanager.cpp ../utils/hilbert/hilbert.c)
-target_link_libraries(test_dhtmanager dhtmanager)
+target_link_libraries(test_dhtmanager thallium dhtmanager)
 
 add_executable(test_dhtmanagerManual ./DHTManager/test_dhtmanagerManual.cpp)
 target_link_libraries(test_dhtmanagerManual dhtmanager)
@@ -57,9 +57,6 @@ target_link_libraries(test_circulararraytpool thallium)
 
 add_executable(test_addtrigger ./Trigger/test_trigger.cpp)
 target_link_libraries(test_addtrigger thallium metatrigger unimos_client)
-
-add_executable(test_triggerthreadpool ./Trigger/test_triggerthreadpool.cpp)
-target_link_libraries(test_triggerthreadpool thallium metatrigger)
 
 
 file(COPY ${gorilla_SOURCE_DIR}/server/settings.json

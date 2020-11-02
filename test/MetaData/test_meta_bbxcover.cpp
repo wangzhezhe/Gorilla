@@ -1,5 +1,6 @@
 #include "../server/MetadataManager/metadataManager.h"
 #include <iostream>
+#include <thallium.hpp>
 
 void test_overlap2d()
 {

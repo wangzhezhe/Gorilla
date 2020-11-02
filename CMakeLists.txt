@@ -31,11 +31,7 @@ set (BUILD_SHARED_LIBS "OFF" CACHE BOOL "Build a shared library")
 
 # packages we depend on (load all the necessary depedency by spack)
 include (xpkg-import)
-find_package (mercury REQUIRED)
-include_directories(${MERCURY_INCLUDE_DIR})
-xpkg_import_module (argobots REQUIRED argobots)
 xpkg_import_module (margo REQUIRED margo)
-xpkg_import_module (abtio REQUIRED abt-io)
 # for the latest thallium we do not need to link libraries
 find_package (thallium REQUIRED)
 

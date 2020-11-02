@@ -285,7 +285,7 @@ int main(int argc, char *argv[])
     //printf("use the drc_key_str %s\n", drc_key_str);
 
     margo_instance_id mid;
-    mid = margo_init_opt("gni", MARGO_CLIENT_MODE, &hii, 0, -1);
+    mid = margo_init_opt("gni", MARGO_CLIENT_MODE, &hii, 0, 4);
     tl::engine clientEngine(mid);
 #else
     tl::engine clientEngine(protocol, THALLIUM_CLIENT_MODE);
@@ -310,8 +310,6 @@ int main(int argc, char *argv[])
         triggerMaster = loadTrigger(uniclient, triggerFile);
     }
 
-    //thread pool
-    ArgoThreadPool threadPool(4);
 
     MPI_Barrier(comm);
 
@@ -376,15 +374,11 @@ int main(int argc, char *argv[])
             MATRIXTOOL::MatrixView dataView = uniclient->getArbitraryData(step, VarNameU, sizeof(double), 3, indexlb, indexub);
             
             
-            
-            int threadid = threadPool.getEssId();
-           threadPool.m_ess[threadid]->make_thread(
+            clientEngine.get_handler_pool().make_thread(
             [] {
                     int anaTime = 2.0 * 1000;
                     std::this_thread::sleep_for(std::chrono::milliseconds(anaTime));
             },tl::anonymous());
-
-            
 
             //free space
             if (dataView.m_data != NULL)

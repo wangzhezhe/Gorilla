@@ -165,7 +165,6 @@ void gatherIP(std::string endpoint)
     for (int i = 0; i < ipList.size(); i++)
     {
         //store all server addrs
-
         spdlog::debug("rank {} add raw data server {}", globalRank, ipList[i]);
         uniServer->m_addrManager->m_endPointsLists.push_back(ipList[i]);
     }
@@ -461,9 +460,8 @@ void putmetadata(const tl::request &req, size_t &step, std::string &varName, Raw
         //maybe to notify it by send an RPC call by action operation
         if (gloablSettings.addTrigger == true)
         {
-            //create thread on a particular ess id by round robin pattern
-            int essid = uniServer->m_dtmanager->m_threadPool->getEssId();
-            uniServer->m_dtmanager->m_threadPool->m_ess[essid]->make_thread([=]() {
+            //create thread on a particular and put it into the pool associated with margo instance
+            globalServerEnginePtr->get_handler_pool().make_thread([=]() {
                 //the rde here is the copy version of the original rde
                 uniServer->m_dtmanager->initstart("InitTrigger", step, varName, rde);
                 //time it
@@ -1017,6 +1015,7 @@ void runRerver(std::string networkingType)
 
     margo_instance_id mid;
     //the number here should same with the number of cores used in test scripts
+    //the loop process is 0, the main thread will work on it
     mid = margo_init_opt("gni", MARGO_SERVER_MODE, &hii, 0, 8);
     tl::engine serverEnginge(mid);
     globalServerEnginePtr = &serverEnginge;

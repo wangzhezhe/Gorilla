@@ -11,7 +11,6 @@
 #include <thallium.hpp>
 #include <vector>
 #include "../../commondata/metadata.h"
-#include "../../utils/ArgothreadPool.h"
 #include "../../client/unimosclient.h"
 #include "../FunctionManager/functionManagerMeta.h"
 #include "../MetadataManager/metadataManager.h"
@@ -24,9 +23,7 @@ struct DynamicTriggerManager
         size_t poolSize,
         MetaDataManager* metadataManager,
         UniClient* uniclient): m_metadataManager(metadataManager),m_uniclient(uniclient)
-    {
-        this->m_threadPool = new ArgoThreadPool(poolSize);
-    };
+    {};
 
     void updateTrigger(std::string triggerName, DynamicTriggerInfo triggerInfo){
         m_dynamicTrigger[triggerName] = triggerInfo;
@@ -66,16 +63,14 @@ struct DynamicTriggerManager
 
     //hold the pointer to the metadataManager
     MetaDataManager * m_metadataManager = nullptr;
-
-    ArgoThreadPool* m_threadPool = nullptr;
+    
+    //use the pool associated with the margo instance
+    //there is issue that for current pool implementation
+    //we do not need to assign new es, we just need to put task into associated pool
+    //ArgoThreadPool* m_threadPool = nullptr;
 
     ~DynamicTriggerManager()
-    {
-        if (this->m_threadPool != nullptr)
-        {
-            delete this->m_threadPool;
-        }
-    };
+    {};
 };
 
 

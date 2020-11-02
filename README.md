@@ -46,7 +46,6 @@ spack load cmake
 
 refer to the ./scripts dir to check exmaples of running multiple servers. The configuration of the server contains item such as protocol used by communication layer, the log level, the global domain and if the trigger is started and so on. The example of the configuration is in ./server/settings.json
 
+**TODO list**
 
-
-
-
+update the thread pool part, do not use the extra ES
