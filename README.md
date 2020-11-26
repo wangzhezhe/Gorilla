@@ -19,33 +19,41 @@ source ~/.gorilla
 cmake ~/cworkspace/src/Gorilla/ -DCMAKE_CXX_COMPILER=CC -DCMAKE_C_COMPILER=cc -DVTK_DIR=~/cworkspace/src/VTK/build/ -DUSE_GNI=ON -DADIOS2_DIR=/global/cscratch1/sd/zw241/build_adios
 ```
 
-this is the content of the `~/.gorilla` file:
-
-```
-#!/bin/bash
-source ~/.basic
-spack load -r thallium
-spack load -r abt-io
-# this is an important parameter for compiling the vtk on cori cluster
-export CRAYPE_LINK_TYPE=dynamic
-cd $SCRATCH/build_Gorilla
-```
-
-For the `~/.basic` file:
+this is the content of the `~/.gorilla` file on cori cluster:
 
 ```
 #!/bin/bash
 source ~/.color
-module unload PrgEnv-intel/6.0.5
-module load PrgEnv-gnu
-module load gcc/8.3.0
-module load openmpi
-source ~/cworkspace/src/spack/share/spack/setup-env.sh
-spack load cmake
+module swap PrgEnv-intel PrgEnv-gnu
+module load cmake/3.18.2
+module load spack
+
+spack load -r mochi-thallium@master
+spack load mochi-cfg
+spack load -r mochi-abt-io@master
+export CRAYPE_LINK_TYPE=dynamic
+cd $SCRATCH/build_Gorilla
 ```
 
 refer to the ./scripts dir to check exmaples of running multiple servers. The configuration of the server contains item such as protocol used by communication layer, the log level, the global domain and if the trigger is started and so on. The example of the configuration is in ./server/settings.json
 
-**TODO list**
+### run
 
-update the thread pool part, do not use the extra ES
+exmaple on cori
+```
+srun -C haswell -n 8 ./unimos_server ~/cworkspace/src/Gorilla/server/settings_gni.json
+```
+remember to set the env if MPICH is used
+
+```
+MPICH_GNI_NDREG_ENTRIES=1024
+```
+
+simple example to put the data
+
+```
+srun -C haswell -n 16 ./example/gray-scott-stg ~/cworkspace/src/Gorilla/example/gssimulation/settings.json gni
+
+```
+
+

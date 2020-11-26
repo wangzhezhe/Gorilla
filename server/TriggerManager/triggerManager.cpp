@@ -12,7 +12,7 @@ void DynamicTriggerManager::initstart(std::string triggerName, size_t step, std:
     }
 
     //there is lock mechanism in update operation
-    this->m_metadataManager->updateMetaDataStatus(step, varName, DRIVERTYPE_RAWMEM, rde.m_rawDataID, MetaStatus::INPROCESS);
+    this->m_metadataManager->updateMetaDataStatus(step, varName, DATATYPE_RAWMEM, rde.m_rawDataID, MetaStatus::INPROCESS);
 
     if (this->m_dynamicTrigger.find(triggerName) == this->m_dynamicTrigger.end())
     {
@@ -64,13 +64,13 @@ void DynamicTriggerManager::initstart(std::string triggerName, size_t step, std:
     //update the data into the AFTERPROCESS if the original is INPROCESS
     //do not update if the status is UNDELETABLE it means the status have beed updated by the action functions
     //TODO add the getMetaDataStatus
-    int status = this->m_metadataManager->getMetaDataStatus(step, varName, DRIVERTYPE_RAWMEM, rde.m_rawDataID);
+    int status = this->m_metadataManager->getMetaDataStatus(step, varName, DATATYPE_RAWMEM, rde.m_rawDataID);
     
     //TODO there is deadlock here since the lock might be hold by deleteprocess for deleting the detadata!!!
     //in the process for erasing the data, there is a while loop 
     if (status == (int)MetaStatus::INPROCESS)
     {
-        this->m_metadataManager->updateMetaDataStatus(step, varName, DRIVERTYPE_RAWMEM, rde.m_rawDataID, MetaStatus::AFTERPROCESS);
+        this->m_metadataManager->updateMetaDataStatus(step, varName, DATATYPE_RAWMEM, rde.m_rawDataID, MetaStatus::AFTERPROCESS);
     }
     else if (status == (int)MetaStatus::UNDELETABLE)
     {

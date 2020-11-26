@@ -29,6 +29,7 @@ struct Settings {
     std::string protocol;
     std::string masterInfo;
     bool addTrigger;
+    std::string memLimit;
     int logLevel;
     
     //add the copy function or use the new operator
@@ -62,6 +63,7 @@ struct Settings {
     
     std::cout << "metaserverNum:         " << this->metaserverNum << std::endl;
     std::cout << "addTrigger:            " << this->addTrigger << std::endl;
+    std::cout << "memLimit:              " << this->memLimit << std::endl;
     std::cout << "logLevel:              " << this->logLevel << std::endl;
     std::cout<<"--------------------"<<std::endl;
     }
@@ -74,6 +76,7 @@ struct Settings {
         metaserverNum=other.metaserverNum;
         protocol=other.protocol;
         masterInfo=other.masterInfo;
+        memLimit=other.memLimit;
         addTrigger=other.addTrigger;
         logLevel=other.logLevel;
         return *this;

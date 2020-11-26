@@ -105,7 +105,7 @@ std::vector<MetaDataWrapper> mockAPIPutrawdata(UniServer *uniServer,
 {
 
     std::vector<MetaDataWrapper> metadataWrapperList;
-    //caculate the blockid by uuid
+    //caculate the blockid by uuid 
     std::string blockID = UUIDTOOL::generateUUID();
 
     spdlog::debug("blockID is {} on server {} ", blockID, uniServer->m_addrManager->nodeAddr);
@@ -452,7 +452,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < totalServerNum; i++)
     {
         UniServer *tempServer = new UniServer();
-        tempServer->initManager(totalServerNum, totalServerNum, NULL, false);
+        tempServer->initManager(totalServerNum, 0, totalServerNum, NULL, false);
         initDHT(tempServer);
         if (i == 0)
         {
@@ -539,6 +539,7 @@ int main(int argc, char **argv)
                     //generate raw data summary block
                     BlockSummary bs(elemSize, elemNum,
                                     DRIVERTYPE_RAWMEM,
+                                    "123456",
                                     3,
                                     indexlb,
                                     indexub);

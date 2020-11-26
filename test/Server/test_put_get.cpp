@@ -57,7 +57,7 @@ void test_put()
     size_t elemInOneDim = (99 - 10 + 1);
     size_t elemSize = sizeof(double);
     size_t elemNum = elemInOneDim * elemInOneDim;
-    std::string driverType = DRIVERTYPE_RAWMEM;
+    std::string dataType = DATATYPE_RAWMEM;
     size_t dims = 2;
     std::array<int, 3> indexlb = {{10, 10, 0}};
     std::array<int, 3> indexub = {{99, 99, 0}};
@@ -73,7 +73,8 @@ void test_put()
 
     //generate raw data summary block
     BlockSummary bs(elemSize, elemNum,
-                    driverType,
+                    dataType,
+                    "12345",
                     dims,
                     indexlb,
                     indexub);

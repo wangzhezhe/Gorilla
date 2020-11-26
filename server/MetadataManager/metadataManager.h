@@ -157,13 +157,13 @@ struct MetaDataManager
   // the performance will be degraded if we try to delete metadata of multiple objects but only use one lock
   std::unordered_map<size_t, std::unordered_map<std::string, MetaDataBlock>> m_metaDataMap;
 
-  void updateMetaData(size_t step, std::string varName, RawDataEndpoint &rde, std::string dataType = DRIVERTYPE_RAWMEM);
+  void updateMetaData(size_t step, std::string varName, RawDataEndpoint &rde, std::string dataType = DATATYPE_RAWMEM);
 
   // the bounding box of the RawDataEndpoints is adjusted
   std::vector<RawDataEndpoint> getOverlapEndpoints(size_t, std::string varName,
-                                                   BBX &querybbx, std::string dataType = DRIVERTYPE_RAWMEM);
+                                                   BBX &querybbx, std::string dataType = DATATYPE_RAWMEM);
 
-  std::vector<RawDataEndpoint> getRawEndpoints(size_t step, std::string varName, std::string dataType = DRIVERTYPE_RAWMEM);
+  std::vector<RawDataEndpoint> getRawEndpoints(size_t step, std::string varName, std::string dataType = DATATYPE_RAWMEM);
 
   bool ifCovered(std::vector<RawDataEndpoint> &existlist, BBX queryBBX);
 

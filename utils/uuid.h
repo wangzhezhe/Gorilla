@@ -21,9 +21,9 @@ inline std::string generateUUID(){
   uuid[13] = '-';
   uuid[18] = '-';
   uuid[23] = '-';
-
   uuid[14] = '4';
-
+  srand (time(NULL));
+  
   for(int i=0;i<36;i++){
     if (i != 8 && i != 13 && i != 18 && i != 14 && i != 23) {
       if (rnd <= 0x02) {

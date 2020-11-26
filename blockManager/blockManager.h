@@ -1,0 +1,128 @@
+
+
+#ifndef RAWDATAMANAGER_H
+#define RAWDATAMANAGER_H
+
+#include <commondata/metadata.h>
+
+//#include "filterManager.h"
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include <array>
+#include <cstring>
+#include <iostream>
+#include <map>
+#include <string>
+#include <thallium.hpp>
+#include <vector>
+
+namespace tl = thallium;
+
+const std::string FILEOBJ_PREXIX = "./filedataobj";
+
+// the abstraction that manage the storage for one data block
+struct DataBlockInterface
+{
+  // the data structure of block summary is same for different data block
+  // but the storage part is different
+  // the block id is also needed, for file based data block, this information is
+  // needed
+  BlOCKID m_blockid;
+  BlockSummary m_blockSummary;
+  // this might be used by the file init
+  // we only know the blockid for the file driver
+  DataBlockInterface(const char* blockid)
+  {
+    if (strlen(blockid) >= STRLEN)
+    {
+      throw std::runtime_error("long blockid");
+    }
+    strcpy(m_blockid, blockid);
+  };
+  // deprecated, the block summary is supposed to be set separately
+  // by the caller
+  /*
+  DataBlockInterface(BlockSummary& blockSummary)
+    : m_blockSummary(blockSummary)
+  {
+    strcpy(this->m_blockid, blockSummary.m_blockid);
+  };
+  */
+
+  virtual BlockSummary getData(void*& dataContainer) = 0;
+
+  // put data into coresponding data structure for specific implementation
+  virtual int putData(void* dataSourcePtr) = 0;
+
+  virtual int eraseData() = 0;
+
+  virtual BlockSummary getDataSubregion(size_t dims, std::array<int, 3> subregionlb,
+    std::array<int, 3> subregionub, void*& dataContainer) = 0;
+
+  virtual void* getrawMemPtr() = 0;
+
+  // TODO generate RawDataEndpointFromBlockSummary
+
+  ~DataBlockInterface(){};
+};
+
+class BlockManager
+{
+public:
+  // constructor, initilize the thread pool
+  // and start to check the thread pool after initialization
+  BlockManager(int rank = 0)
+  {
+    // create the dir if it is not exist
+    if (rank == 0)
+    {
+      struct stat buffer;
+      if (stat(FILEOBJ_PREXIX.c_str(), &buffer) != 0)
+      {
+        // dir not exist , create
+        if (mkdir(FILEOBJ_PREXIX.data(), 0700) != 0)
+        {
+          throw std::runtime_error("failed to create the objects dir for the block manager");
+        }
+      }
+    }
+  };
+  DataBlockInterface* getBlockHandle(std::string blockID, std::string backend);
+  // put/get data by Object
+  // parse the interface by the defination
+  int putBlock(BlockSummary& blockSummary, std::string backend, void* dataPointer);
+
+  int eraseBlock(std::string blockID, std::string backend);
+
+  // this function can be called when the blockid is accuired from the metadata
+  // service this is just get the summary information of block data
+  size_t getBlockSize(std::string blockID, std::string backend);
+  BlockSummary getBlockSummary(std::string blockID);
+  BlockSummary getBlock(std::string blockID, std::string backend, void*& dataContainer);
+  BlockSummary getBlockSubregion(std::string blockID, std::string backend, size_t dims, std::array<int, 3> subregionlb,
+    std::array<int, 3> subregionub, void*& dataContainer);
+
+  // execute the data checking service
+  // void doChecking(DataMeta &dataMeta, size_t blockID);
+  // void loadFilterManager(FilterManager*
+  // fmanager){m_filterManager=fmanager;return;}
+
+  // add thread pool here, after the data put, get a thread from the thread pool
+  // to check filtered data there is a filter List for every block
+  bool checkDataExistance(std::string blockID, std::string backend);
+
+  // void* getBlockPointer(std::string blockID);
+
+  ~BlockManager() {}
+
+  // private:
+  tl::mutex m_DataBlockMapMutex;
+  // map the block id into the interface
+  std::map<std::string, DataBlockInterface*> DataBlockMap;
+
+  // TODO add accounting information, how much resource is avalible for the
+  // current process
+};
+
+#endif

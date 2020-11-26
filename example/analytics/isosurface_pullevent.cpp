@@ -14,8 +14,8 @@
 #include <vtkXMLImageDataWriter.h>
 #include <vtkXMLDataSetWriter.h>
 
-#include "../simulation/timer.hpp"
-#include "../simulation/settings.h"
+#include "../gssimulation/timer.hpp"
+#include "../gssimulation/settings.h"
 #include "../client/unimosclient.h"
 #include "../putgetMeta/metaclient.h"
 #include "../../commondata/metadata.h"

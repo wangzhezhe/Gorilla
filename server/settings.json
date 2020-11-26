@@ -8,5 +8,5 @@
     "addTrigger": false,
     "bufferedStep":10,
     "triggerFile":"./trigger_test.json",
-    "logLevel":0
+    "logLevel":1
 }

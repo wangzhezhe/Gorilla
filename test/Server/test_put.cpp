@@ -18,7 +18,7 @@ void test_put_1d()
     //there is data screw if the input data is not in the shape of the cubic
     int elemSize = 128;
     size_t elemNum = sizeof(double);
-    std::string driverType = DRIVERTYPE_RAWMEM;
+    std::string dataType = DATATYPE_RAWMEM;
     size_t dims = 1;
     std::array<int, 3> indexlb = {{0, 0, 0}};
     std::array<int, 3> indexub = {{elemSize-1, 0, 0}};
@@ -33,7 +33,8 @@ void test_put_1d()
 
     //generate raw data summary block
     BlockSummary bs((size_t)elemSize, elemNum,
-                    driverType,
+                    dataType,
+                    "12345",
                     dims,
                     indexlb,
                     indexub);
@@ -64,7 +65,7 @@ void test_put_2d()
     size_t elemInOneDim = (99-10+1);
     size_t elemSize = elemInOneDim*elemInOneDim;
     size_t elemNum = sizeof(double);
-    std::string driverType = DRIVERTYPE_RAWMEM;
+    std::string dataType = DATATYPE_RAWMEM;
     size_t dims = 2;
     std::array<int, 3> indexlb = {{10, 10, 0}};
     std::array<int, 3> indexub = {{99, 99, 0}};
@@ -80,7 +81,8 @@ void test_put_2d()
 
     //generate raw data summary block
     BlockSummary bs(elemSize, elemNum,
-                    driverType,
+                    dataType,
+                    "12345",
                     dims,
                     indexlb,
                     indexub);
@@ -110,7 +112,7 @@ void test_put_3d()
     size_t elemInOneDim = (512);
     size_t elemSize = elemInOneDim*elemInOneDim*elemInOneDim;
     size_t elemNum = sizeof(double);
-    std::string driverType = DRIVERTYPE_RAWMEM;
+    std::string dataType = DATATYPE_RAWMEM;
     size_t dims = 3;
     std::array<int, 3> indexlb = {{0, 0, 0}};
     std::array<int, 3> indexub = {{511, 511, 511}};
@@ -125,7 +127,8 @@ void test_put_3d()
 
     //generate raw data summary block
     BlockSummary bs(elemSize, elemNum,
-                    driverType,
+                    dataType,
+                    "12345",
                     dims,
                     indexlb,
                     indexub);

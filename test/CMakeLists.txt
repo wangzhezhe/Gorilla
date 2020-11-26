@@ -1,5 +1,3 @@
-
-
 add_executable(test_dhtmanager ./DHTManager/test_dhtmanager.cpp ../utils/hilbert/hilbert.c)
 target_link_libraries(test_dhtmanager thallium dhtmanager)
 
@@ -21,11 +19,11 @@ target_link_libraries(test_matrixbasic)
 add_executable(test_matrixassemble ./Util/test_matrixassemble.cpp)
 target_link_libraries(test_matrixassemble)
 
-add_executable(test_rawdatamanager ./RawData/test_rawdatamanager.cpp)
-target_link_libraries(test_rawdatamanager thallium rawdatamanager)
+add_executable(test_membackend ./BlockData/test_membackend.cpp)
+target_link_libraries(test_membackend thallium blockManager)
 
-add_executable(test_vtkdataset ./RawData/test_vtkdataset.cpp)
-target_link_libraries(test_vtkdataset thallium rawdatamanager ${VTK_LIBRARIES})
+add_executable(test_filebackend ./BlockData/test_filebackend.cpp)
+target_link_libraries(test_filebackend thallium blockManager)
 
 add_executable(test_funcraw_vtk ./FuncManager/test_funcraw_vtk.cpp)
 target_link_libraries(test_funcraw_vtk PRIVATE thallium adios2::adios2 rawexec ${VTK_LIBRARIES})
@@ -91,7 +89,11 @@ target_link_libraries(test_client_watcher thallium unimos_client)
 add_executable(adiosthread ./thalimtest/adiosthread.cpp)
 target_link_libraries(adiosthread adios2::adios2)
 
-add_subdirectory(mock)
+add_executable(test_scheduler ./Scheduler/test_scheduler.cpp)
+target_link_libraries(test_scheduler schedulemanager thallium)
+
+# deprecated
+# add_subdirectory(mock)
 
 add_test( NAME test_dhtmanager COMMAND test_dhtmanager)
 
@@ -99,7 +101,9 @@ add_test( NAME test_metadatamanager COMMAND test_metadatamanager)
 
 add_test( NAME test_bbx COMMAND test_bbx)
 
-add_test( NAME test_rawdatamanager COMMAND test_rawdatamanager)
+add_test( NAME test_membackend COMMAND test_membackend)
+
+add_test( NAME test_filebackend COMMAND test_filebackend)
 
 add_test( NAME test_funcmeta COMMAND test_funcmeta)
 

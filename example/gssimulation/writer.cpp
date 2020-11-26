@@ -1,5 +1,6 @@
 #include "writer.h"
 #include <iostream>
+#include <utils/uuid.h>
 
 #include <vtkImageData.h>
 #include <vtkImageImport.h>
@@ -49,7 +50,7 @@ void Writer::writeImageData(const GrayScott &sim, std::string fileName)
 
 
 
-void Writer::write(const GrayScott &sim, size_t &step, std::string recordInfo)
+void Writer::write(const GrayScott &sim, size_t step, int rank, std::string recordInfo)
 {
     std::vector<double> u = sim.u_noghost();
 
@@ -60,15 +61,18 @@ void Writer::write(const GrayScott &sim, size_t &step, std::string recordInfo)
 
     size_t elemSize = sizeof(double);
     size_t elemNum = sim.size_x*sim.size_y*sim.size_z;
+    int blockindex = 0;
+    std::string blockid = VarNameU+"_"+std::to_string(step)+"_"+std::to_string(rank)+"_"+std::to_string(blockindex);
     
     //generate raw data summary block
     BlockSummary bs(elemSize, elemNum,
-                    DRIVERTYPE_RAWMEM,
+                    DATATYPE_RAWMEM,
+                    blockid,
                     3,
                     indexlb,
                     indexub,
                     recordInfo);
-    
+     
     int status = m_uniclient->putrawdata(step, VarNameU, bs, u.data());
 
     if(status!=0){

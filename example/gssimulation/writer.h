@@ -45,7 +45,7 @@ public:
 
     void writeImageData(const GrayScott &sim, std::string fileName);
 
-    void write(const GrayScott &sim, size_t &step, std::string recordInfo = "");
+    void write(const GrayScott &sim, size_t step, int rank, std::string recordInfo = "");
 
     UniClient *m_uniclient = NULL;
 

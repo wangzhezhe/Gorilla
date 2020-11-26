@@ -275,7 +275,7 @@ int main(int argc, char **argv)
         if (ifStage)
         {
             //write to the stage server
-            dataWriter.write(sim, step);
+            dataWriter.write(sim, step, rank);
         }
 
         //}

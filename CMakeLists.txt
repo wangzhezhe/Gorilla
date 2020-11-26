@@ -67,6 +67,9 @@ ${gorilla_SOURCE_DIR}/utils/hilbert/hilbert.c)
 add_library(metadatamanager 
 ${gorilla_SOURCE_DIR}/server/MetadataManager/metadataManager.cpp)
 
+add_library(schedulemanager 
+${gorilla_SOURCE_DIR}/server/ScheduleManager/scheduleManager.cpp)
+
 find_package(VTK COMPONENTS
     FiltersCore
     IOImage
@@ -75,12 +78,12 @@ find_package(VTK COMPONENTS
     FiltersSources
 )
 
-add_library(rawdatamanager 
-${gorilla_SOURCE_DIR}/server/RawdataManager/blockManager.cpp
-${gorilla_SOURCE_DIR}/server/RawdataManager/rawmemobj/rawmemobj.cpp
-${gorilla_SOURCE_DIR}/server/RawdataManager/vtkobj/vtkobj.cpp
+add_library(blockManager 
+${gorilla_SOURCE_DIR}/blockManager/blockManager.cpp
+${gorilla_SOURCE_DIR}/blockManager/rawmemobj/rawmemobj.cpp
+${gorilla_SOURCE_DIR}/blockManager/fileobj/fileobj.cpp
 )
-target_link_libraries(rawdatamanager abt-io ${VTK_LIBRARIES})
+target_link_libraries(blockManager abt-io ${VTK_LIBRARIES})
 
 
 add_library(metaclient ./putgetMeta/metaclient.cpp)
@@ -90,6 +93,8 @@ add_library (unimos_client
 ${gorilla_SOURCE_DIR}/client/unimosclient.cpp
 ${gorilla_SOURCE_DIR}/client/watcher.cpp
 )
+target_link_libraries(unimos_client blockManager)
+
 
 # there is reference between each other, so it is better to build them together
 add_library(metatrigger 
@@ -124,7 +129,7 @@ thallium
  adios2::adios2
  MPI::MPI_C 
  unimos_client 
- dhtmanager rawdatamanager metadatamanager 
+ dhtmanager blockManager metadatamanager schedulemanager
  metatrigger 
  rawexec
  ${VTK_LIBRARIES}
@@ -137,8 +142,9 @@ else()
  MPI::MPI_C 
  unimos_client 
  dhtmanager 
- rawdatamanager 
- metadatamanager 
+ blockManager 
+ metadatamanage
+ schedulemanager 
  rawexec
  metatrigger 
  metaclient

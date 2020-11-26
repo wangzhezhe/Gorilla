@@ -1,14 +1,14 @@
 #ifndef FUNCTIONRAW_H
 #define FUNCTIONRAW_H
 
-#include "../../commondata/metadata.h"
+#include <commondata/metadata.h>
 #include "../statefulConfig.h"
 //#include "../unimosserver.hpp"
 
 #include <thallium.hpp>
 #include <map>
 #include <vector>
-#include "../RawdataManager/blockManager.h"
+#include <blockManager/blockManager.h>
 
 namespace tl = thallium;
 

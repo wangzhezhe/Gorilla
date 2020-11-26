@@ -1,7 +1,7 @@
 #ifndef FUNCTIONMETA_H
 #define FUNCTIONMETA_H
 
-#include "../../commondata/metadata.h"
+#include <commondata/metadata.h>
 
 #include "../statefulConfig.h"
 //#include "../unimosserver.hpp"

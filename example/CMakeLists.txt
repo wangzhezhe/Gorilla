@@ -1,24 +1,24 @@
 add_executable(gray-scott-inline
-  ./simulation/main_inline.cpp
-  ./simulation/gray-scott.cpp
-  ./simulation/writer.cpp
-  ./simulation/settings.cpp
+  ./gssimulation/main_inline.cpp
+  ./gssimulation/gray-scott.cpp
+  ./gssimulation/writer.cpp
+  ./gssimulation/settings.cpp
 )
 
 add_executable(gray-scott-stg
-  ./simulation/main_stg.cpp
-  ./simulation/gray-scott.cpp
-  ./simulation/writer.cpp
-  ./simulation/settings.cpp
+  ./gssimulation/main_stg.cpp
+  ./gssimulation/gray-scott.cpp
+  ./gssimulation/writer.cpp
+  ./gssimulation/settings.cpp
 )
 
 add_executable(isosurface
    ./analytics/isosurface_pulldata.cpp
-   ./simulation/settings.cpp)
+   ./gssimulation/settings.cpp)
 
 add_executable(isosurface_event
    ./analytics/isosurface_pullevent.cpp
-   ./simulation/settings.cpp)
+   ./gssimulation/settings.cpp)
 
 if(USE_GNI)
   target_link_libraries(gray-scott-inline ${DRC_LIBRARIES} MPI::MPI_C ${VTK_LIBRARIES}
@@ -56,3 +56,6 @@ add_executable(sim-inline-adios
 )
 
 target_link_libraries(sim-inline-adios adios2::adios2 ${VTK_LIBRARIES} MPI::MPI_C)
+
+
+# mandelbulb simulation

@@ -3,6 +3,7 @@
 
 #include "../utils/matrixtool.h"
 #include "../commondata/metadata.h"
+#include <blockManager/blockManager.h>
 
 #include <vector>
 #include <iostream>
@@ -14,6 +15,8 @@
 #include <thallium.hpp>
 
 namespace tl = thallium;
+
+
 
 struct UniClient
 {
@@ -68,12 +71,14 @@ struct UniClient
     tl::endpoint m_masterEndpoint;
     std::string m_associatedDataServer = "";
     tl::engine *m_clientEnginePtr = NULL;
+    BlockManager b_manager;
 
     size_t m_bulkSize = 0;
     void *m_dataContainer = nullptr;
     std::vector<std::pair<void *, std::size_t>> m_segments;
     tl::bulk m_dataBulk;
-
+    
+    //this value is used for round roubin
     int m_position = 0;
     int m_totalServerNum = 0;
 

@@ -32,7 +32,7 @@ void mockwatcher(int p_num)
     }
 }
 
-main(int argc, char *argv[])
+main(int argc, char **argv)
 {
     tl::abt scope;
     int p_rank;

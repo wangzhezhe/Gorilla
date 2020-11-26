@@ -115,6 +115,8 @@ MetaDataManager::getRawEndpoints(size_t step, std::string varName, std::string d
 
 // need to be locked when the function is called
 // this is only for the raw
+// if there is overlap, return the rawdata endpoint
+// the bbx in raw data endpoint/descriptor is the overlapped region
 std::vector<RawDataEndpoint>
 MetaDataManager::getOverlapEndpoints(size_t step, std::string varName,
                                      BBX &querybbx, std::string dataType)
@@ -195,6 +197,7 @@ MetaDataManager::getOverlapEndpoints(size_t step, std::string varName,
 }
 
 // refer to https://stackoverflow.com/questions/4397226/algorithm-required-to-determine-if-a-rectangle-is-completely-covered-by-another
+// check if the set of small rectangles can fill out the large rectangle
 bool MetaDataManager::ifCovered(std::vector<RawDataEndpoint> &existlist, BBX queryBBX)
 {
 

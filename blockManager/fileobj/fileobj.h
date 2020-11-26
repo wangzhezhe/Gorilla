@@ -1,18 +1,18 @@
+#ifndef FILEOBJ_H
+#define FILEOBJ_H
 
-
-#ifndef RAWMEMOBJ_H
-#define RAWMEMOBJ_H
-
-#include "../blockManager.h"
+#include <blockManager/blockManager.h>
 #include <iostream>
 
-struct RawMemObj : public DataBlockInterface
+
+//this can be the wrapper for the file based obj
+//such as the burst buffer or the parallel file system
+
+struct FileObj : public DataBlockInterface
 {
 
-  RawMemObj(BlockSummary &blockSummary) : DataBlockInterface(blockSummary){
-                                              //std::cout << "RawMemObj is initialised" << std::endl;
-                                          };
-
+  FileObj(const char* blockid) : DataBlockInterface(blockid){};
+  
   BlockSummary getData(void *&dataContainer);
 
   // put data into coresponding data structure for specific implementation
@@ -27,12 +27,13 @@ struct RawMemObj : public DataBlockInterface
       void *&dataContainer);
 
   void* getrawMemPtr(){
-    return this->m_rawMemPtr;
+    //since there is not raw mem ptr for file based IO
+    return NULL;
   };
 
   void *m_rawMemPtr = NULL;
 
-  ~RawMemObj()
+  ~FileObj()
   {
     if (m_rawMemPtr != NULL)
     {
