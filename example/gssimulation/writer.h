@@ -10,6 +10,7 @@
 #include "../../commondata/metadata.h"
 
 namespace tl = thallium;
+using namespace GORILLA;
 
 class Writer
 {

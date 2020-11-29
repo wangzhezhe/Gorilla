@@ -16,7 +16,8 @@
 
 namespace tl = thallium;
 
-
+namespace GORILLA
+{
 
 struct UniClient
 {
@@ -114,7 +115,7 @@ struct UniClient
     int putrawdata(size_t step, std::string varName, BlockSummary &dataSummary, void *dataContainer);
 
     //put the meta data to specific server addr
-    int putmetadata(std::string serverAddr, size_t step, std::string varName, RawDataEndpoint &rde);
+    int putmetadata(std::string serverAddr, size_t step, std::string varName, BlockDescriptor &rde);
 
     //get the address of the master server according
     std::string loadMasterAddr(std::string masterConfigFile);
@@ -123,7 +124,7 @@ struct UniClient
     //this metnod is unnecessary if the server end execute the data get operation
     std::vector<std::string> getmetaServerList(size_t dims, std::array<int, 3> indexlb, std::array<int, 3> indexub);
 
-    std::vector<RawDataEndpoint> getrawDataEndpointList(std::string serverAddr,
+    std::vector<BlockDescriptor> getblockDescriptorList(std::string serverAddr,
                                                         size_t step,
                                                         std::string varName,
                                                         size_t dims,
@@ -185,4 +186,5 @@ struct UniClient
     void deleteMetaStep(size_t step);
 };
 
+}
 #endif

@@ -3,6 +3,10 @@
 #include "watcher.hpp"
 #include "../commondata/metadata.h"
 #include <iostream>
+
+namespace GORILLA
+{
+
 //TODO, reduce the infromaion here, this is recieved by several partition
 //consider how to reduce the notification
 //send a function pointer here and call this function when there is notification information
@@ -25,4 +29,6 @@ std::string Watcher::startWatch(tl::engine *enginePtr){
     std::cout << "start watcher for addr: " << rawAddr << std::endl;
     margo_wait_for_finalize(enginePtr->get_margo_instance());
     return rawAddr;
+}
+
 }

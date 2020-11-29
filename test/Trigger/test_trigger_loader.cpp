@@ -27,8 +27,9 @@ const std::string serverCred = "Gorila_cred_conf";
 #endif
 
 namespace tl = thallium;
+using namespace GORILLA;
 
-DynamicTriggerInfo parseTrigger(nlohmann::json &j)
+ GORILLA::DynamicTriggerInfo parseTrigger(nlohmann::json &j)
 {
     std::string funcNameCheck = j.at("funcName_check");
     std::string funcNameCompare = j.at("funcName_compare");
@@ -42,7 +43,7 @@ DynamicTriggerInfo parseTrigger(nlohmann::json &j)
     j.at("parameters_compare").get_to(ParametersCompare);
     j.at("parameters_action").get_to(ParametersAction);
 
-    DynamicTriggerInfo tgInfo(funcNameCheck, ParametersCheck,
+     GORILLA::DynamicTriggerInfo tgInfo(funcNameCheck, ParametersCheck,
                               funcNameCompare, ParametersCompare,
                               funcNameAction, ParametersAction);
 
@@ -97,7 +98,7 @@ int main(int argc, char **argv)
 
     //register the trigger to the server, the init trigger should be registered automatically
 
-    UniClient *m_uniclient = new UniClient(&globalclientEngine, "unimos_server.conf", 0);
+     GORILLA::UniClient *m_uniclient = new UniClient(&globalclientEngine, "unimos_server.conf", 0);
     m_uniclient->getAllServerAddr();
 
     std::string fileName(argv[2]);
@@ -114,7 +115,7 @@ int main(int argc, char **argv)
         //std::cout << *it << '\n';
         i++;
         //transfer the content into the structure of the trigger
-        DynamicTriggerInfo dti = parseTrigger(*it);
+         GORILLA::DynamicTriggerInfo dti = parseTrigger(*it);
 
         std::string triggerName = (*it).at("name_trigger");
         std::vector<int> lb;

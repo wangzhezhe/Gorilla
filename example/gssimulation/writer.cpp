@@ -66,7 +66,7 @@ void Writer::write(const GrayScott &sim, size_t step, int rank, std::string reco
     
     //generate raw data summary block
     BlockSummary bs(elemSize, elemNum,
-                    DATATYPE_RAWMEM,
+                    DATATYPE_CARGRID,
                     blockid,
                     3,
                     indexlb,

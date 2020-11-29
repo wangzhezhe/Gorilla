@@ -2,6 +2,7 @@
 
 #include "../server/DHTManager/dhtmanager.h"
 #include <vector>
+using namespace GORILLA;
 
 void test1d()
 {

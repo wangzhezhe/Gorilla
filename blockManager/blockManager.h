@@ -18,6 +18,8 @@
 #include <vector>
 
 namespace tl = thallium;
+namespace GORILLA
+{
 
 const std::string FILEOBJ_PREXIX = "./filedataobj";
 
@@ -34,7 +36,7 @@ struct DataBlockInterface
   // we only know the blockid for the file driver
   DataBlockInterface(const char* blockid)
   {
-    if (strlen(blockid) >= STRLEN)
+    if (strlen(blockid) >= STRLENLONG)
     {
       throw std::runtime_error("long blockid");
     }
@@ -62,7 +64,7 @@ struct DataBlockInterface
 
   virtual void* getrawMemPtr() = 0;
 
-  // TODO generate RawDataEndpointFromBlockSummary
+  // TODO generate BlockDescriptorFromBlockSummary
 
   ~DataBlockInterface(){};
 };
@@ -88,19 +90,19 @@ public:
       }
     }
   };
-  DataBlockInterface* getBlockHandle(std::string blockID, std::string backend);
+  DataBlockInterface* getBlockHandle(std::string blockID, int backend);
   // put/get data by Object
   // parse the interface by the defination
-  int putBlock(BlockSummary& blockSummary, std::string backend, void* dataPointer);
+  int putBlock(BlockSummary& blockSummary, int backend, void* dataPointer);
 
-  int eraseBlock(std::string blockID, std::string backend);
+  int eraseBlock(std::string blockID, int backend);
 
   // this function can be called when the blockid is accuired from the metadata
   // service this is just get the summary information of block data
-  size_t getBlockSize(std::string blockID, std::string backend);
+  size_t getBlockSize(std::string blockID, int backend);
   BlockSummary getBlockSummary(std::string blockID);
-  BlockSummary getBlock(std::string blockID, std::string backend, void*& dataContainer);
-  BlockSummary getBlockSubregion(std::string blockID, std::string backend, size_t dims, std::array<int, 3> subregionlb,
+  BlockSummary getBlock(std::string blockID, int backend, void*& dataContainer);
+  BlockSummary getBlockSubregion(std::string blockID, int backend, size_t dims, std::array<int, 3> subregionlb,
     std::array<int, 3> subregionub, void*& dataContainer);
 
   // execute the data checking service
@@ -110,7 +112,7 @@ public:
 
   // add thread pool here, after the data put, get a thread from the thread pool
   // to check filtered data there is a filter List for every block
-  bool checkDataExistance(std::string blockID, std::string backend);
+  bool checkDataExistance(std::string blockID, int backend);
 
   // void* getBlockPointer(std::string blockID);
 
@@ -124,5 +126,5 @@ public:
   // TODO add accounting information, how much resource is avalible for the
   // current process
 };
-
+}
 #endif

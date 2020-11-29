@@ -7,6 +7,7 @@
 #include "../../utils/matrixtool.h"
 
 namespace tl = thallium;
+using namespace GORILLA;
 
 //use the two dimentions in the setting files for testing!!!!
 
@@ -57,7 +58,7 @@ void test_put()
     size_t elemInOneDim = (99 - 10 + 1);
     size_t elemSize = sizeof(double);
     size_t elemNum = elemInOneDim * elemInOneDim;
-    std::string dataType = DATATYPE_RAWMEM;
+    std::string dataType = DATATYPE_CARGRID;
     size_t dims = 2;
     std::array<int, 3> indexlb = {{10, 10, 0}};
     std::array<int, 3> indexub = {{99, 99, 0}};

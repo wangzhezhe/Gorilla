@@ -6,10 +6,13 @@
 #include "rawmemobj/rawmemobj.h"
 #include <iostream>
 
+namespace GORILLA
+{
+
 // for the rawfile, the client such as analytics maybe call getblock without
 // call the put firstly, therefore, it also needs to cache the id
 // return instance if it is not null
-DataBlockInterface* BlockManager::getBlockHandle(std::string blockID, std::string backend)
+DataBlockInterface* BlockManager::getBlockHandle(std::string blockID, int backend)
 {
   if (blockID.compare("") == 0)
   {
@@ -29,7 +32,7 @@ DataBlockInterface* BlockManager::getBlockHandle(std::string blockID, std::strin
     else
     {
       // this is the new block id
-      if (backend.compare(BACKENDMEM) == 0)
+      if (backend == BACKEND::MEM)
       {
         DataBlockInterface* dbi = new RawMemObj(blockID.data());
         // assign block id to the new allocated handle
@@ -37,7 +40,7 @@ DataBlockInterface* BlockManager::getBlockHandle(std::string blockID, std::strin
         this->DataBlockMap[blockID] = dbi;
         handle = dbi;
       }
-      else if (backend.compare(BACKENDFILE) == 0)
+      else if (backend == BACKEND::FILE)
       {
         DataBlockInterface* dbi = new FileObj(blockID.data());
         // assign block id to the new allocated handle
@@ -54,7 +57,7 @@ DataBlockInterface* BlockManager::getBlockHandle(std::string blockID, std::strin
   return handle;
 }
 
-int BlockManager::putBlock(BlockSummary& blockSummary, std::string backend, void* dataPointer)
+int BlockManager::putBlock(BlockSummary& blockSummary, int backend, void* dataPointer)
 {
   DataBlockInterface* handle = getBlockHandle(std::string(blockSummary.m_blockid), backend);
   // assign actual value to block summay, this information will be used for data put operation
@@ -83,7 +86,7 @@ BlockSummary BlockManager::getBlockSummary(std::string blockID)
 }
 
 // this might be called with without put operation firstly
-BlockSummary BlockManager::getBlock(std::string blockID, std::string backend, void*& dataContainer)
+BlockSummary BlockManager::getBlock(std::string blockID, int backend, void*& dataContainer)
 {
   DataBlockInterface* handle = getBlockHandle(blockID, backend);
   BlockSummary bs = handle->getData(dataContainer);
@@ -92,7 +95,7 @@ BlockSummary BlockManager::getBlock(std::string blockID, std::string backend, vo
 
 // this function is only useful for the image data
 // since we reshape the returned data
-BlockSummary BlockManager::getBlockSubregion(std::string blockID, std::string backend, size_t dims,
+BlockSummary BlockManager::getBlockSubregion(std::string blockID, int backend, size_t dims,
   std::array<int, 3> subregionlb, std::array<int, 3> subregionub, void*& dataContainer)
 {
 
@@ -102,9 +105,9 @@ BlockSummary BlockManager::getBlockSubregion(std::string blockID, std::string ba
   return bs;
 }
 
-size_t BlockManager::getBlockSize(std::string blockID, std::string backend)
+size_t BlockManager::getBlockSize(std::string blockID, int backend)
 {
-  if (backend == BACKENDFILE)
+  if (backend == BACKEND::FILE)
   {
     throw std::runtime_error("not support getBlockSize for file backend currently");
   }
@@ -118,9 +121,9 @@ size_t BlockManager::getBlockSize(std::string blockID, std::string backend)
   return bs.m_elemNum * bs.m_elemSize;
 }
 
-bool BlockManager::checkDataExistance(std::string blockID, std::string backend)
+bool BlockManager::checkDataExistance(std::string blockID, int backend)
 {
-  if (backend == BACKENDFILE)
+  if (backend == BACKEND::FILE)
   {
     throw std::runtime_error("not support checkDataExistance for file backend currently");
   }
@@ -134,7 +137,7 @@ bool BlockManager::checkDataExistance(std::string blockID, std::string backend)
   }
 }
 
-int BlockManager::eraseBlock(std::string blockID, std::string backend)
+int BlockManager::eraseBlock(std::string blockID, int backend)
 {
   DataBlockInterface* handle = getBlockHandle(blockID, backend);
   handle->eraseData();
@@ -142,4 +145,6 @@ int BlockManager::eraseBlock(std::string blockID, std::string backend)
   DataBlockMap.erase(blockID);
   this->m_DataBlockMapMutex.unlock();
   return 0;
+}
+
 }

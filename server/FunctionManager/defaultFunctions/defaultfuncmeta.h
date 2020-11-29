@@ -6,10 +6,11 @@
 #include "../../../commondata/metadata.h"
 #include "../../../client/unimosclient.h"
 
-
+namespace GORILLA
+{
 struct FunctionManagerMeta;
 
-std::string defaultCheckGetStep(size_t step, std::string varName, RawDataEndpoint &rde);
+std::string defaultCheckGetStep(size_t step, std::string varName, BlockDescriptor &rde);
 
 bool defaultComparisonStep(std::string checkResults, std::vector<std::string> parameters);
 
@@ -18,7 +19,7 @@ bool defaultComparisonStep(std::string checkResults, std::vector<std::string> pa
 void defaultActionSartDt(DynamicTriggerManager*dtm, 
 size_t step, 
 std::string varName, 
-RawDataEndpoint& rde,
+BlockDescriptor& rde,
 std::vector<std::string> parameters);
 */
 
@@ -26,12 +27,12 @@ void defaultActionSartDt(
 FunctionManagerMeta*fmm,
 size_t step, 
 std::string varName, 
-RawDataEndpoint& rde,
+BlockDescriptor& rde,
 std::vector<std::string> parameters);
 
-//std::string defaultRemoteCheck(size_t step, std::string varName, RawDataEndpoint& rde);
+//std::string defaultRemoteCheck(size_t step, std::string varName, BlockDescriptor& rde);
 
-std::string defaultCheck(size_t step, std::string varName, RawDataEndpoint &rde, std::vector<std::string> parameters);
+std::string defaultCheck(size_t step, std::string varName, BlockDescriptor &rde, std::vector<std::string> parameters);
 
 bool defaultComparison(std::string checkResults, 
 std::vector<std::string> parameters);
@@ -42,7 +43,7 @@ size_t step,
 std::string varName,
 std::string triggerMaster,
 UniClient* uniclient,
-RawDataEndpoint& rde,
+BlockDescriptor& rde,
 std::vector<std::string> parameters);
 
 void defaultNotifyAction(
@@ -51,7 +52,7 @@ size_t step,
 std::string varName,
 std::string triggerMaster,
 UniClient *uniclient, 
-RawDataEndpoint &rde, 
+BlockDescriptor &rde, 
 std::vector<std::string> parameters);
 
 void defaultPutEvent(
@@ -60,11 +61,11 @@ size_t step,
 std::string varName,
 std::string triggerMaster,
 UniClient *uniclient, 
-RawDataEndpoint &rde, 
+BlockDescriptor &rde, 
 std::vector<std::string> parameters);
 
 
-std::string InsituExpCheck(size_t step, std::string varName, RawDataEndpoint &rde, std::vector<std::string> parameters);
+std::string InsituExpCheck(size_t step, std::string varName, BlockDescriptor &rde, std::vector<std::string> parameters);
 
 bool InsituExpCompare(std::string checkResults, 
 std::vector<std::string> parameters);
@@ -75,9 +76,9 @@ size_t step,
 std::string varName,
 std::string triggerMaster,
 UniClient *uniclient, 
-RawDataEndpoint &rde, 
+BlockDescriptor &rde, 
 std::vector<std::string> parameters);
 
 
-
+}
 #endif

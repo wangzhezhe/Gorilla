@@ -1,9 +1,12 @@
 #include "metadataManager.h"
 #include <queue>
 
+namespace GORILLA
+{
 std::string rawDataVersrion("rawData");
 
-int MetaDataManager::getMetaDataStatus(size_t step, std::string varName, std::string dataType, std::string rawDataID)
+int MetaDataManager::getMetaDataStatus(
+  size_t step, std::string varName, std::string dataType, std::string rawDataID)
 {
   this->m_metaDataMapMutex.lock();
   int stepCount = this->m_metaDataMap.count(step);
@@ -31,7 +34,8 @@ int MetaDataManager::getMetaDataStatus(size_t step, std::string varName, std::st
   return status;
 }
 
-void MetaDataManager::updateMetaDataStatus(size_t step, std::string varName, std::string dataType, std::string rawDataID, MetaStatus newstatus)
+void MetaDataManager::updateMetaDataStatus(size_t step, std::string varName, std::string dataType,
+  std::string rawDataID, MetaStatus newstatus)
 {
   this->m_metaDataMapMutex.lock();
   int stepCount = this->m_metaDataMap.count(step);
@@ -58,8 +62,7 @@ void MetaDataManager::updateMetaDataStatus(size_t step, std::string varName, std
   this->m_metaDataMapMutex.unlock();
 }
 
-void MetaDataManager::updateMetaData(size_t step, std::string varName,
-                                     RawDataEndpoint &rde, std::string dataType)
+void MetaDataManager::updateMetaData(size_t step, std::string varName, BlockDescriptor& rde)
 {
   this->m_metaDataMapMutex.lock();
   if (this->m_metaDataMap.find(step) == this->m_metaDataMap.end())
@@ -69,14 +72,16 @@ void MetaDataManager::updateMetaData(size_t step, std::string varName,
     m_metaDataMap[step] = innermap;
   }
 
+  std::string dataType = rde.m_dataType;
+
   m_metaDataMap[step][varName].insertRDEP(dataType, rde);
   this->m_metaDataMapMutex.unlock();
 }
 
-std::vector<RawDataEndpoint>
-MetaDataManager::getRawEndpoints(size_t step, std::string varName, std::string dataType)
+std::vector<BlockDescriptor> MetaDataManager::getRawEndpoints(
+  size_t step, std::string varName, std::string dataType)
 {
-  std::vector<RawDataEndpoint> endpointList;
+  std::vector<BlockDescriptor> endpointList;
 
   m_metaDataMapMutex.lock();
   int tempSize = this->m_metaDataMap.count(step);
@@ -96,7 +101,7 @@ MetaDataManager::getRawEndpoints(size_t step, std::string varName, std::string d
     return endpointList;
   }
 
-  //check the exist of the dataType
+  // check the exist of the dataType
   m_metaDataMapMutex.lock();
   bool exist = m_metaDataMap[step][varName].dataTypeExist(dataType);
   m_metaDataMapMutex.unlock();
@@ -117,12 +122,11 @@ MetaDataManager::getRawEndpoints(size_t step, std::string varName, std::string d
 // this is only for the raw
 // if there is overlap, return the rawdata endpoint
 // the bbx in raw data endpoint/descriptor is the overlapped region
-std::vector<RawDataEndpoint>
-MetaDataManager::getOverlapEndpoints(size_t step, std::string varName,
-                                     BBX &querybbx, std::string dataType)
+std::vector<BlockDescriptor> MetaDataManager::getOverlapEndpoints(
+  size_t step, std::string varName, BBX& querybbx, std::string dataType)
 {
   // range the vector
-  std::vector<RawDataEndpoint> endpointList;
+  std::vector<BlockDescriptor> endpointList;
 
   m_metaDataMapMutex.lock();
   int tempSize = this->m_metaDataMap.count(step);
@@ -142,7 +146,7 @@ MetaDataManager::getOverlapEndpoints(size_t step, std::string varName,
     return endpointList;
   }
 
-  //check the exist of the dataType
+  // check the exist of the dataType
   m_metaDataMapMutex.lock();
   bool exist = m_metaDataMap[step][varName].dataTypeExist(dataType);
   m_metaDataMapMutex.unlock();
@@ -157,21 +161,23 @@ MetaDataManager::getOverlapEndpoints(size_t step, std::string varName,
   int size = m_metaDataMap[step][varName].m_metadataBlock[dataType].size();
   m_metaDataMapMutex.unlock();
 
-  //TODO, if the registered metadata did not cover all the bounding box, return empty
-  //store for key point
+  // TODO, if the registered metadata did not cover all the bounding box, return empty
+  // store for key point
   // go through vector of raw data pointer to check the overlapping part
 
   for (int i = 0; i < size; i++)
   {
     m_metaDataMapMutex.lock();
-    std::array<int, 3> m_indexlb = m_metaDataMap[step][varName].m_metadataBlock[dataType][i].m_indexlb;
-    std::array<int, 3> m_indexub = m_metaDataMap[step][varName].m_metadataBlock[dataType][i].m_indexub;
+    std::array<int, 3> m_indexlb =
+      m_metaDataMap[step][varName].m_metadataBlock[dataType][i].m_indexlb;
+    std::array<int, 3> m_indexub =
+      m_metaDataMap[step][varName].m_metadataBlock[dataType][i].m_indexub;
     size_t dims = m_metaDataMap[step][varName].m_metadataBlock[dataType][i].m_dims;
     m_metaDataMapMutex.unlock();
 
     BBX bbx(dims, m_indexlb, m_indexub);
 
-    BBX *overlapbbx = getOverlapBBX(bbx, querybbx);
+    BBX* overlapbbx = getOverlapBBX(bbx, querybbx);
 
     if (overlapbbx != NULL)
     {
@@ -180,15 +186,17 @@ MetaDataManager::getOverlapEndpoints(size_t step, std::string varName,
       std::array<int, 3> indexub = overlapbbx->getIndexub();
 
       m_metaDataMapMutex.lock();
-      std::string rawDataServerAddr = m_metaDataMap[step][varName].m_metadataBlock[dataType][i].m_rawDataServerAddr;
+      std::string rawDataServerAddr =
+        m_metaDataMap[step][varName].m_metadataBlock[dataType][i].m_rawDataServerAddr;
       std::string rawDataID = m_metaDataMap[step][varName].m_metadataBlock[dataType][i].m_rawDataID;
+      int backend = m_metaDataMap[step][varName].m_metadataBlock[dataType][i].m_backend;
       m_metaDataMapMutex.unlock();
-
-      RawDataEndpoint rde(rawDataServerAddr,
-                          rawDataID,
-                          dims, indexlb,
-                          indexub);
-      endpointList.push_back(rde);
+      
+      //extract block descriptor
+      BlockDescriptor bd(rawDataServerAddr, rawDataID, dataType, dims, indexlb, indexub);
+      //TODO put backend in the constructor
+      bd.m_backend = backend;
+      endpointList.push_back(bd);
       delete overlapbbx;
     }
   }
@@ -196,12 +204,13 @@ MetaDataManager::getOverlapEndpoints(size_t step, std::string varName,
   return endpointList;
 }
 
-// refer to https://stackoverflow.com/questions/4397226/algorithm-required-to-determine-if-a-rectangle-is-completely-covered-by-another
+// refer to
+// https://stackoverflow.com/questions/4397226/algorithm-required-to-determine-if-a-rectangle-is-completely-covered-by-another
 // check if the set of small rectangles can fill out the large rectangle
-bool MetaDataManager::ifCovered(std::vector<RawDataEndpoint> &existlist, BBX queryBBX)
+bool MetaDataManager::ifCovered(std::vector<BlockDescriptor>& existlist, BBX queryBBX)
 {
 
-  //query lb should match with the dimes in rdep
+  // query lb should match with the dimes in rdep
   std::queue<BBX> bbxqueue;
   bbxqueue.push(queryBBX);
   int curStatus = 0;
@@ -210,49 +219,49 @@ bool MetaDataManager::ifCovered(std::vector<RawDataEndpoint> &existlist, BBX que
     BBX existBBX(rdep.m_dims, rdep.m_indexlb, rdep.m_indexub);
     while (!bbxqueue.empty())
     {
-      //the status is at the new layer
+      // the status is at the new layer
       if (bbxqueue.front().m_status != curStatus)
       {
         break;
       }
 
       BBX curBBX = bbxqueue.front();
-      //curBBX.printBBXinfo();
-      BBX *overlap = getOverlapBBX(curBBX, existBBX);
+      // curBBX.printBBXinfo();
+      BBX* overlap = getOverlapBBX(curBBX, existBBX);
 
       if (overlap == NULL)
       {
-        //not overlap
-        //std::cout << "debug none overlap" << std::endl;
+        // not overlap
+        // std::cout << "debug none overlap" << std::endl;
         curBBX.m_status++;
         bbxqueue.push(curBBX);
         bbxqueue.pop();
       }
       else if (overlap->equal(curBBX))
       {
-        //curBBX is covered by existing domain
-        //pop current elem direactly
-        //std::cout << "debug delete bbx" << std::endl;
-        //curBBX.printBBXinfo();
+        // curBBX is covered by existing domain
+        // pop current elem direactly
+        // std::cout << "debug delete bbx" << std::endl;
+        // curBBX.printBBXinfo();
         bbxqueue.pop();
       }
       else
       {
-        //there is overlap between two bbx
-        //need to split the curent bbx
-        //std::cout << "debug split bbx" << std::endl;
+        // there is overlap between two bbx
+        // need to split the curent bbx
+        // std::cout << "debug split bbx" << std::endl;
         std::vector<BBX> bbxlist = splitReduceBBX(curBBX, *overlap);
         for (auto v : bbxlist)
         {
-          //v.printBBXinfo();
+          // v.printBBXinfo();
           v.m_status = curBBX.m_status + 1;
           bbxqueue.push(v);
         }
         bbxqueue.pop();
-        //std::cout << "current queue size " << bbxqueue.size() << std::endl;
+        // std::cout << "current queue size " << bbxqueue.size() << std::endl;
       }
     }
-    //increase for every outter for every existing bbx
+    // increase for every outter for every existing bbx
     curStatus++;
   }
   if (bbxqueue.empty())
@@ -263,4 +272,6 @@ bool MetaDataManager::ifCovered(std::vector<RawDataEndpoint> &existlist, BBX que
   {
     return false;
   }
+}
+
 }

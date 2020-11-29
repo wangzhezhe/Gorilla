@@ -1,4 +1,5 @@
 #include "../server/addrManager.h"
+using namespace GORILLA;
 
 void test_addrManager()
 {

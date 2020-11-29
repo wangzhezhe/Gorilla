@@ -17,6 +17,9 @@
 
 namespace tl = thallium;
 
+namespace GORILLA
+{
+
 struct DynamicTriggerManager
 {
     DynamicTriggerManager( 
@@ -29,9 +32,9 @@ struct DynamicTriggerManager
         m_dynamicTrigger[triggerName] = triggerInfo;
     };
 
-    void initstart(std::string triggerName, size_t step, std::string varName, RawDataEndpoint rde);
+    void initstart(std::string triggerName, size_t step, std::string varName, BlockDescriptor rde);
 
-    void commonstart(std::string triggerName, size_t step, std::string varName, RawDataEndpoint rde);
+    void commonstart(std::string triggerName, size_t step, std::string varName, BlockDescriptor rde);
 
     void putEvent(std::string varName, EventWrapper &event);
 
@@ -73,6 +76,6 @@ struct DynamicTriggerManager
     {};
 };
 
-
+}
 
 #endif

@@ -9,6 +9,9 @@
 
 namespace tl = thallium;
 
+namespace GORILLA
+{
+
 // store all kinds of metrics
 // and the scheduler method
 struct ScheduleManager
@@ -46,4 +49,5 @@ struct ScheduleManager
   ~ScheduleManager(){};
 };
 
+}
 #endif

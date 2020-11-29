@@ -6,6 +6,7 @@
 #include <string>
 
 namespace tl = thallium;
+using namespace GORILLA;
 
 int main(int argc, char **argv)
 {

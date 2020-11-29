@@ -13,6 +13,8 @@
 #include <sstream>
 #include <adios2.h>
 
+namespace GORILLA
+{
 std::string test(FunctionManagerRaw *fmr, const BlockSummary &bs, void *inputData, const std::vector<std::string> &parameters)
 {
     //bs.printSummary();
@@ -226,4 +228,6 @@ std::string adiosWrite(FunctionManagerRaw *fmr, const BlockSummary &bs, void *in
     //the partition of the staging server is useully less than the partition of the writer
 
     return "OK";
+}
+
 }

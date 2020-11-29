@@ -1,5 +1,6 @@
 
 #include "../../server/FunctionManager/functionManagerMeta.h"
+using namespace GORILLA;
 
 int main(){
     tl::abt scope;

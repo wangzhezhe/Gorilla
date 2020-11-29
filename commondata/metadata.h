@@ -13,22 +13,35 @@
 #include <typeinfo>
 #include <vector>
 
-// Thaliium may not good at transfer enum type
-// enum DRIVERTYPE { RAWMEM, VTK };
+// use namespace to avoid the conflicts for type defination 
+// comapred with system library
+namespace GORILLA
+{
 
-// This datatype is stored at the metadata server
+// experimental
+enum MetaStatus
+{
+  ERROR,
+  BEFOREPROCESS,
+  INPROCESS,
+  AFTERPROCESS,
+  UNDELETABLE,
+};
+
+enum BACKEND
+{
+  MEM,
+  FILE,
+};
+
+// This backend is stored at the metadata server
 // to index multiple blocks with the same type
 // and they can be customized
 // therefore we use string instead of enum
 
-static std::string const BACKENDMEM = "MEM";
-static std::string const BACKENDFILE = "FILE";
+// cartisian grid
+static std::string const DATATYPE_CARGRID = "CARGRID";
 
-// data type is more specific level, the first level is backend info
-// the second level is the data type info
-
-static std::string const DATATYPE_RAWMEM = "RAWMEM";
-static std::string const DATATYPE_RAWFILE = "RAWFILE";
 // static std::string const DATATYPE_VTKDATASET = "VTKDATASET";
 
 // how to put the data, maybe there is also the lcoal put
@@ -113,11 +126,12 @@ struct MetaAddrWrapper
   }
 };
 
-#define STRLEN 256
+const size_t STRLENLONG = 256;
+const size_t STRLENSHORT = 64;
 
-typedef char DATAYPE[STRLEN];
-typedef char BlOCKID[STRLEN];
-typedef char EXTRAINFO[STRLEN];
+typedef char DATAYPE[STRLENSHORT];
+typedef char BlOCKID[STRLENLONG];
+typedef char EXTRAINFO[STRLENSHORT];
 
 // the Block Summary for every data block, this info is stored at the raw data
 // server
@@ -134,6 +148,8 @@ struct BlockSummary
   // the metadata size should be a fixed size
   DATAYPE m_dataType;
   BlOCKID m_blockid;
+
+  int m_backend = BACKEND::MEM;
 
   size_t m_dims = 3;
 
@@ -165,17 +181,17 @@ struct BlockSummary
     , m_indexub(indexub)
   {
 
-    if (strlen(dataType.data()) >= STRLEN)
+    if (strlen(dataType.data()) >= STRLENSHORT)
     {
       throw std::runtime_error("length of data type should less than 256: " + dataType);
     }
 
-    if (strlen(blockid.data()) >= STRLEN)
+    if (strlen(blockid.data()) >= STRLENLONG)
     {
       throw std::runtime_error("length of blockid should less than 512: " + blockid);
     }
 
-    if (strlen(extraInfo.data()) >= STRLEN)
+    if (strlen(extraInfo.data()) >= STRLENSHORT)
     {
       throw std::runtime_error("length of extraInfo should less than 512: " + extraInfo);
     }
@@ -197,7 +213,7 @@ struct BlockSummary
 
   size_t getTotalSize()
   {
-    if (strcmp(m_dataType, DATATYPE_RAWMEM.data()) == 0)
+    if (strcmp(m_dataType, DATATYPE_CARGRID.data()) == 0)
     {
       return m_elemNum * m_elemSize;
     }
@@ -297,6 +313,7 @@ struct BlockSummary
     ar& m_elemNum;
     ar& m_dataType;
     ar& m_blockid;
+    ar& m_backend;
     ar& m_dims;
     ar& m_indexlb;
     ar& m_indexub;
@@ -304,26 +321,18 @@ struct BlockSummary
   }
 };
 
-enum MetaStatus
+// the block descriptor is stored at the index service
+// this is used to find the block data (meta and actual data)
+// for client get operation
+struct BlockDescriptor
 {
-  ERROR,
-  RAW,
-  BEFOREPROCESS,
-  INPROCESS,
-  AFTERPROCESS,
-  UNDELETABLE,
-};
-
-// define the equal opertaion for this struct
-
-struct RawDataEndpoint
-{
-  RawDataEndpoint(){};
+  BlockDescriptor(){};
   // the raw data end point info is part of the Block Summary
-  RawDataEndpoint(std::string rawDataServerAddr, std::string rawDataID, size_t dims,
-    std::array<int, 3> indexlb, std::array<int, 3> indexub)
+  BlockDescriptor(std::string rawDataServerAddr, std::string rawDataID, std::string dataType,
+    size_t dims, std::array<int, 3> indexlb, std::array<int, 3> indexub)
     : m_rawDataServerAddr(rawDataServerAddr)
     , m_rawDataID(rawDataID)
+    , m_dataType(dataType)
     , m_dims(dims)
     , m_indexlb(indexlb)
     , m_indexub(indexub){};
@@ -332,9 +341,11 @@ struct RawDataEndpoint
   std::string m_rawDataServerAddr;
   // the id of the raw data
   std::string m_rawDataID;
-  // experiment, label the lifecycle of the metadata
-  int m_metaStatus = MetaStatus::RAW;
-  std::string m_dataType = DATATYPE_RAWMEM;
+  // experiment, label the lifecycle of the data
+  int m_metaStatus = MetaStatus::BEFOREPROCESS;
+  std::string m_dataType = DATATYPE_CARGRID;
+  int m_backend = BACKEND::MEM;
+
   size_t m_dims = 0;
   std::array<int, 3> m_indexlb{ { 0, 0, 0 } };
   std::array<int, 3> m_indexub{ { 0, 0, 0 } };
@@ -342,12 +353,13 @@ struct RawDataEndpoint
   void printInfo()
   {
     std::cout << "server addr " << m_rawDataServerAddr << " dataID " << m_rawDataID
-              << " m_metaStatus " << m_metaStatus << " m_dataType " << m_dataType << " dims "
-              << m_dims << " lb " << m_indexlb[0] << "," << m_indexlb[1] << "," << m_indexlb[2]
-              << " ub " << m_indexub[0] << "," << m_indexub[1] << "," << m_indexub[2] << std::endl;
+              << " m_metaStatus " << m_metaStatus << " m_dataType " << m_dataType << " m_backend "
+              << m_backend << " dims " << m_dims << " lb " << m_indexlb[0] << "," << m_indexlb[1]
+              << "," << m_indexlb[2] << " ub " << m_indexub[0] << "," << m_indexub[1] << ","
+              << m_indexub[2] << std::endl;
   }
 
-  ~RawDataEndpoint(){};
+  ~BlockDescriptor(){};
 
   template <typename A>
   void serialize(A& ar)
@@ -356,6 +368,7 @@ struct RawDataEndpoint
     ar& m_rawDataID;
     ar& m_metaStatus;
     ar& m_dataType;
+    ar& m_backend;
     ar& m_dims;
     ar& m_indexlb;
     ar& m_indexub;
@@ -385,12 +398,12 @@ struct InfoForPut
 struct MetaDataWrapper {
   MetaDataWrapper(){};
   MetaDataWrapper(std::string destAddr, size_t step, std::string varName,
-                  RawDataEndpoint rde)
+                  BlockDescriptor rde)
       : m_destAddr(destAddr), m_step(step), m_varName(varName), m_rde(rde){};
   std::string m_destAddr = "";
   size_t m_step = 0;
   std::string m_varName = "";
-  RawDataEndpoint m_rde;
+  BlockDescriptor m_rde;
 
   ~MetaDataWrapper(){};
 
@@ -517,4 +530,5 @@ struct EventWrapper
   }
 };
 
+}
 #endif

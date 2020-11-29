@@ -5,13 +5,14 @@
 #include <thallium.hpp>
 
 namespace tl = thallium;
+using namespace GORILLA;
 
 void add_insitu_exp()
 {
     //TODO add gni initilization
     //client engine
     tl::engine clientEngine("verbs", THALLIUM_CLIENT_MODE);
-    UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf",0);
+     GORILLA::UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf",0);
 
     //add the init trigger
     std::string triggerNameInit = "InitTrigger";
@@ -27,7 +28,7 @@ void add_insitu_exp()
     //start the trigger when the condition is satisfied
     initActionParameters.push_back(triggerNameExp);
     
-    DynamicTriggerInfo initTgInfo(
+     GORILLA::DynamicTriggerInfo initTgInfo(
         "defaultCheckGetStep", initCheckParameters,
         "defaultComparisonStep", initComparisonParameters,
         "defaultActionSartDt", initActionParameters);
@@ -52,7 +53,7 @@ void add_insitu_exp()
     //is the time for ana execution
     //InsituExpCompare is used to check the ana results
     //InsituExpAction is used to write the data by ADIOS
-    DynamicTriggerInfo tgInfo(
+     GORILLA::DynamicTriggerInfo tgInfo(
         "InsituExpCheck", checkParameters,
         "InsituExpCompare", comparisonParameters,
         "InsituExpAction", actionParameters);

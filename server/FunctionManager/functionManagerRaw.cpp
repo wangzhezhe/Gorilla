@@ -1,7 +1,8 @@
 #include "functionManagerRaw.h"
 #include <spdlog/spdlog.h>
 
-
+namespace GORILLA
+{
 //if the execute aims to generate the new version of the data
 //the return value is the id of original function,
 //then at the trigger, replace the original id and use the same index (the data is on the same node)
@@ -41,4 +42,5 @@ bool FunctionManagerRaw::registerFunction(std::string functionName, rawdatafunct
     m_functionMapMutex.unlock();
 
     return true;
+}
 }

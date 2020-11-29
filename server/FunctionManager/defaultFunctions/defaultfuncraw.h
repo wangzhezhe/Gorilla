@@ -7,6 +7,8 @@
 #include <vector>
 #include <string>
 
+namespace GORILLA
+{
 
 struct FunctionManagerRaw;
 
@@ -34,6 +36,6 @@ const BlockSummary &bs,
 void *inputData, 
 const std::vector<std::string>& parameters);
 
-
+}
 
 #endif

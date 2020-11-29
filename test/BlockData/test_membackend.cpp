@@ -2,6 +2,7 @@
 
 #include "../../blockManager/blockManager.h"
 #include "../../commondata/metadata.h"
+using namespace GORILLA;
 
 void test_membackend_basic()
 {
@@ -11,7 +12,7 @@ void test_membackend_basic()
   BlockManager bm;
   BlockSummary bs;
   strcpy(bs.m_blockid, "123");
-  bm.putBlock(bs, BACKENDMEM, NULL);
+  bm.putBlock(bs, BACKEND::MEM, NULL);
 }
 
 void test_membackend_putget()
@@ -32,9 +33,9 @@ void test_membackend_putget()
   }
 
   std::string blockid = "12345";
-  BlockSummary bs(sizeof(double), 100, DATATYPE_RAWMEM, blockid, 1, indexlb, indexub);
+  BlockSummary bs(sizeof(double), 100, DATATYPE_CARGRID, blockid, 1, indexlb, indexub);
 
-  bm.putBlock(bs, BACKENDMEM, rawdata.data());
+  bm.putBlock(bs, BACKEND::MEM, rawdata.data());
 
   // test get data
 
@@ -48,7 +49,7 @@ void test_membackend_putget()
 
   // get the pointer stored in the raw data manager
   void* getContainer = NULL;
-  bm.getBlock(blockid, BACKENDMEM, getContainer);
+  bm.getBlock(blockid, BACKEND::MEM, getContainer);
   if (getContainer != NULL)
   {
     // check the results

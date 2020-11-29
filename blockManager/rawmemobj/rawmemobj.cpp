@@ -1,6 +1,9 @@
 #include "rawmemobj.h"
 #include <utils/matrixtool.h>
 
+namespace GORILLA
+{
+
 int RawMemObj::eraseData()
 {
   if (this->m_rawMemPtr != NULL)
@@ -119,4 +122,6 @@ BlockSummary RawMemObj::getDataSubregion(
   bs.m_indexub = subregionub;
 
   return bs;
+}
+
 }

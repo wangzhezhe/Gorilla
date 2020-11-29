@@ -6,6 +6,9 @@
 #include <blockManager/blockManager.h>
 #include <iostream>
 
+namespace GORILLA
+{
+
 struct RawMemObj : public DataBlockInterface
 {
 
@@ -40,5 +43,5 @@ struct RawMemObj : public DataBlockInterface
     }
   };
 };
-
+}
 #endif

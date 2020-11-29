@@ -4,6 +4,9 @@
 
 namespace tl = thallium;
 
+namespace GORILLA
+{
+
 //the watcher at the client is a server
 //this server only have one RPC, the recvNotify
 struct Watcher {
@@ -19,3 +22,5 @@ struct Watcher {
 
     std::string m_watcherAddr;
 };
+
+}

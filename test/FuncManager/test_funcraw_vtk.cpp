@@ -3,6 +3,7 @@
 #include "../../server/FunctionManager/functionManagerRaw.h"
 #include <thallium.hpp>
 #include <unistd.h>
+using namespace GORILLA;
 
 void test_exengineraw()
 {
@@ -32,7 +33,7 @@ void test_executeVTK_raw()
   }
 
   BlockSummary bs(
-    sizeof(double), len * len * len, DATATYPE_RAWMEM, "12345", 3, { { 0, 0, 0 } }, { { 9, 9, 9 } });
+    sizeof(double), len * len * len, DATATYPE_CARGRID, "12345", 3, { { 0, 0, 0 } }, { { 9, 9, 9 } });
   std::string funcName = "testvtk";
   std::vector<std::string> parameters;
   exengine->execute(NULL, bs, rawdata.data(), funcName, parameters);

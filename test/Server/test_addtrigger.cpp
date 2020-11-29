@@ -5,6 +5,7 @@
 #include <thallium.hpp>
 
 namespace tl = thallium;
+using namespace GORILLA;
 
 void add_basictrigger()
 {

@@ -3,6 +3,9 @@
 #include <sys/stat.h>
 #include <utils/matrixtool.h>
 
+namespace GORILLA
+{
+
 // TODO, the block summary retured here is the one that is extracted from the file
 BlockSummary FileObj::getData(void*& dataContainer)
 {
@@ -262,4 +265,6 @@ BlockSummary FileObj::getDataSubregion(
   bs.m_indexub = subregionub;
 
   return bs;
+}
+
 }

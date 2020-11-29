@@ -1,6 +1,7 @@
 
 #include "../../blockManager/blockManager.h"
 #include "../../commondata/metadata.h"
+using namespace GORILLA;
 
 void test_filebackend_basic()
 {
@@ -8,11 +9,11 @@ void test_filebackend_basic()
 
   BlockManager bm;
   BlockSummary bs;
-  strcpy(bs.m_dataType, DATATYPE_RAWFILE.data());
+  strcpy(bs.m_dataType, DATATYPE_CARGRID.data());
   strcpy(bs.m_blockid, "testblock");
   bs.m_elemSize = sizeof(int);
   int a = 123;
-  bm.putBlock(bs, BACKENDFILE, &a);
+  bm.putBlock(bs, BACKEND::FILE, &a);
 }
 
 void test_filebackend_putget()
@@ -31,9 +32,9 @@ void test_filebackend_putget()
   }
 
   std::string blockid = "12345";
-  BlockSummary bs(sizeof(double), 100, DATATYPE_RAWFILE, blockid, 1, indexlb, indexub);
+  BlockSummary bs(sizeof(double), 100, DATATYPE_CARGRID, blockid, 1, indexlb, indexub);
 
-  bm.putBlock(bs, BACKENDFILE, rawdata.data());
+  bm.putBlock(bs, BACKEND::FILE, rawdata.data());
 
   // test get data
 
@@ -51,7 +52,7 @@ void test_filebackend_putget()
   void* getContainer = (void*)calloc(bsget.m_elemNum, bsget.m_elemSize);
   for (int i = 0; i < 5; i++)
   {
-    bm.getBlock(blockid, BACKENDFILE, getContainer);
+    bm.getBlock(blockid, BACKEND::FILE, getContainer);
     if (getContainer != NULL)
     {
       // check the results
@@ -81,7 +82,7 @@ void test_filebackend_direactget()
   std::string blockid = "12345";
   BlockManager bmanager;
   void* getContainer = nullptr;
-  BlockSummary bsget = bmanager.getBlock(blockid, BACKENDFILE, getContainer);
+  BlockSummary bsget = bmanager.getBlock(blockid, BACKEND::FILE, getContainer);
   bsget.printSummary();
 
   // assign space in the getBlock function if it is nullptr
@@ -126,11 +127,11 @@ void test_filebackend_erase()
   }
 
   std::string blockid = "123456";
-  BlockSummary bs(sizeof(double), 100, DATATYPE_RAWFILE, blockid, 1, indexlb, indexub);
+  BlockSummary bs(sizeof(double), 100, DATATYPE_CARGRID, blockid, 1, indexlb, indexub);
 
-  bm.putBlock(bs, BACKENDFILE, rawdata.data());
+  bm.putBlock(bs, BACKEND::FILE, rawdata.data());
 
-  int status = bm.eraseBlock(blockid, BACKENDFILE);
+  int status = bm.eraseBlock(blockid, BACKEND::FILE);
 
   if (status != 0)
   {

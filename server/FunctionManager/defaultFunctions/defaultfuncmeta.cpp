@@ -2,9 +2,10 @@
 #include <sstream>
 #include "defaultfuncmeta.h"
 #include "../../TriggerManager/triggerManager.h"
-
+namespace GORILLA
+{
 //get metadata
-std::string defaultCheckGetStep(size_t step, std::string varName, RawDataEndpoint &rde)
+std::string defaultCheckGetStep(size_t step, std::string varName, BlockDescriptor &rde)
 {
     std::string stepStr = std::to_string(step);
     return stepStr;
@@ -40,7 +41,7 @@ bool defaultComparisonStep(std::string checkResults, std::vector<std::string> pa
 }
 
 //start a new dynamic trigger
-void defaultActionSartDt(FunctionManagerMeta *fmm, size_t step, std::string varName, RawDataEndpoint &rde, std::vector<std::string> parameters)
+void defaultActionSartDt(FunctionManagerMeta *fmm, size_t step, std::string varName, BlockDescriptor &rde, std::vector<std::string> parameters)
 {
     //start another dynamic trigger
     //the first element id the name of the dynamic trigger
@@ -65,7 +66,7 @@ void defaultActionSartDt(FunctionManagerMeta *fmm, size_t step, std::string varN
 }
 
 //get metadata
-std::string defaultCheck(size_t step, std::string varName, RawDataEndpoint &rde, std::vector<std::string> parameters)
+std::string defaultCheck(size_t step, std::string varName, BlockDescriptor &rde, std::vector<std::string> parameters)
 {
 
     //std::cout << "execute defaultCheck" << std::endl;
@@ -87,7 +88,7 @@ bool defaultComparison(std::string checkResults, std::vector<std::string> parame
     return true;
 }
 
-void defaultAction(FunctionManagerMeta *fmm, size_t step, std::string varName, std::string triggerMaster, UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
+void defaultAction(FunctionManagerMeta *fmm, size_t step, std::string varName, std::string triggerMaster, UniClient *uniclient, BlockDescriptor &rde, std::vector<std::string> parameters)
 {
     //std::cout << "execute defaultAction" << std::endl;
     for (int i = 0; i < parameters.size(); i++)
@@ -98,7 +99,7 @@ void defaultAction(FunctionManagerMeta *fmm, size_t step, std::string varName, s
 }
 
 //TODO, if it is master, then notify to the watcher, if it is not master, then sent the information to the master
-void defaultNotifyAction(FunctionManagerMeta *fmm, size_t step, std::string varName, std::string triggerMaster, UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
+void defaultNotifyAction(FunctionManagerMeta *fmm, size_t step, std::string varName, std::string triggerMaster, UniClient *uniclient, BlockDescriptor &rde, std::vector<std::string> parameters)
 {
 
     //notify the watcher
@@ -126,7 +127,7 @@ void defaultNotifyAction(FunctionManagerMeta *fmm, size_t step, std::string varN
 }
 
 //put information of the current step into the group master
-void defaultPutEvent(FunctionManagerMeta *fmm, size_t step, std::string varName, std::string triggerMaster, UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
+void defaultPutEvent(FunctionManagerMeta *fmm, size_t step, std::string varName, std::string triggerMaster, UniClient *uniclient, BlockDescriptor &rde, std::vector<std::string> parameters)
 {
     if (fmm->m_dtm == NULL)
     {
@@ -155,7 +156,7 @@ void defaultPutEvent(FunctionManagerMeta *fmm, size_t step, std::string varName,
 }
 
 //in-situ function for exp
-std::string InsituExpCheck(size_t step, std::string varName, RawDataEndpoint &rde, std::vector<std::string> parameters)
+std::string InsituExpCheck(size_t step, std::string varName, BlockDescriptor &rde, std::vector<std::string> parameters)
 {
     if (parameters.size() == 0)
     {
@@ -221,7 +222,7 @@ bool InsituExpCompare(std::string checkResults, std::vector<std::string> paramet
     return false;
 }
 
-void InsituExpAction(FunctionManagerMeta *fmm, size_t step, std::string varName, std::string triggerMaster, UniClient *uniclient, RawDataEndpoint &rde, std::vector<std::string> parameters)
+void InsituExpAction(FunctionManagerMeta *fmm, size_t step, std::string varName, std::string triggerMaster, UniClient *uniclient, BlockDescriptor &rde, std::vector<std::string> parameters)
 {
     //write the data into the adios
     //send request to the raw data server and let it execut the adios data writting
@@ -274,4 +275,6 @@ void InsituExpAction(FunctionManagerMeta *fmm, size_t step, std::string varName,
     //std::cout << "execute results of InsituExpAction: " << result << std::endl;
 
     return;
+}
+
 }

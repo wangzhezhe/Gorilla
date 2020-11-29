@@ -12,6 +12,9 @@
 #include <map>
 #include <blockManager/blockManager.h>
 
+namespace GORILLA
+{
+
 struct UniServer
 {
   UniServer(){};
@@ -93,5 +96,5 @@ struct UniServer
     // delete m_frawmanager;
   };
 };
-
+}
 #endif

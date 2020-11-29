@@ -53,7 +53,20 @@ simple example to put the data
 
 ```
 srun -C haswell -n 16 ./example/gray-scott-stg ~/cworkspace/src/Gorilla/example/gssimulation/settings.json gni
-
 ```
 
+simple example to get the data for further processing
 
+```
+srun  -n 4 ./example/isosurface ~/cworkspace/src/Gorilla/example/gssimulation/settings.json 10 0.5 gni
+```
+
+### version info
+
+v0.1
+
+M:N put get for Cartesian grid
+
+memory and file backend
+
+in-memory data trigger (experimental)

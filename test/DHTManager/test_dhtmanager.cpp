@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <thallium.hpp>
 #define BILLION 1000000000L
+using namespace GORILLA;
 
 void testInit1d() {
   std::cout << "------init 1d------" << std::endl;

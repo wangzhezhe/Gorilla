@@ -10,6 +10,9 @@
 
 namespace tl = thallium;
 
+namespace GORILLA
+{
+
 struct AddrManager
 {
     int m_serverNum;
@@ -48,7 +51,7 @@ struct AddrManager
     ~AddrManager(){};
 };
 
-
+}
 
 
 #endif

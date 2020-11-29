@@ -1,5 +1,6 @@
 
 #include "../server/ScheduleManager/scheduleManager.h"
+using namespace GORILLA;
 
 void test_scheduler_basic()
 {

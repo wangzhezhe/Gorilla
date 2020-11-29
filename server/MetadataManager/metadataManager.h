@@ -11,6 +11,9 @@
 using namespace BBXTOOL;
 namespace tl = thallium;
 
+namespace GORILLA
+{
+
 //the key is the index for the different version of the data
 //it can be the raw or specific filter name such like VTKISO
 //the design here maybe not useful currently
@@ -68,12 +71,12 @@ struct MetaDataBlock
   }
 
   //the mutex is applied by caller
-  void insertRDEP(std::string dataType, RawDataEndpoint &rde)
+  void insertRDEP(std::string dataType, BlockDescriptor &rde)
   {
 
     if (m_metadataBlock.find(dataType) == m_metadataBlock.end())
     {
-      std::vector<RawDataEndpoint> rdelist;
+      std::vector<BlockDescriptor> rdelist;
       m_metadataBlock[dataType] = rdelist;
     }
 
@@ -102,7 +105,7 @@ struct MetaDataBlock
 
   //the key is the type/version of the data such as raw mem or vtk or compressed data
   //the value is the endpoints related with the type
-  std::unordered_map<std::string, std::vector<RawDataEndpoint>> m_metadataBlock;
+  std::unordered_map<std::string, std::vector<BlockDescriptor>> m_metadataBlock;
 
   ~MetaDataBlock()
   {
@@ -157,15 +160,15 @@ struct MetaDataManager
   // the performance will be degraded if we try to delete metadata of multiple objects but only use one lock
   std::unordered_map<size_t, std::unordered_map<std::string, MetaDataBlock>> m_metaDataMap;
 
-  void updateMetaData(size_t step, std::string varName, RawDataEndpoint &rde, std::string dataType = DATATYPE_RAWMEM);
+  void updateMetaData(size_t step, std::string varName, BlockDescriptor &rde);
 
-  // the bounding box of the RawDataEndpoints is adjusted
-  std::vector<RawDataEndpoint> getOverlapEndpoints(size_t, std::string varName,
-                                                   BBX &querybbx, std::string dataType = DATATYPE_RAWMEM);
+  // the bounding box of the BlockDescriptors is adjusted
+  std::vector<BlockDescriptor> getOverlapEndpoints(size_t, std::string varName,
+                                                   BBX &querybbx, std::string dataType = DATATYPE_CARGRID);
 
-  std::vector<RawDataEndpoint> getRawEndpoints(size_t step, std::string varName, std::string dataType = DATATYPE_RAWMEM);
+  std::vector<BlockDescriptor> getRawEndpoints(size_t step, std::string varName, std::string dataType = DATATYPE_CARGRID);
 
-  bool ifCovered(std::vector<RawDataEndpoint> &existlist, BBX queryBBX);
+  bool ifCovered(std::vector<BlockDescriptor> &existlist, BBX queryBBX);
 
   void updateMetaDataStatus(size_t step, std::string varName, std::string dataType, std::string rawDataID, MetaStatus newstatus);
 
@@ -193,5 +196,7 @@ struct MetaDataManager
     m_metaDataMapMutex.unlock();
   }
 };
+
+}
 
 #endif

@@ -171,7 +171,7 @@ std::vector<MetaDataWrapper> mockAPIPutrawdata(UniServer *uniServer,
         {
             throw std::runtime_error("faild to get the coresponding server id in dhtManager");
         }
-        RawDataEndpoint rde(
+        BlockDescriptor rde(
             uniServer->m_addrManager->nodeAddr,
             blockID,
             blockSummary.m_dims, indexlb, indexub);
@@ -190,7 +190,7 @@ std::vector<MetaDataWrapper> mockAPIPutrawdata(UniServer *uniServer,
     return metadataWrapperList;
 }
 
-int mockServerPutmetadata(UniServer *uniServer, size_t &step, std::string &varName, RawDataEndpoint &rde)
+int mockServerPutmetadata(UniServer *uniServer, size_t &step, std::string &varName, BlockDescriptor &rde)
 {
 
     spdlog::debug("server {} put meta", uniServer->m_addrManager->nodeAddr);
@@ -227,17 +227,17 @@ std::vector<std::string> mockServergetmetaServerList(UniServer *uniServer, size_
     return metaServerAddr;
 }
 
-std::vector<RawDataEndpoint> mockServergetrawDataEndpointList(UniServer *uniServer,
+std::vector<BlockDescriptor> mockServergetblockDescriptorList(UniServer *uniServer,
                                                               size_t step,
                                                               std::string varName,
                                                               size_t dims,
                                                               std::array<int, 3> indexlb,
                                                               std::array<int, 3> indexub)
 {
-    std::vector<RawDataEndpoint> rawDataEndpointList;
+    std::vector<BlockDescriptor> blockDescriptorList;
     BBXTOOL::BBX BBXQuery(dims, indexlb, indexub);
-    rawDataEndpointList = uniServer->m_metaManager->getOverlapEndpoints(step, varName, BBXQuery);
-    return rawDataEndpointList;
+    blockDescriptorList = uniServer->m_metaManager->getOverlapEndpoints(step, varName, BBXQuery);
+    return blockDescriptorList;
 }
 
 int mockServergetSubregionData(UniServer *uniServer,
@@ -334,8 +334,8 @@ MATRIXTOOL::MatrixView mockClientGetArbitratyData(
         //TODO use the mock service
         //get the dest server
         UniServer *destuniServer = serverList[metaServerID];
-        std::vector<RawDataEndpoint> rweList =
-            mockServergetrawDataEndpointList(destuniServer, step, varName, dims, indexlb, indexub);
+        std::vector<BlockDescriptor> rweList =
+            mockServergetblockDescriptorList(destuniServer, step, varName, dims, indexlb, indexub);
 
         //std::cout << "metadata server id" << metaServerID << " size of rweList " << rweList.size() << std::endl;
         if (rweList.size() == 0)

@@ -8,6 +8,9 @@
 //this can be the wrapper for the file based obj
 //such as the burst buffer or the parallel file system
 
+namespace GORILLA
+{
+
 struct FileObj : public DataBlockInterface
 {
 
@@ -42,4 +45,5 @@ struct FileObj : public DataBlockInterface
   };
 };
 
+}
 #endif

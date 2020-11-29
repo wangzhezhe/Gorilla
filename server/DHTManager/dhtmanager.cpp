@@ -4,6 +4,9 @@
 #include <string>
 #include <cmath>
 
+namespace GORILLA
+{
+
 // n is the number of the elements
 int computeBits(int n)
 {
@@ -341,4 +344,6 @@ std::vector<ResponsibleMetaServer> DHTManager::getMetaServerID(BBX& BBXQuery)
     }
   }
   return rmList;
+}
+
 }

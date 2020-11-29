@@ -9,6 +9,9 @@
 
 using namespace BBXTOOL;
 
+namespace GORILLA
+{
+
 struct ResponsibleMetaServer {
   ResponsibleMetaServer(int metaServerID, BBX *bbx)
       : m_metaServerID(metaServerID), m_bbx(bbx){};
@@ -53,5 +56,5 @@ struct DHTManager {
   // TODO, aggregate bounding box, input a list that contains several BBX and
   // then aggregate them into a large one
 };
-
+}
 #endif

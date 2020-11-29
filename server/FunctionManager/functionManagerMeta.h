@@ -12,6 +12,8 @@
 
 namespace tl = thallium;
 
+namespace GORILLA
+{
 struct FunctionManagerMeta;
 struct DynamicTriggerManager;
 //the function pointer that execute at the metadata server
@@ -19,12 +21,12 @@ struct DynamicTriggerManager;
 typedef std::string (*initCheckPtr)(
     size_t step,
     std::string varName,
-    RawDataEndpoint &rde);
+    BlockDescriptor &rde);
 
 typedef std::string (*checkPtr)(
     size_t step,
     std::string varName,
-    RawDataEndpoint &rde,
+    BlockDescriptor &rde,
     std::vector<std::string> parameters);
 
 typedef bool (*comparisonPtr)(std::string checkResults, std::vector<std::string> parameters);
@@ -33,7 +35,7 @@ typedef void (*initActionPtr)(
     FunctionManagerMeta *fmm,
     size_t step,
     std::string varName,
-    RawDataEndpoint &rde,
+    BlockDescriptor &rde,
     std::vector<std::string> parameters);
 
 typedef void (*actionPtr)(
@@ -42,7 +44,7 @@ typedef void (*actionPtr)(
     std::string varName,
     std::string triggerMaster,
     UniClient *uniclient,
-    RawDataEndpoint &rde,
+    BlockDescriptor &rde,
     std::vector<std::string> parameters);
 
 
@@ -175,5 +177,5 @@ struct FunctionManagerMeta
     DynamicTriggerManager* m_dtm = NULL;
 };
 
-
+}
 #endif

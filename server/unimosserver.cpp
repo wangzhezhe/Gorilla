@@ -54,6 +54,9 @@ extern "C"
 
 namespace tl = thallium;
 
+namespace GORILLA
+{
+
 // global variables
 
 // The pointer to the enginge should be set as global element
@@ -299,7 +302,7 @@ void forceEraseMetaAndRawManually(size_t step)
       // kvinner.second.size() << std::endl;
       for (auto& it : kvinner.second)
       {
-        RawDataEndpoint rde = it;
+        BlockDescriptor rde = it;
         // TODO chcek the status here
         uniClient->eraseRawData(rde.m_rawDataServerAddr, rde.m_rawDataID);
       }
@@ -375,13 +378,13 @@ void eraseMetaAndRaw(size_t step)
           auto iter = kvinner.second.begin();
           while (iter != kvinner.second.end())
           {
-            RawDataEndpoint rde = *iter;
+            BlockDescriptor rde = *iter;
             // check the status
             // raw or after process , delete
             // std::cout << "curr status " << rde.m_metaStatus << std::endl;
             while (true)
             {
-              if (rde.m_metaStatus == MetaStatus::RAW ||
+              if (rde.m_metaStatus == MetaStatus::BEFOREPROCESS ||
                 rde.m_metaStatus == MetaStatus::AFTERPROCESS)
               {
                 // erase metadata
@@ -417,14 +420,14 @@ void eraseMetaAndRaw(size_t step)
         // the current deleted step is i
         int blockSize =
           uniServer->m_metaManager->m_metaDataMap[currentlb][varName].getBlockNumberByVersion(
-            DATATYPE_RAWMEM);
+            DATATYPE_CARGRID);
         // std::cout << "debug metablock size for step: " << currentlb << "
         // variable: " << varName << " size: " << blockSize << std::endl;
         if (blockSize == 0)
         {
           // TODO, only remove the inner data if there are multiple versions in
           // furture
-          uniServer->m_metaManager->m_metaDataMap[currentlb][varName].eraseBlocks(DATATYPE_RAWMEM);
+          uniServer->m_metaManager->m_metaDataMap[currentlb][varName].eraseBlocks(DATATYPE_CARGRID);
         }
         // std::cout << "debug m_metaDataMap size for step currentlb " <<
         // uniServer->m_metaManager->m_metaDataMap.count(currentlb) << std::endl;
@@ -444,7 +447,7 @@ void eraseMetaAndRaw(size_t step)
 }
 
 // the manager of the matadata controller should be maintained at this level
-void putmetadata(const tl::request& req, size_t& step, std::string& varName, RawDataEndpoint rde)
+void putmetadata(const tl::request& req, size_t& step, std::string& varName, BlockDescriptor rde)
 {
   // TODO update the status of the RDE here
   try
@@ -513,7 +516,7 @@ void putmetadata(const tl::request& req, size_t& step, std::string& varName, Raw
 
 void eraserawdata(const tl::request& req, std::string& blockID)
 {
-  uniServer->m_blockManager->eraseBlock(blockID, BACKENDMEM);
+  uniServer->m_blockManager->eraseBlock(blockID, BACKEND::MEM);
   req.respond(0);
   return;
 }
@@ -576,10 +579,9 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
   double diff1, diff2;
   clock_gettime(CLOCK_REALTIME, &start);
 
-  if (strcmp(blockSummary.m_dataType, DATATYPE_RAWMEM.data()) != 0)
+  if (blockSummary.m_backend != BACKEND::MEM)
   {
-    throw std::runtime_error("the data type is supposed to be rawdata for putrawdata");
-    return;
+    throw std::runtime_error("the backend is supposed to be mem for putrawdata");
   }
 
   // assume data is different when every rawdataput is called
@@ -644,8 +646,8 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
     */
     // generate the empty container firstly, then get the data pointer
     // the data will be stored into the memory by put block operation
-    int status =
-      uniServer->m_blockManager->putBlock(blockSummary, BACKENDMEM, uniServer->m_dataContainerMap[clientID]);
+    int status = uniServer->m_blockManager->putBlock(
+      blockSummary, BACKEND::MEM, uniServer->m_dataContainerMap[clientID]);
     uniServer->m_schedulerManager->assignMem(blockSummary.getTotalSize());
 
     spdlog::debug("---put block {} on server {} map size {}", blockSummary.m_blockid,
@@ -751,17 +753,17 @@ void getmetaServerList(
   }
 }
 
-void getRawDataEndpointList(const tl::request& req, size_t& step, std::string& varName,
+void getBlockDescriptorList(const tl::request& req, size_t& step, std::string& varName,
   size_t& dims, std::array<int, 3>& indexlb, std::array<int, 3>& indexub)
 {
-  std::vector<RawDataEndpoint> rawDataEndpointList;
+  std::vector<BlockDescriptor> blockDescriptorList;
   try
   {
     BBXTOOL::BBX BBXQuery(dims, indexlb, indexub);
 
     // check if all required partition is avalible, get raw endpoint first then
     // execute check operation
-    std::vector<RawDataEndpoint> rdeplist =
+    std::vector<BlockDescriptor> rdeplist =
       uniServer->m_metaManager->getRawEndpoints(step, varName);
 
     // get overlap between the query
@@ -772,7 +774,7 @@ void getRawDataEndpointList(const tl::request& req, size_t& step, std::string& v
       getOverlapBBX(queryBBX, *(uniServer->m_dhtManager->metaServerIDToBBX[globalRank]));
     if (overlap == NULL)
     {
-      req.respond(rawDataEndpointList);
+      req.respond(blockDescriptorList);
       throw std::runtime_error("dht error, there should overlap between queried bbx and current "
                                "metadata partition\n");
       return;
@@ -789,21 +791,21 @@ void getRawDataEndpointList(const tl::request& req, size_t& step, std::string& v
       {
         delete overlap;
       }
-      req.respond(rawDataEndpointList);
+      req.respond(blockDescriptorList);
       return;
     }
-    rawDataEndpointList = uniServer->m_metaManager->getOverlapEndpoints(step, varName, BBXQuery);
+    blockDescriptorList = uniServer->m_metaManager->getOverlapEndpoints(step, varName, BBXQuery);
     if (overlap != NULL)
     {
       delete overlap;
     }
-    req.respond(rawDataEndpointList);
+    req.respond(blockDescriptorList);
     return;
   }
   catch (std::exception& e)
   {
-    spdlog::info("exception for getRawDataEndpointList: {}", std::string(e.what()));
-    req.respond(rawDataEndpointList);
+    spdlog::info("exception for getBlockDescriptorList: {}", std::string(e.what()));
+    req.respond(blockDescriptorList);
   }
   return;
 }
@@ -848,6 +850,7 @@ void executeRawFunc(const tl::request& req, std::string& blockID, std::string& f
   return;
 }
 
+// This function is only called for the mem backend
 void getDataSubregion(const tl::request& req, std::string& blockID, size_t& dims,
   std::array<int, 3>& subregionlb, std::array<int, 3>& subregionub, tl::bulk& clientBulk)
 {
@@ -857,20 +860,20 @@ void getDataSubregion(const tl::request& req, std::string& blockID, size_t& dims
 
     spdlog::debug("map size on server {} is {}", uniServer->m_addrManager->nodeAddr,
       uniServer->m_blockManager->DataBlockMap.size());
-    if (uniServer->m_blockManager->checkDataExistance(blockID, BACKENDMEM) == false)
+    if (uniServer->m_blockManager->checkDataExistance(blockID, BACKEND::MEM) == false)
     {
       throw std::runtime_error("failed to get block id " + blockID + " on server with rank id " +
         std::to_string(globalRank));
     }
     BlockSummary bs = uniServer->m_blockManager->getBlockSummary(blockID);
-    //TODO check if the summary is empty (no data id)
+    // TODO check if the summary is empty (no data id)
     size_t elemSize = bs.m_elemSize;
     BBXTOOL::BBX bbx(dims, subregionlb, subregionub);
     size_t allocSize = elemSize * bbx.getElemNum();
     spdlog::debug("alloc size at server {} is {}", globalRank, allocSize);
 
     uniServer->m_blockManager->getBlockSubregion(
-      blockID, BACKENDMEM, dims, subregionlb, subregionub, dataContainer);
+      blockID, BACKEND::MEM, dims, subregionlb, subregionub, dataContainer);
 
     // TODO, this can still be optimized
     // reuse the segments for data put instead of allocate new segment every time
@@ -882,16 +885,6 @@ void getDataSubregion(const tl::request& req, std::string& blockID, size_t& dims
 
     tl::endpoint ep = req.get_endpoint();
     clientBulk.on(ep) << returnBulk;
-
-    // if the data type of bs is the file, release the memory, since the data is not stored in
-    // the memory for the file obj
-    if (bs.m_dataType == DATATYPE_RAWFILE)
-    {
-      if (dataContainer != NULL)
-      {
-        free(dataContainer);
-      }
-    }
 
     req.respond(0);
   }
@@ -1064,7 +1057,7 @@ void runRerver(std::string networkingType)
   globalServerEnginePtr->define("eraserawdata", eraserawdata);
   globalServerEnginePtr->define("putmetadata", putmetadata);
   globalServerEnginePtr->define("getmetaServerList", getmetaServerList);
-  globalServerEnginePtr->define("getRawDataEndpointList", getRawDataEndpointList);
+  globalServerEnginePtr->define("getBlockDescriptorList", getBlockDescriptorList);
   globalServerEnginePtr->define("getDataSubregion", getDataSubregion);
   globalServerEnginePtr->define("putTriggerInfo", putTriggerInfo);
   globalServerEnginePtr->define("executeRawFunc", executeRawFunc);
@@ -1196,12 +1189,14 @@ void signalHandler(int signal_num)
   exit(signal_num);
 }
 
+} // namespace gorilla
+
 int main(int argc, char** argv)
 {
   MPI_Init(NULL, NULL);
 
-  MPI_Comm_rank(MPI_COMM_WORLD, &globalRank);
-  MPI_Comm_size(MPI_COMM_WORLD, &globalProc);
+  MPI_Comm_rank(MPI_COMM_WORLD, &GORILLA::globalRank);
+  MPI_Comm_size(MPI_COMM_WORLD, &GORILLA::globalProc);
 
   // auto file_logger = spdlog::basic_logger_mt("unimos_server_log",
   // "unimos_server_log.txt"); spdlog::set_default_logger(file_logger);
@@ -1216,15 +1211,15 @@ int main(int argc, char** argv)
 
   // the copy operator is called here
   Settings tempsetting = Settings::from_json(argv[1]);
-  gloablSettings = tempsetting;
-  if (globalRank == 0)
+  GORILLA::gloablSettings = tempsetting;
+  if (GORILLA::globalRank == 0)
   {
-    gloablSettings.printsetting();
+    GORILLA::gloablSettings.printsetting();
   }
 
-  std::string networkingType = gloablSettings.protocol;
+  std::string networkingType = GORILLA::gloablSettings.protocol;
 
-  int logLevel = gloablSettings.logLevel;
+  int logLevel = GORILLA::gloablSettings.logLevel;
 
   if (logLevel == 0)
   {
@@ -1237,23 +1232,23 @@ int main(int argc, char** argv)
 
   spdlog::debug("debug mode");
 
-  signal(SIGINT, signalHandler);
-  signal(SIGQUIT, signalHandler);
-  signal(SIGTSTP, signalHandler);
+  signal(SIGINT, GORILLA::signalHandler);
+  signal(SIGQUIT, GORILLA::signalHandler);
+  signal(SIGTSTP, GORILLA::signalHandler);
 
-  if (globalRank == 0)
+  if (GORILLA::globalRank == 0)
   {
-    std::cout << "total process num: " << globalProc << std::endl;
+    std::cout << "total process num: " << GORILLA::globalProc << std::endl;
   }
 
-  if (gloablSettings.metaserverNum > globalProc)
+  if (GORILLA::gloablSettings.metaserverNum > GORILLA::globalProc)
   {
     throw std::runtime_error("number of metaserver should less than the number of process");
   }
 
   try
   {
-    runRerver(networkingType);
+    GORILLA::runRerver(networkingType);
   }
   catch (const std::exception& e)
   {

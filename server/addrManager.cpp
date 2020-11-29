@@ -1,7 +1,8 @@
 
 #include "addrManager.h"
 #include "../utils/hash.h"
-
+namespace GORILLA
+{
 std::string AddrManager::getByVarTs(std::string varName, int ts)
 {
 
@@ -75,4 +76,5 @@ void AddrManager::broadcastMetaServer(UniClient *globalClient)
         }
     }
     return;
+}
 }

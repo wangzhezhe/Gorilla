@@ -13,7 +13,7 @@ differnet dimentions to define a data block
 
 backend: mem or file
 
-dataformat, raw array, or vtk or others
+dataformat, cartisian grid, raw array, or vtk or others
 
 block position, local or staging...
 

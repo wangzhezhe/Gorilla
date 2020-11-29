@@ -12,6 +12,9 @@
 
 namespace tl = thallium;
 
+namespace GORILLA
+{
+
 struct FunctionManagerRaw;
 //TODO use separate .h file???
 typedef std::string (*rawdatafunctionPointer)(
@@ -85,4 +88,5 @@ struct FunctionManagerRaw
 
 };
 
+}
 #endif

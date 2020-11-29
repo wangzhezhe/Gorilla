@@ -5,7 +5,7 @@
 
 int main(){
     
-    std::string jsonFile = "./settings.json";
+    std::string jsonFile = "~/cworkspace/src/Gorilla/server/settings_gni.json";
 
     Settings gloablSettings = Settings::from_json(jsonFile.c_str());
 

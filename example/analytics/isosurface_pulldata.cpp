@@ -39,6 +39,8 @@ extern "C"
     } while (0)
 #endif
 
+using namespace GORILLA;
+
 const std::string serverCred = "Gorila_cred_conf";
 
 void writeImageData(std::string fileName,
