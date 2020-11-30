@@ -35,7 +35,7 @@ struct RawMemObj : public DataBlockInterface
 
   void *m_rawMemPtr = NULL;
 
-  ~RawMemObj()
+  virtual ~RawMemObj()
   {
     if (m_rawMemPtr != NULL)
     {

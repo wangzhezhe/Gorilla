@@ -4,6 +4,7 @@
 // this should be put at the .cpp file instead of the .h file
 #include "fileobj/fileobj.h"
 #include "rawmemobj/rawmemobj.h"
+#include "vtkmemobj/vtkmemobj.h"
 #include <iostream>
 
 namespace GORILLA
@@ -36,7 +37,8 @@ DataBlockInterface* BlockManager::getBlockHandle(std::string blockID, int backen
       {
         DataBlockInterface* dbi = new RawMemObj(blockID.data());
         // assign block id to the new allocated handle
-        strcpy(dbi->m_blockid, blockID.data());
+        // this is set when init the interface
+        // strcpy(dbi->m_blockid, blockID.data());
         this->DataBlockMap[blockID] = dbi;
         handle = dbi;
       }
@@ -45,6 +47,13 @@ DataBlockInterface* BlockManager::getBlockHandle(std::string blockID, int backen
         DataBlockInterface* dbi = new FileObj(blockID.data());
         // assign block id to the new allocated handle
         strcpy(dbi->m_blockid, blockID.data());
+        this->DataBlockMap[blockID] = dbi;
+        handle = dbi;
+      }
+      else if (backend == BACKEND::MEMVTKPTR)
+      {
+        DataBlockInterface* dbi = new VTKMemObj(blockID.data());
+        // strcpy(dbi->m_blockid, blockID.data());
         this->DataBlockMap[blockID] = dbi;
         handle = dbi;
       }
@@ -142,6 +151,8 @@ int BlockManager::eraseBlock(std::string blockID, int backend)
   DataBlockInterface* handle = getBlockHandle(blockID, backend);
   handle->eraseData();
   this->m_DataBlockMapMutex.unlock();
+  //the handle is assigned by new
+  delete handle;
   DataBlockMap.erase(blockID);
   this->m_DataBlockMapMutex.unlock();
   return 0;

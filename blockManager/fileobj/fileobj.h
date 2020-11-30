@@ -36,7 +36,7 @@ struct FileObj : public DataBlockInterface
 
   void *m_rawMemPtr = NULL;
 
-  ~FileObj()
+  virtual ~FileObj()
   {
     if (m_rawMemPtr != NULL)
     {

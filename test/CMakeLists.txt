@@ -91,6 +91,10 @@ target_link_libraries(adiosthread adios2::adios2)
 add_executable(test_scheduler ./Scheduler/test_scheduler.cpp)
 target_link_libraries(test_scheduler schedulemanager thallium)
 
+# vtk marshal
+add_executable(test_vtkmem ./BlockData/test_vtkmem.cpp)
+target_link_libraries(test_vtkmem ${VTK_LIBRARIES} thallium blockManager)
+
 # deprecated
 # add_subdirectory(mock)
 
@@ -103,6 +107,8 @@ add_test( NAME test_bbx COMMAND test_bbx)
 add_test( NAME test_membackend COMMAND test_membackend)
 
 add_test( NAME test_filebackend COMMAND test_filebackend)
+
+add_test( NAME test_vtkmem COMMAND test_vtkmem)
 
 add_test( NAME test_funcmeta COMMAND test_funcmeta)
 

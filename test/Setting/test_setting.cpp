@@ -3,12 +3,13 @@
 #include <string>
 #include <vector>
 
-int main(){
-    
-    std::string jsonFile = "~/cworkspace/src/Gorilla/server/settings_gni.json";
+int main()
+{
 
-    Settings gloablSettings = Settings::from_json(jsonFile.c_str());
+  std::string jsonFile("~/cworkspace/src/Gorilla/server/settings_gni.json");
 
-    gloablSettings.printsetting();
-    return 0;
+  Settings gloablSettings = Settings::from_json(jsonFile);
+
+  gloablSettings.printsetting();
+  return 0;
 }

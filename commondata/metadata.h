@@ -32,6 +32,7 @@ enum BACKEND
 {
   MEM,
   FILE,
+  MEMVTKPTR,
 };
 
 // This backend is stored at the metadata server
@@ -41,8 +42,7 @@ enum BACKEND
 
 // cartisian grid
 static std::string const DATATYPE_CARGRID = "CARGRID";
-
-// static std::string const DATATYPE_VTKDATASET = "VTKDATASET";
+static std::string const DATATYPE_VTKDATASET= "VTKDATASET";
 
 // how to put the data, maybe there is also the lcoal put
 // for the local put, the data object and summary is managed by rawdataManager in local way

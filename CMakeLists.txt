@@ -75,13 +75,16 @@ find_package(VTK COMPONENTS
     IOImage
     IOXML
     CommonCore
+    CommonDataModel
     FiltersSources
+    ParallelCore
 )
 
 add_library(blockManager 
 ${gorilla_SOURCE_DIR}/blockManager/blockManager.cpp
 ${gorilla_SOURCE_DIR}/blockManager/rawmemobj/rawmemobj.cpp
 ${gorilla_SOURCE_DIR}/blockManager/fileobj/fileobj.cpp
+${gorilla_SOURCE_DIR}/blockManager/vtkmemobj/vtkmemobj.cpp
 )
 target_link_libraries(blockManager abt-io ${VTK_LIBRARIES})
 

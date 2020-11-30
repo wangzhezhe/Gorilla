@@ -61,12 +61,13 @@ simple example to get the data for further processing
 srun  -n 4 ./example/isosurface ~/cworkspace/src/Gorilla/example/gssimulation/settings.json 10 0.5 gni
 ```
 
-### version info
+### Version info
 
 v0.1
 
 M:N put get for Cartesian grid
 
-memory and file backend
+memory and file backend 
+(file backend will be used when there is not enough mem space)
 
 in-memory data trigger (experimental)

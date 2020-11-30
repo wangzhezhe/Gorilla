@@ -64,9 +64,11 @@ struct DataBlockInterface
 
   virtual void* getrawMemPtr() = 0;
 
-  // TODO generate BlockDescriptorFromBlockSummary
-
-  ~DataBlockInterface(){};
+  // both the destructor of the parent class and child class should labeled by virtual
+  // https://www.quantstart.com/articles/C-Virtual-Destructors-How-to-Avoid-Memory-Leaks/
+  virtual ~DataBlockInterface(){
+    std::cout << "delete DataBlockInterface" << std::endl;
+  };
 };
 
 class BlockManager
