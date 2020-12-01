@@ -66,8 +66,9 @@ struct DataBlockInterface
 
   // both the destructor of the parent class and child class should labeled by virtual
   // https://www.quantstart.com/articles/C-Virtual-Destructors-How-to-Avoid-Memory-Leaks/
+  // otherwise base class destructor will be called instead of the derived class destructor
   virtual ~DataBlockInterface(){
-    std::cout << "delete DataBlockInterface" << std::endl;
+    //std::cout << "delete DataBlockInterface" << std::endl;
   };
 };
 

@@ -10,6 +10,9 @@ add_definitions(-DENABLE_TIMERS)
 
 find_package(MPI REQUIRED) 
 
+#use the debug build when it is necessary
+SET(CMAKE_CXX_FLAGS  "-DDEBUG_BUILD")
+
 # add our cmake module directory to the path
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
      "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -96,7 +99,7 @@ add_library (unimos_client
 ${gorilla_SOURCE_DIR}/client/unimosclient.cpp
 ${gorilla_SOURCE_DIR}/client/watcher.cpp
 )
-target_link_libraries(unimos_client blockManager)
+target_link_libraries(unimos_client blockManager ${VTK_LIBRARIES})
 
 
 # there is reference between each other, so it is better to build them together

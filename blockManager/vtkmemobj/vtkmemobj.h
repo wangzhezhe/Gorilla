@@ -14,7 +14,7 @@ struct VTKMemObj : public DataBlockInterface
 
   VTKMemObj(const char* blockid)
     : DataBlockInterface(blockid){
-      std::cout << "VTKMemObj is initialised" << std::endl;
+      //std::cout << "VTKMemObj is initialised" << std::endl;
     };
 
   BlockSummary getData(void*& dataContainer);
@@ -24,22 +24,29 @@ struct VTKMemObj : public DataBlockInterface
 
   int eraseData();
 
-  void* getrawMemPtr() { return (void*)this->m_dataset; };
+  void* getrawMemPtr() { return (void*)this->m_vtkobject; };
 
   BlockSummary getDataSubregion(size_t dims, std::array<int, 3> subregionlb,
     std::array<int, 3> subregionub, void*& dataContainer);
-
-  vtkDataSet* m_dataset = NULL;
+  
+  //we use a vtksmart pointer here
+  //otherwise, the data will be deleted if the outer smart pointer out of the scope
+  //vtkDataObject* m_vtkobject = NULL;
+  //the common pointer and smart pointer can be assigned to each other transparently
+  vtkSmartPointer<vtkDataObject> m_vtkobject = NULL;
 
   virtual ~VTKMemObj()
   {
     // we may choose to use the pure null ptr
     // refer to https://vtk.org/Wiki/VTK/Tutorials/SmartPointers
-    if (m_dataset != NULL)
+    if (m_vtkobject != NULL)
     {
-      m_dataset->Delete();
+      //refer to
+      //https://stackoverflow.com/questions/16497930/how-to-free-a-vtksmartpointer
+      //previous data will be deleted if we assign it to null
+      m_vtkobject=NULL;
     }
-    std::cout << "VTKMemObj is erased" << std::endl;
+    //std::cout << "VTKMemObj is erased" << std::endl;
   };
 };
 }

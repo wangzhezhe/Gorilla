@@ -46,15 +46,20 @@ target_link_libraries(test_put thallium unimos_client)
 add_executable(test_put_get ./Server/test_put_get.cpp)
 target_link_libraries(test_put_get thallium unimos_client)
 
+
+add_executable(test_vtkobj_put ./Server/test_vtkobj_put.cpp)
+target_link_libraries(test_vtkobj_put thallium blockManager unimos_client ${VTK_LIBRARIES} ${DRC_LIBRARIES})
+
+
 add_executable(test_threadpool ./Util/test_threadpool.cpp)
 target_link_libraries(test_threadpool thallium)
 
 add_executable(test_circulararraytpool ./Util/test_circulararraytpool.cpp)
 target_link_libraries(test_circulararraytpool thallium)
 
-
 add_executable(test_addtrigger ./Trigger/test_trigger.cpp)
 target_link_libraries(test_addtrigger thallium metatrigger unimos_client)
+
 
 
 file(COPY ${gorilla_SOURCE_DIR}/server/settings.json

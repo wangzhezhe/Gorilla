@@ -10,7 +10,7 @@
 #include <vtkSphereSource.h>
 #include <vtkXMLPolyDataWriter.h>
 
-// refer to  /Users/Hessen/cworkspace/paraview/VTK/Parallel/Core/MarshalData
+// refer to paraview/VTK/Parallel/Core/MarshalData
 
 using namespace GORILLA;
 
@@ -53,6 +53,8 @@ void test_marshal_unmarshal()
 
   size_t dataSize = numTuples * numComponents;
 
+  std::cout << "numTuples " << numTuples << " numComponents " << numComponents << std::endl;
+
   // try to recv the data
   vtkSmartPointer<vtkCharArray> recvbuffer = vtkSmartPointer<vtkCharArray>::New();
 
@@ -66,6 +68,13 @@ void test_marshal_unmarshal()
   // when the memory of the vtkchar array is allocated???
   memcpy(recvbuffer->GetPointer(0), buffer->GetPointer(0), recvSize);
 
+  std::cout << "------check recvbuffer content: ------" << std::endl;
+  for (int i = 0; i < recvSize; i++)
+  {
+    std::cout << recvbuffer->GetValue(i);
+  }
+  std::cout << "------" << std::endl;
+
   // unmarshal
   vtkSmartPointer<vtkDataObject> recvbj = vtkCommunicator::UnMarshalDataObject(recvbuffer);
 
@@ -78,8 +87,8 @@ void test_put(BlockManager& bm)
   std::cout << "---test " << __FUNCTION__ << std::endl;
   // create sphere source
   // Attention! do not use the smart pointer here to avoid the data is deleted by smart pointer
-  // vtkSmartPointer<vtkSphereSource> sphereSource = vtkSmartPointer<vtkSphereSource>::New();
-  vtkSphereSource* sphereSource = vtkSphereSource::New();
+  vtkSmartPointer<vtkSphereSource> sphereSource = vtkSmartPointer<vtkSphereSource>::New();
+  // vtkSphereSource* sphereSource = vtkSphereSource::New();
   sphereSource->SetThetaResolution(8);
   sphereSource->SetPhiResolution(8);
   sphereSource->SetStartTheta(0.0);
@@ -89,7 +98,8 @@ void test_put(BlockManager& bm)
   sphereSource->LatLongTessellationOff();
 
   sphereSource->Update();
-  vtkPolyData* polyData = sphereSource->GetOutput();
+  // vtkPolyData* polyData = sphereSource->GetOutput();
+  vtkSmartPointer<vtkPolyData> polyData = sphereSource->GetOutput();
   std::string blockid = "vtktest";
 
   // give it to the smart pointer
@@ -97,10 +107,10 @@ void test_put(BlockManager& bm)
   std::array<int, 3> indexub = { { 10, 10, 10 } };
 
   // the both elem size and elem number is 1 useless for vtk data
-  BlockSummary bs(1, 1, DATATYPE_VTKDATASET, blockid, 3, indexlb, indexub);
+  BlockSummary bs(1, 1, DATATYPE_VTKPTR, blockid, 3, indexlb, indexub);
   // the actual data is supposed to be created outof the block manager
   // and the block manager only keep the pointer to the object in this case
-  bm.putBlock(bs, BACKEND::MEMVTKPTR, polyData);
+  bm.putBlock(bs, BACKEND::MEMVTKPTR, &polyData);
   return;
 }
 
@@ -132,6 +142,8 @@ void test_erase(BlockManager& bm)
   std::string blockid = "vtktest";
 
   bm.eraseBlock(blockid, BACKEND::MEMVTKPTR);
+
+  // check that the destructor is called properly
 }
 
 int main()

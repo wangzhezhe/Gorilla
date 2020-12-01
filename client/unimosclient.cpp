@@ -1,9 +1,12 @@
-
 #include "unimosclient.h"
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
 #define BILLION 1000000000L
+
+#include <vtkCharArray.h>
+#include <vtkCommunicator.h>
+#include <vtkSmartPointer.h>
 
 namespace GORILLA
 {
@@ -19,7 +22,7 @@ tl::endpoint UniClient::lookup(std::string& address)
     auto endpoint = this->m_clientEnginePtr->lookup(address);
     std::string tempAddr = address;
     this->m_serverToEndpoints[tempAddr] = endpoint;
-    std::cout << "add new endpoints into the address cache" << std::endl;
+    DEBUG("add new endpoints into the address cache");
     return endpoint;
   }
 
@@ -58,10 +61,12 @@ int UniClient::getAllServerAddr()
 
   for (auto it = adrList.begin(); it != adrList.end(); it++)
   {
+    std::cout << "debug list index " << it->m_index << " addr " << it->m_addr << std::endl;
     this->m_serverIDToAddr[it->m_index] = it->m_addr;
     auto endpoint = this->m_clientEnginePtr->lookup(it->m_addr);
     this->m_serverToEndpoints[it->m_addr] = endpoint;
   }
+
   return 0;
 }
 
@@ -86,12 +91,17 @@ int UniClient::updateDHT(std::string serverAddr, std::vector<MetaAddrWrapper> me
 
 std::string UniClient::getServerAddr()
 {
+  if (this->m_totalServerNum == 0)
+  {
+    throw std::runtime_error("m_totalServerNum is not initilizsed");
+  }
   // check the cache, return if exist
   int serverId = this->m_position % this->m_totalServerNum;
 
   if (this->m_serverIDToAddr.find(serverId) == this->m_serverIDToAddr.end())
   {
-    throw std::runtime_error("server id not exist");
+    throw std::runtime_error("server id not exist " + std::to_string(this->m_position) + " " +
+      std::to_string(this->m_totalServerNum));
   }
 
   return this->m_serverIDToAddr[serverId];
@@ -115,51 +125,83 @@ std::string UniClient::loadMasterAddr(std::string masterConfigFile)
   return content;
 }
 
-void UniClient::initPutRawData(size_t dataMallocSize)
+// when there is no segment, assign it
+// when there is existing segments but new one is larger than it
+// allocate the new size
+// the databulk will be freeed (margo bulk free) when the assignment or movement constructor is
+// called
+void UniClient::initPutRawData(size_t dataTransferSize)
 {
-  // std::cout << "init the data bulk size " << dataMallocSize << std::endl;
-  this->m_bulkSize = dataMallocSize;
-  this->m_dataContainer = (void*)malloc(dataMallocSize);
-  this->m_segments = std::vector<std::pair<void*, std::size_t> >(1);
-  this->m_segments[0].first = (void*)(this->m_dataContainer);
-  this->m_segments[0].second = dataMallocSize;
-  // register the memory
-  this->m_dataBulk = this->m_clientEnginePtr->expose(this->m_segments, tl::bulk_mode::read_only);
+  if (this->m_bulkSize == 0)
+  {
+    // if the current bulk size is 0 allocate the new bulk
+    this->m_bulkSize = dataTransferSize;
+    this->m_segments = std::vector<std::pair<void*, std::size_t> >(1);
+    this->m_segments[0].first = (void*)malloc(dataTransferSize);
+    this->m_segments[0].second = dataTransferSize;
+    // register the memory
+    this->m_dataBulk = this->m_clientEnginePtr->expose(this->m_segments, tl::bulk_mode::read_only);
+  }
+  else if (this->m_bulkSize >= dataTransferSize)
+  {
+    // do nothing if current bulk size is larger then malloc size
+    return;
+  }
+  else
+  {
+    // assign the new memory space and release the old one
+    // the old bulk is released when execute the assign operator
+    // server also need to do the similar operations
+    DEBUG("resize the bulk from " << this->m_bulkSize << " to " << dataTransferSize);
+    if (this->m_segments[0].first != nullptr)
+    {
+      free(this->m_segments[0].first);
+      this->m_segments[0].first == nullptr;
+    }
+    this->m_bulkSize = dataTransferSize;
+    this->m_segments = std::vector<std::pair<void*, std::size_t> >(1);
+    this->m_segments[0].first = (void*)malloc(dataTransferSize);
+    this->m_segments[0].second = dataTransferSize;
+    // register the memory
+    this->m_dataBulk = this->m_clientEnginePtr->expose(this->m_segments, tl::bulk_mode::read_only);
+  }
+
   return;
 }
 
-// TODO //ask if there is avalible mem resources
-// if there is avalible mem, put in mem
-// else, put into the disk
-// then update the metadata
-int UniClient::putrawdata(
-  size_t step, std::string varName, BlockSummary& dataSummary, void* dataContainerSrc)
+int putCarGrid(UniClient* client, size_t step, std::string varName, BlockSummary& dataSummary,
+  void* dataContainerSrc)
 {
   struct timespec start, end1, end2;
   double diff1, diff2;
   clock_gettime(CLOCK_REALTIME, &start);
-  size_t dataMallocSize = dataSummary.getTotalSize();
-  if (this->m_associatedDataServer.compare("") == 0)
+  size_t dataTransferSize = dataSummary.getTotalSize();
+  // currently, when there is no associated data server
+  // the data bulk (memory space) is not assigned
+  // when there is assiciated data server, we assume the size of the data bulk is fixed
+  // this might works for cargid
+  // but for vtk, the data size might change, this need to be solved
+  if (client->m_associatedDataServer.compare("") == 0)
   {
-    this->m_associatedDataServer = this->getServerAddr();
+    client->m_associatedDataServer = client->getServerAddr();
     // std::cout << "m_position " << m_position << " m_associatedDataServer " <<
     // this->m_associatedDataServer << std::endl; assume the size of the data block is fixed
-    this->initPutRawData(dataMallocSize);
+    client->initPutRawData(dataTransferSize);
   }
 
-  if (dataMallocSize != this->m_bulkSize)
+  if (dataTransferSize > client->m_bulkSize)
   {
-    throw std::runtime_error("mismatch of the data size");
+    throw std::runtime_error("the tran of the data size");
   }
 
   // prepare the info for data put
   // ask the placement way, use raw mem or write out the file
-  tl::remote_procedure remotegetInfoForPut = this->m_clientEnginePtr->define("getinfoForput");
-  tl::endpoint serverEndpoint = this->lookup(this->m_associatedDataServer);
+  tl::remote_procedure remotegetInfoForPut = client->m_clientEnginePtr->define("getinfoForput");
+  tl::endpoint serverEndpoint = client->lookup(client->m_associatedDataServer);
   // const tl::request& req, size_t step, size_t objSize, size_t bbxdim,
   // std::array<int, 3> indexlb, std::array<int, 3> indexub)
   InfoForPut ifp = remotegetInfoForPut.on(serverEndpoint)(
-    step, dataMallocSize, dataSummary.m_dims, dataSummary.m_indexlb, dataSummary.m_indexub);
+    step, dataTransferSize, dataSummary.m_dims, dataSummary.m_indexlb, dataSummary.m_indexub);
 
   // create the raw data endpoint that will be stored at the metadata server
   // the data block is the minimal granularity that stores the data object
@@ -179,7 +221,7 @@ int UniClient::putrawdata(
     return -1;
   }
 
-  std::cout << "debug ifp.m_putMethod " << ifp.m_putMethod << std::endl;
+  DEBUG("debug ifp.m_putMethod " << ifp.m_putMethod);
 
   // store the data obj into the file if the putmethod is file
   // the fileput just provides some functions for data put or get
@@ -189,12 +231,16 @@ int UniClient::putrawdata(
   // process the data objects
   if (ifp.m_putMethod.compare(FILEPUT) == 0)
   {
+    if (std::string(dataSummary.m_dataType) == DATATYPE_VTKPTR)
+    {
+      throw std::runtime_error("not supported for the vtk ptr yet");
+    }
 
     dataSummary.m_backend = BACKEND::FILE;
     bdesc.m_backend = BACKEND::FILE;
 
     // write the data
-    int status = b_manager.putBlock(dataSummary, BACKEND::FILE, dataContainerSrc);
+    int status = client->b_manager.putBlock(dataSummary, BACKEND::FILE, dataContainerSrc);
     if (status != 0)
     {
       throw std::runtime_error("failed to put the data into the file");
@@ -204,16 +250,16 @@ int UniClient::putrawdata(
   else if (ifp.m_putMethod.compare(RDMAPUT) == 0)
   {
     // update the server addr in raw data endpoint
-    bdesc.m_rawDataServerAddr = this->m_associatedDataServer;
+    bdesc.m_rawDataServerAddr = client->m_associatedDataServer;
     // reuse the existing memory space
     // attention, if the simulation time is short consider to use the lock here
     // for every process, there are large span between two data write opertaion
-    memcpy(this->m_dataContainer, dataContainerSrc, dataMallocSize);
+    memcpy(client->m_segments[0].first, dataContainerSrc, dataTransferSize);
 
-    tl::remote_procedure remotePutRawData = this->m_clientEnginePtr->define("putrawdata");
-    tl::endpoint serverEndpoint = this->lookup(this->m_associatedDataServer);
+    tl::remote_procedure remotePutRawData = client->m_clientEnginePtr->define("putrawdata");
+    tl::endpoint serverEndpoint = client->lookup(client->m_associatedDataServer);
     int status = remotePutRawData.on(serverEndpoint)(
-      this->m_position, step, varName, dataSummary, this->m_dataBulk);
+      client->m_position, step, varName, dataSummary, client->m_dataBulk);
     // example for async put
     // auto request = remotePutRawData.on(this->m_serverEndpoint).async(this->m_position ,step,
     // varName, dataSummary, this->m_dataBulk);
@@ -227,16 +273,124 @@ int UniClient::putrawdata(
       throw std::runtime_error("failed to put the raw data");
       return -1;
     }
+
+    // update the meta
+    clock_gettime(CLOCK_REALTIME, &end1);
+    diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+    // std::cout << "put stage 1: " << diff1 << std::endl;
+
+    if (ifp.m_metaServerList.size() == 0)
+    {
+      throw std::runtime_error("the size of the metadatalist is not supposed to be 0");
+      return -1;
+    }
+
+    // range metaserver list, and update the metadata
+    tl::remote_procedure remotePutMetaData = client->m_clientEnginePtr->define("putmetadata");
+    for (auto it = ifp.m_metaServerList.begin(); it != ifp.m_metaServerList.end(); it++)
+    {
+      // std::cout << "debug mdwlist position" << this->m_position << it->m_destAddr << std::endl;
+      tl::endpoint metaserverEndpoint = client->lookup(*it);
+      int status = remotePutMetaData.on(metaserverEndpoint)(step, varName, bdesc);
+      if (status != 0)
+      {
+        std::cerr << "failed to put metadata" << std::endl;
+        return -1;
+      }
+    }
+
+    clock_gettime(CLOCK_REALTIME, &end2);
+    diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
+    // std::cout << "put stage 2: " << diff2 << std::endl;
   }
   else
   {
     throw std::runtime_error("unsupported put method");
     return -1;
   }
+  return 0;
+}
 
-  clock_gettime(CLOCK_REALTIME, &end1);
-  diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
-  // std::cout << "put stage 1: " << diff1 << std::endl;
+int putVTKData(UniClient* client, size_t step, std::string varName, BlockSummary& dataSummary,
+  void* dataContainerSrc)
+{
+
+  DEBUG("vtk marshal data for var " << varName);
+  vtkSmartPointer<vtkCharArray> vtkbuffer = vtkSmartPointer<vtkCharArray>::New();
+  bool oktoMarshal =
+    vtkCommunicator::MarshalDataObject((vtkDataObject*)dataContainerSrc, vtkbuffer);
+  if (oktoMarshal == false)
+  {
+    throw std::runtime_error("failed to marshal vtk data");
+  }
+
+  vtkIdType numTuples = vtkbuffer->GetNumberOfTuples();
+  int numComponents = vtkbuffer->GetNumberOfComponents();
+
+  size_t dataTransferSize = numTuples * numComponents;
+
+  DEBUG("vtk dataTransferSize: " << dataTransferSize);
+
+  //std::cout << "------check vtkbuffer content: ------" << std::endl;
+  //for (int i = 0; i < dataTransferSize; i++)
+  //{
+  //  std::cout << vtkbuffer->GetValue(i);
+  //}
+  //std::cout << "------" << std::endl;
+
+  // the elem size and elem length used in the block summary
+  // is the size of the marshaled array, update the block summary here
+  dataSummary.m_elemSize = numComponents;
+  dataSummary.m_elemNum = numTuples;
+
+  // assign the server
+  if (client->m_associatedDataServer.compare("") == 0)
+  {
+    client->m_associatedDataServer = client->getServerAddr();
+    DEBUG("m_position " << client->m_position << " m_associatedDataServer "
+                        << client->m_associatedDataServer);
+    client->initPutRawData(dataTransferSize);
+  }
+
+  tl::remote_procedure remotegetInfoForPut = client->m_clientEnginePtr->define("getinfoForput");
+  tl::endpoint serverEndpoint = client->lookup(client->m_associatedDataServer);
+
+  InfoForPut ifp = remotegetInfoForPut.on(serverEndpoint)(
+    step, dataTransferSize, dataSummary.m_dims, dataSummary.m_indexlb, dataSummary.m_indexub);
+
+  BlockDescriptor bdesc(client->m_associatedDataServer, dataSummary.m_blockid,
+    std::string(dataSummary.m_dataType), dataSummary.m_dims, dataSummary.m_indexlb,
+    dataSummary.m_indexub);
+
+  // check the data summary
+  if (strcmp(dataSummary.m_blockid, "") == 0)
+  {
+    throw std::runtime_error("dataSummary.m_blockid should not be empty string");
+    return -1;
+  }
+  
+  //use the marshaled objests here!!
+  //the bulk object is associated with the mem space labeld by the segments
+  memcpy(client->m_segments[0].first, vtkbuffer->GetPointer(0), dataTransferSize);
+
+  tl::remote_procedure remotePutRawData = client->m_clientEnginePtr->define("putrawdata");
+  serverEndpoint = client->lookup(client->m_associatedDataServer);
+  int status = remotePutRawData.on(serverEndpoint)(
+    client->m_position, step, varName, dataSummary, client->m_dataBulk);
+
+  // example for async put
+  // auto request = remotePutRawData.on(this->m_serverEndpoint).async(this->m_position ,step,
+  // varName, dataSummary, this->m_dataBulk);
+
+  // bool completed = request.received();
+  // ...
+  // actually wait on the request and get the result out of it
+  // int status = request.wait();
+  if (status != 0)
+  {
+    throw std::runtime_error("failed to put the raw data");
+    return -1;
+  }
 
   if (ifp.m_metaServerList.size() == 0)
   {
@@ -245,11 +399,11 @@ int UniClient::putrawdata(
   }
 
   // range metaserver list, and update the metadata
-  tl::remote_procedure remotePutMetaData = this->m_clientEnginePtr->define("putmetadata");
+  tl::remote_procedure remotePutMetaData = client->m_clientEnginePtr->define("putmetadata");
   for (auto it = ifp.m_metaServerList.begin(); it != ifp.m_metaServerList.end(); it++)
   {
     // std::cout << "debug mdwlist position" << this->m_position << it->m_destAddr << std::endl;
-    tl::endpoint metaserverEndpoint = this->lookup(*it);
+    tl::endpoint metaserverEndpoint = client->lookup(*it);
     int status = remotePutMetaData.on(metaserverEndpoint)(step, varName, bdesc);
     if (status != 0)
     {
@@ -258,9 +412,40 @@ int UniClient::putrawdata(
     }
   }
 
-  clock_gettime(CLOCK_REALTIME, &end2);
-  diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
-  // std::cout << "put stage 2: " << diff2 << std::endl;
+  return 0;
+}
+
+// TODO //ask if there is avalible mem resources
+// if there is avalible mem, put in mem
+// else, put into the disk
+// then update the metadata
+int UniClient::putrawdata(
+  size_t step, std::string varName, BlockSummary& dataSummary, void* dataContainerSrc)
+{
+
+  std::string dataType = std::string(dataSummary.m_dataType);
+
+  if (dataType == DATATYPE_CARGRID)
+  {
+
+    int status = putCarGrid(this, step, varName, dataSummary, dataContainerSrc);
+    if (status != 0)
+    {
+      throw std::runtime_error("failed to put the cartisian grid");
+    }
+  }
+  else if (dataType == DATATYPE_VTKPTR)
+  {
+    int status = putVTKData(this, step, varName, dataSummary, dataContainerSrc);
+    if (status != 0)
+    {
+      throw std::runtime_error("failed to put the vtk data");
+    }
+  }
+  else
+  {
+    throw std::runtime_error("unsupported data type");
+  }
 
   return 0;
 }
@@ -380,8 +565,8 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(size_t step, std::string varN
       if (bd->m_backend == BACKEND::MEM)
       {
         // get the subregion by the rdma to call the remote server
-        int status = this->getSubregionData(bd->m_rawDataServerAddr, bd->m_rawDataID,
-          allocSize, dims, bd->m_indexlb, bd->m_indexub, subDataContainer);
+        int status = this->getSubregionData(bd->m_rawDataServerAddr, bd->m_rawDataID, allocSize,
+          dims, bd->m_indexlb, bd->m_indexub, subDataContainer);
 
         if (status != 0)
         {
@@ -392,8 +577,8 @@ MATRIXTOOL::MatrixView UniClient::getArbitraryData(size_t step, std::string varN
       else if (bd->m_backend == BACKEND::FILE)
       {
         // get the subregion data from the local block management store for the file backend
-        BlockSummary bs = this->b_manager.getBlockSubregion(bd->m_rawDataID, BACKEND::FILE, dims,
-          bd->m_indexlb, bd->m_indexub, subDataContainer);
+        BlockSummary bs = this->b_manager.getBlockSubregion(
+          bd->m_rawDataID, BACKEND::FILE, dims, bd->m_indexlb, bd->m_indexub, subDataContainer);
         if (strcmp(bs.m_blockid, "") == 0)
         {
           throw std::runtime_error("failed to get the block summary");

@@ -25,6 +25,11 @@
 #include "statefulConfig.h"
 #include "unimosserver.hpp"
 
+// for vtk
+#include <vtkCharArray.h>
+#include <vtkCommunicator.h>
+#include <vtkSmartPointer.h>
+
 // timer information
 //#include "../putgetMeta/metaclient.h"
 
@@ -482,7 +487,7 @@ void putmetadata(const tl::request& req, size_t& step, std::string& varName, Blo
     if (gloablSettings.addTrigger == true)
     {
       // create thread on a particular and put it into the pool associated with
-      // margo instance
+      // margo instance, mix it with the pool to process the rpc
       globalServerEnginePtr->get_handler_pool().make_thread(
         [=]() {
           // the rde here is the copy version of the original rde
@@ -596,33 +601,59 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
     "blockID is {} on server {} ", blockSummary.m_blockid, uniServer->m_addrManager->nodeAddr);
 
   // assign the memory
-  size_t mallocSize = blockSummary.m_elemSize * blockSummary.m_elemNum;
+  size_t transferSize = blockSummary.m_elemSize * blockSummary.m_elemNum;
 
   // the space are allocated previously in order to save data put time
   // TODO, the client can choose how many channel are exposed at the same time
   // currently we assume there is one channel per client
-  // only create the new memory space when the clientid is not exist
+  // create the new memory space when the clientid is not exist
+  uniServer->m_bulkMapmutex.lock();
   if (uniServer->m_bulkMap.find(clientID) == uniServer->m_bulkMap.end())
   {
-    // create new bulk, this part can be reused (assume one client sent one data block for a
-    // particular time)
-    void* tempdataContainer = (void*)malloc(mallocSize);
+
     // update the accouting info for mem space
-    uniServer->m_schedulerManager->assignMem(mallocSize);
+    uniServer->m_schedulerManager->assignMem(transferSize);
+    uniServer->m_dataContainerMap[clientID] = (void*)malloc(transferSize);
 
     std::vector<std::pair<void*, std::size_t> > segments(1);
-    segments[0].first = tempdataContainer;
-    segments[0].second = mallocSize;
+    segments[0].first = uniServer->m_dataContainerMap[clientID];
+    segments[0].second = transferSize;
 
-    tl::bulk tempBulk = globalServerEnginePtr->expose(segments, tl::bulk_mode::write_only);
-    uniServer->m_bulkMapmutex.lock();
-    uniServer->m_bulkMap[clientID] = tempBulk;
-    uniServer->m_dataContainerMap[clientID] = tempdataContainer;
-    uniServer->m_bulkMapmutex.unlock();
-    spdlog::info("allocate new bulk for clientID {} serverRank {}", clientID, globalRank);
+    uniServer->m_bulkMap[clientID] =
+      globalServerEnginePtr->expose(segments, tl::bulk_mode::write_only);
+
+    spdlog::info("allocate new bulk for clientID {} serverRank {} size {}", clientID, globalRank,
+      transferSize);
+  }
+  else
+  {
+    size_t oldSize = uniServer->m_bulkMap[clientID].size();
+    // if old size is too small we may resize it
+    if (oldSize < transferSize)
+    {
+      // create the new mem when the client exists but the memsize is not enough
+      if (uniServer->m_dataContainerMap[clientID] != nullptr)
+      {
+        free(uniServer->m_dataContainerMap[clientID]);
+        uniServer->m_schedulerManager->releaseMem(oldSize);
+      }
+
+      uniServer->m_schedulerManager->assignMem(transferSize);
+      uniServer->m_dataContainerMap[clientID] = (void*)malloc(transferSize);
+
+      std::vector<std::pair<void*, std::size_t> > segments(1);
+      segments[0].first = uniServer->m_dataContainerMap[clientID];
+      segments[0].second = transferSize;
+
+      uniServer->m_bulkMap[clientID] =
+        globalServerEnginePtr->expose(segments, tl::bulk_mode::write_only);
+
+      spdlog::info("resize the new memsize of client {} to {}", clientID, transferSize);
+    }
   }
 
   tl::bulk currentBulk = uniServer->m_bulkMap[clientID];
+  uniServer->m_bulkMapmutex.unlock();
 
   try
   {
@@ -644,25 +675,86 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
         rawdata++;
     }
     */
+
+    // For the raw mem object, copy from the original place
+    // For the vtkptr, we need to create a separate object before the put operation
+    // since for put, we only store a pointer
+
     // generate the empty container firstly, then get the data pointer
     // the data will be stored into the memory by put block operation
-    int status = uniServer->m_blockManager->putBlock(
-      blockSummary, BACKEND::MEM, uniServer->m_dataContainerMap[clientID]);
-    uniServer->m_schedulerManager->assignMem(blockSummary.getTotalSize());
+    // what if another request comes during the copy operation from the transferblock to real
+    // block?? one transfer block only associated with one client currently
 
-    spdlog::debug("---put block {} on server {} map size {}", blockSummary.m_blockid,
-      uniServer->m_addrManager->nodeAddr, uniServer->m_blockManager->DataBlockMap.size());
-    if (status != 0)
+    // for the vtk objects, we need to marshal the data before put operation
+    if (std::string(blockSummary.m_dataType) == DATATYPE_VTKPTR)
     {
-      blockSummary.printSummary();
+
+      // try to recv the data
+      vtkSmartPointer<vtkCharArray> recvbuffer = vtkSmartPointer<vtkCharArray>::New();
+
+      // set key properties, type, numTuples, numComponents, name,
+      recvbuffer->SetNumberOfComponents(blockSummary.m_elemSize);
+      recvbuffer->SetNumberOfTuples(blockSummary.m_elemNum);
+
+      size_t recvSize = transferSize;
+
+      // try to simulate the data recv process
+      // when the memory of the vtkchar array is allocated???
+      memcpy(recvbuffer->GetPointer(0), uniServer->m_dataContainerMap[clientID], recvSize);
+
+      // check the data content
+      //recvbuffer->PrintSelf(std::cout, vtkIndent(5));
+      //std::cout << "------check recvbuffer content: ------" << std::endl;
+      //for (int i = 0; i < recvSize; i++)
+      //{
+      //  std::cout << recvbuffer->GetValue(i);
+      //}
+      //std::cout << "------" << std::endl;
+
+      // unmarshal
+      vtkSmartPointer<vtkDataObject> recvbj = vtkCommunicator::UnMarshalDataObject(recvbuffer);
+      spdlog::debug("---finish to unmarshal vtk obj");
+
+      // this vtkDataObject should be managemet by the datablock manager
+      // we use void* as a bridge to transfer it to the vtksmartPointer managed by the blockmanager
+      int status = uniServer->m_blockManager->putBlock(blockSummary, BACKEND::MEM, &recvbj);
+      uniServer->m_schedulerManager->assignMem(blockSummary.getTotalSize());
+
+      spdlog::debug("---put vtk block {} on server {} map size {}", blockSummary.m_blockid,
+        uniServer->m_addrManager->nodeAddr, uniServer->m_blockManager->DataBlockMap.size());
+      if (status != 0)
+      {
+        blockSummary.printSummary();
+        req.respond(status);
+        throw std::runtime_error("failed to put the vtk data");
+        return;
+      }
+
+      // put into the Block Manager
       req.respond(status);
-      throw std::runtime_error("failed to put the raw data");
+
       return;
     }
+    else
+    {
+      int status = uniServer->m_blockManager->putBlock(
+        blockSummary, BACKEND::MEM, uniServer->m_dataContainerMap[clientID]);
+      uniServer->m_schedulerManager->assignMem(blockSummary.getTotalSize());
 
-    // put into the Block Manager
-    req.respond(status);
-    return;
+      spdlog::debug("---put block {} on server {} map size {}", blockSummary.m_blockid,
+        uniServer->m_addrManager->nodeAddr, uniServer->m_blockManager->DataBlockMap.size());
+      if (status != 0)
+      {
+        blockSummary.printSummary();
+        req.respond(status);
+        throw std::runtime_error("failed to put the raw data");
+        return;
+      }
+
+      // put into the Block Manager
+      req.respond(status);
+      return;
+    }
   }
   catch (const std::exception& e)
   {

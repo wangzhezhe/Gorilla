@@ -5,11 +5,11 @@ namespace GORILLA
 BlockSummary VTKMemObj::getData(void*& dataContainer)
 {
   // return the vtk data set
-  if (this->m_dataset==NULL)
+  if (this->m_vtkobject == NULL)
   {
     throw std::runtime_error("failed to getData for RawMemObj");
   }
-  dataContainer = (void*)(this->m_dataset);
+  dataContainer = (void*)(this->m_vtkobject);
   // the block summary is the member of the parent interface
   return this->m_blockSummary;
 }
@@ -33,12 +33,20 @@ int VTKMemObj::eraseData()
 int VTKMemObj::putData(void* dataSourcePtr)
 {
 
-  if (this->m_dataset!=NULL)
+  if (this->m_vtkobject != NULL)
   {
     throw std::runtime_error("vtk objects exists");
   }
 
-  this->m_dataset = (vtkDataSet*)dataSourcePtr;
+  // the datasource is the address of the smartpointer in this case
+  // use the addr of the smart pointer to transfer it
+  // instead of transfer it into the normal pointer
+  // related issue
+  // https://discourse.paraview.org/t/question-about-getpointer-of-the-vktsmartpointer/5952
+  // be careful, there is sigault if the original type is not wrapped by the vtkSmartPointer
+  // maybe try to use the template when this part become more complicated in future
+  // https://stackoverflow.com/questions/49830867/check-if-void-to-object-with-static-cast-is-successful
+  this->m_vtkobject = *(static_cast<vtkSmartPointer<vtkDataObject>*>(dataSourcePtr));
   return 0;
 }
 

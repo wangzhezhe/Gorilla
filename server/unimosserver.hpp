@@ -81,7 +81,12 @@ struct UniServer
   // init the bulk at the server end
   tl::mutex m_bulkMapmutex;
   std::map<int, tl::bulk> m_bulkMap;
+  //instead of keeping a map of the segment
+  //it is convenient to keep a map of datacontainer
+  //this map stores all memspace used for data transfering
+  //this space is supposed to reused multiple times
   std::map<int, void*> m_dataContainerMap;
+  
 
   ~UniServer()
   {

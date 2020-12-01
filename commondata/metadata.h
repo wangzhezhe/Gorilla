@@ -13,7 +13,7 @@
 #include <typeinfo>
 #include <vector>
 
-// use namespace to avoid the conflicts for type defination 
+// use namespace to avoid the conflicts for type defination
 // comapred with system library
 namespace GORILLA
 {
@@ -42,7 +42,7 @@ enum BACKEND
 
 // cartisian grid
 static std::string const DATATYPE_CARGRID = "CARGRID";
-static std::string const DATATYPE_VTKDATASET= "VTKDATASET";
+static std::string const DATATYPE_VTKPTR = "VTKPTR";
 
 // how to put the data, maybe there is also the lcoal put
 // for the local put, the data object and summary is managed by rawdataManager in local way
@@ -213,7 +213,8 @@ struct BlockSummary
 
   size_t getTotalSize()
   {
-    if (strcmp(m_dataType, DATATYPE_CARGRID.data()) == 0)
+    if (strcmp(m_dataType, DATATYPE_CARGRID.data()) == 0 ||
+      strcmp(m_dataType, DATATYPE_VTKPTR.data()) == 0)
     {
       return m_elemNum * m_elemSize;
     }
