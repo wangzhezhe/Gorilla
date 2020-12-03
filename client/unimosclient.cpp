@@ -6,6 +6,8 @@
 
 #include <vtkCharArray.h>
 #include <vtkCommunicator.h>
+#include <vtkPointData.h>
+#include <vtkPolyData.h>
 #include <vtkSmartPointer.h>
 
 namespace GORILLA
@@ -314,6 +316,9 @@ int putCarGrid(UniClient* client, size_t step, std::string varName, BlockSummary
 int putVTKData(UniClient* client, size_t step, std::string varName, BlockSummary& dataSummary,
   void* dataContainerSrc)
 {
+    struct timespec start, end1, end2, end3;
+  double diff1, diff2, diff3;
+  clock_gettime(CLOCK_REALTIME, &start);
 
   DEBUG("vtk marshal data for var " << varName);
   vtkSmartPointer<vtkCharArray> vtkbuffer = vtkSmartPointer<vtkCharArray>::New();
@@ -331,12 +336,17 @@ int putVTKData(UniClient* client, size_t step, std::string varName, BlockSummary
 
   DEBUG("vtk dataTransferSize: " << dataTransferSize);
 
-  //std::cout << "------check vtkbuffer content: ------" << std::endl;
-  //for (int i = 0; i < dataTransferSize; i++)
+
+  clock_gettime(CLOCK_REALTIME, &end1);
+  diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+  DEBUG("stage marshal : " << diff1);  
+
+  // std::cout << "------check vtkbuffer content: ------" << std::endl;
+  // for (int i = 0; i < dataTransferSize; i++)
   //{
   //  std::cout << vtkbuffer->GetValue(i);
   //}
-  //std::cout << "------" << std::endl;
+  // std::cout << "------" << std::endl;
 
   // the elem size and elem length used in the block summary
   // is the size of the marshaled array, update the block summary here
@@ -368,10 +378,17 @@ int putVTKData(UniClient* client, size_t step, std::string varName, BlockSummary
     throw std::runtime_error("dataSummary.m_blockid should not be empty string");
     return -1;
   }
-  
-  //use the marshaled objests here!!
-  //the bulk object is associated with the mem space labeld by the segments
+
+  clock_gettime(CLOCK_REALTIME, &end2);
+  diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
+  DEBUG("stage registermem : " << diff2);
+
+  // use the marshaled objests here!!
+  // the bulk object is associated with the mem space labeld by the segments
   memcpy(client->m_segments[0].first, vtkbuffer->GetPointer(0), dataTransferSize);
+  // instead of copy agagin, just let segments equals to pointer size
+  // this can not be done before the bulk
+  // client->m_segments[0].first = vtkbuffer->GetPointer(0);
 
   tl::remote_procedure remotePutRawData = client->m_clientEnginePtr->define("putrawdata");
   serverEndpoint = client->lookup(client->m_associatedDataServer);
@@ -398,6 +415,10 @@ int putVTKData(UniClient* client, size_t step, std::string varName, BlockSummary
     return -1;
   }
 
+  clock_gettime(CLOCK_REALTIME, &end3);
+  diff3 = (end3.tv_sec - end2.tv_sec) * 1.0 + (end3.tv_nsec - end2.tv_nsec) * 1.0 / BILLION;
+  DEBUG("stage transfer : " << diff3);
+
   // range metaserver list, and update the metadata
   tl::remote_procedure remotePutMetaData = client->m_clientEnginePtr->define("putmetadata");
   for (auto it = ifp.m_metaServerList.begin(); it != ifp.m_metaServerList.end(); it++)
@@ -412,6 +433,139 @@ int putVTKData(UniClient* client, size_t step, std::string varName, BlockSummary
     }
   }
 
+  return 0;
+}
+
+// this is experimental function, we extract the data from the vtk poly and then
+// transfer them to server and assembe back to vtk data there
+int putVTKDataExp(UniClient* client, size_t step, std::string varName, BlockSummary& dataSummary,
+  void* dataContainerSrc)
+{
+  struct timespec start, end1, end2, end3;
+  double diff1, diff2, diff3;
+  clock_gettime(CLOCK_REALTIME, &start);
+  // start to marshal
+  // we only support the polydata for this method for experiment
+  // vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
+  // polyData.TakeReference((vtkPolyData*)dataContainerSrc);
+  vtkSmartPointer<vtkPolyData> polyData = (vtkPolyData*)dataContainerSrc;
+  // extract arrays
+  int numCells = polyData->GetNumberOfPolys();
+  int numPoints = polyData->GetNumberOfPoints();
+
+  // if there are multiple array
+  // refer to
+  // https://github.com/pnorbert/adiosvm/blob/master/Tutorial/gray-scott/analysis/isosurface.cpp
+  // refer to
+  // https://github.com/pnorbert/adiosvm/blob/master/Tutorial/gray-scott/analysis/find_blobs.cpp
+  // TODO support this further
+  // for the test data, there is only one filed array namely the normal data
+  //int numPointArray = polyData->GetPointData()->GetNumberOfArrays();
+  //std::string arrayName = polyData->GetPointData()->GetArrayName(0);
+  //size_t arrayTuple = polyData->GetPointData()->GetArray(0)->GetNumberOfTuples();
+  //size_t arraycomponent = polyData->GetPointData()->GetArray(0)->GetNumberOfComponents();
+  //DEBUG("numPointArray size is " << numPointArray << " arrayName " << arrayName << " arrayTuple " << arrayTuple << " arraycomponent " << arraycomponent);
+
+  std::vector<double> points(numPoints * 3);
+  std::vector<double> normals(numPoints * 3);
+  std::vector<int> cells(numCells * 3); // Assumes that cells are triangles
+
+  double coords[3];
+
+  auto cellArray = polyData->GetPolys();
+
+  cellArray->InitTraversal();
+
+  // Iterate through cells
+  for (int i = 0; i < polyData->GetNumberOfPolys(); i++)
+  {
+    auto idList = vtkSmartPointer<vtkIdList>::New();
+
+    cellArray->GetNextCell(idList);
+
+    // Iterate through points of a cell
+    for (int j = 0; j < idList->GetNumberOfIds(); j++)
+    {
+      auto id = idList->GetId(j);
+
+      cells[i * 3 + j] = id;
+
+      polyData->GetPoint(id, coords);
+
+      points[id * 3 + 0] = coords[0];
+      points[id * 3 + 1] = coords[1];
+      points[id * 3 + 2] = coords[2];
+    }
+  }
+
+  auto normalArray = polyData->GetPointData()->GetNormals();
+
+  // Extract normals
+  for (int i = 0; i < normalArray->GetNumberOfTuples(); i++)
+  {
+    normalArray->GetTuple(i, coords);
+
+    normals[i * 3 + 0] = coords[0];
+    normals[i * 3 + 1] = coords[1];
+    normals[i * 3 + 2] = coords[2];
+  }
+
+
+  // start to transfer, use the putvtkdataexp
+  // for this method, we will not reuse the segments allocated at the server end
+  // we expose three segments
+  // This number should be equals to the number array plus three (points, normal, cell)
+  std::vector<std::pair<void*, std::size_t> > segments(3);
+  segments[0].first = points.data();
+  segments[0].second = points.size() * sizeof(double);
+  segments[1].first = normals.data();
+  segments[1].second = normals.size() * sizeof(double);
+  segments[2].first = cells.data();
+  segments[2].second = cells.size() * sizeof(int);
+
+
+
+  std::vector<size_t> transferSizeList;
+  for (int i = 0; i < segments.size(); i++)
+  {
+    transferSizeList.push_back(segments[i].second);
+  }
+
+  clock_gettime(CLOCK_REALTIME, &end1);
+  diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+  DEBUG("stage marshal : " << diff1);
+
+  DEBUG("point size  " << segments[0].second << " normal size " << segments[1].second
+                       << " cell size " << segments[2].second);
+  // organize it into the bulk and register memory
+  tl::bulk expdataBulk = client->m_clientEnginePtr->expose(segments, tl::bulk_mode::read_only);
+
+  if (client->m_associatedDataServer.compare("") == 0)
+  {
+    client->m_associatedDataServer = client->getServerAddr();
+  }
+
+  clock_gettime(CLOCK_REALTIME, &end2);
+  diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
+  DEBUG("stage registermem : " << diff2);
+
+  DEBUG("server addr is " << client->m_associatedDataServer);
+  tl::remote_procedure remoteputvtkexp = client->m_clientEnginePtr->define("putvtkexp");
+  tl::endpoint serverEndpoint = client->lookup(client->m_associatedDataServer);
+  int status = remoteputvtkexp.on(serverEndpoint)(
+    client->m_position, step, varName, dataSummary, expdataBulk, transferSizeList);
+
+  if (status != 0)
+  {
+    throw std::runtime_error("failed to put the exp vtk data");
+    return -1;
+  }
+
+  clock_gettime(CLOCK_REALTIME, &end3);
+  diff3 = (end3.tv_sec - end2.tv_sec) * 1.0 + (end3.tv_nsec - end2.tv_nsec) * 1.0 / BILLION;
+  DEBUG("stage transfer : " << diff3);
+
+  // do not update the metadata for the experimental version
   return 0;
 }
 
@@ -436,7 +590,8 @@ int UniClient::putrawdata(
   }
   else if (dataType == DATATYPE_VTKPTR)
   {
-    int status = putVTKData(this, step, varName, dataSummary, dataContainerSrc);
+     int status = putVTKData(this, step, varName, dataSummary, dataContainerSrc);
+    //int status = putVTKDataExp(this, step, varName, dataSummary, dataContainerSrc);
     if (status != 0)
     {
       throw std::runtime_error("failed to put the vtk data");

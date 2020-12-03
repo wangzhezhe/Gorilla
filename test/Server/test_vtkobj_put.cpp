@@ -35,7 +35,7 @@ namespace tl = thallium;
 using namespace GORILLA;
 
 // assume that the server is alreasy started normally
-void test_put_vtk()
+void test_put_vtk(int pointNum)
 {
   const std::string serverCred = "Gorila_cred_conf";
 #ifdef USE_GNI
@@ -77,13 +77,13 @@ void test_put_vtk()
   size_t dims = 3;
   std::array<int, 3> indexlb = { { 0, 0, 0 } };
   std::array<int, 3> indexub = { { 10, 10, 10 } };
-  std::string varName = "testVTK";
-  std::string blockid = "block_0";
+  std::string varName = "testVTK" + std::to_string(pointNum);
+  std::string blockid = "block_0+"+ std::to_string(pointNum);
 
   // allocate vtk data
   vtkSmartPointer<vtkSphereSource> sphereSource = vtkSmartPointer<vtkSphereSource>::New();
-  sphereSource->SetThetaResolution(8);
-  sphereSource->SetPhiResolution(8);
+  sphereSource->SetThetaResolution(pointNum);
+  sphereSource->SetPhiResolution(pointNum);
   sphereSource->SetStartTheta(0.0);
   sphereSource->SetEndTheta(360.0);
   sphereSource->SetStartPhi(0.0);
@@ -110,7 +110,12 @@ void test_put_vtk()
   }
 }
 
-int main()
+int main(int argc, char** argv)
 {
-  test_put_vtk();
+  if (argc != 2)
+  {
+    throw std::runtime_error("the point number should be added");
+  }
+  int pointnum = std::stoi(argv[1]);
+  test_put_vtk(pointnum);
 }
