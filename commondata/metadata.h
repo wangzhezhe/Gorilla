@@ -126,11 +126,12 @@ struct MetaAddrWrapper
   }
 };
 
-const size_t STRLENLONG = 256;
+const size_t STRLENLONG = 128;
 const size_t STRLENSHORT = 64;
 
 typedef char DATAYPE[STRLENSHORT];
 typedef char BlOCKID[STRLENLONG];
+typedef char ARRAYID[STRLENLONG];
 typedef char EXTRAINFO[STRLENSHORT];
 
 // the Block Summary for every data block, this info is stored at the raw data
@@ -147,6 +148,7 @@ struct BlockSummary
   // since we may need to get data from the file, in that case
   // the metadata size should be a fixed size
   DATAYPE m_dataType;
+  // this is the block identifier
   BlOCKID m_blockid;
 
   int m_backend = BACKEND::MEM;
@@ -163,6 +165,7 @@ struct BlockSummary
   // improve the performance
   int m_clientID;
   // some extra information need to be sent from the data writer
+  // this can be used to express the 
   EXTRAINFO m_extraInfo;
 
   BlockSummary()
@@ -283,6 +286,10 @@ struct BlockSummary
     {
       return false;
     }
+    if (this->m_backend != other.m_backend)
+    {
+      return false;
+    }
     if (this->m_dims != other.m_dims)
     {
       return false;
@@ -298,6 +305,10 @@ struct BlockSummary
       return false;
     }
     if (this->m_clientID != other.m_clientID)
+    {
+      return false;
+    }
+    if (strcmp(this->m_extraInfo, other.m_extraInfo) != 0)
     {
       return false;
     }
