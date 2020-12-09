@@ -88,6 +88,7 @@ ${gorilla_SOURCE_DIR}/blockManager/blockManager.cpp
 ${gorilla_SOURCE_DIR}/blockManager/rawmemobj/rawmemobj.cpp
 ${gorilla_SOURCE_DIR}/blockManager/fileobj/fileobj.cpp
 ${gorilla_SOURCE_DIR}/blockManager/vtkmemobj/vtkmemobj.cpp
+${gorilla_SOURCE_DIR}/blockManager/vtkmemexplicit/vtkmemexplicit.cpp
 )
 target_link_libraries(blockManager abt-io ${VTK_LIBRARIES})
 

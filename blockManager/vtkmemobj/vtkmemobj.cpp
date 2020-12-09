@@ -7,7 +7,7 @@ BlockSummary VTKMemObj::getData(void*& dataContainer)
   // return the vtk data set
   if (this->m_vtkobject == NULL)
   {
-    throw std::runtime_error("failed to getData for RawMemObj");
+    throw std::runtime_error("the vtk obj is null for VTKMemObj::getData, failed to getData for RawMemObj");
   }
   dataContainer = (void*)(this->m_vtkobject);
   // the block summary is the member of the parent interface

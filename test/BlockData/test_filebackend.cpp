@@ -12,7 +12,7 @@ void test_filebackend_basic()
   strcpy(bs.m_dataType, DATATYPE_CARGRID.data());
   strcpy(bs.m_blockid, "testblock");
   ArraySummary as(std::string(bs.m_blockid), sizeof(int), 1);
-  bs.addArraySummary(bs.m_blockid, as);
+  bs.addArraySummary(as);
   int a = 123;
   bm.putBlock(bs, BACKEND::FILE, &a);
 }

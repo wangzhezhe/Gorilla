@@ -39,7 +39,6 @@ struct DataBlockInterface
   // for the most general form such as the data block contains mutiple array
   // there should a map that index the array name into the data pointer
 
-
   DataBlockInterface(const char* blockid)
   {
     if (strlen(blockid) >= STRLENLONG)
@@ -57,10 +56,11 @@ struct DataBlockInterface
     strcpy(this->m_blockid, blockSummary.m_blockid);
   };
   */
-  //maybe add array name here???
+  // maybe add array name here???
   virtual BlockSummary getData(void*& dataContainer) = 0;
 
   // put data into coresponding data structure for specific implementation
+  // when we use the putdata, there is one array in data block
   virtual int putData(void* dataSourcePtr) = 0;
 
   virtual int eraseData() = 0;
@@ -70,11 +70,15 @@ struct DataBlockInterface
 
   virtual void* getrawMemPtr() = 0;
 
+  virtual int putArray(ArraySummary& as, void* dataSourcePtr) = 0;
+
+  virtual int getArray(ArraySummary& as, void*& dataContainer) = 0;
+
   // both the destructor of the parent class and child class should labeled by virtual
   // https://www.quantstart.com/articles/C-Virtual-Destructors-How-to-Avoid-Memory-Leaks/
   // otherwise base class destructor will be called instead of the derived class destructor
   virtual ~DataBlockInterface(){
-    //std::cout << "delete DataBlockInterface" << std::endl;
+    // std::cout << "delete DataBlockInterface" << std::endl;
   };
 };
 
@@ -111,17 +115,20 @@ public:
   size_t getBlockSize(std::string blockID, int backend);
   BlockSummary getBlockSummary(std::string blockID);
   BlockSummary getBlock(std::string blockID, int backend, void*& dataContainer);
-  BlockSummary getBlockSubregion(std::string blockID, int backend, size_t dims, std::array<int, 3> subregionlb,
-    std::array<int, 3> subregionub, void*& dataContainer);
+  BlockSummary getBlockSubregion(std::string blockID, int backend, size_t dims,
+    std::array<int, 3> subregionlb, std::array<int, 3> subregionub, void*& dataContainer);
 
-  // execute the data checking service
-  // void doChecking(DataMeta &dataMeta, size_t blockID);
-  // void loadFilterManager(FilterManager*
-  // fmanager){m_filterManager=fmanager;return;}
+  int putArray(BlockSummary& blockSummary, ArraySummary& as, int backend, void* dataPointer);
+  int getArray(std::string blockName, std::string arrayName, int backend, void*& dataPointer);
 
-  // add thread pool here, after the data put, get a thread from the thread pool
-  // to check filtered data there is a filter List for every block
-  bool checkDataExistance(std::string blockID, int backend);
+    // execute the data checking service
+    // void doChecking(DataMeta &dataMeta, size_t blockID);
+    // void loadFilterManager(FilterManager*
+    // fmanager){m_filterManager=fmanager;return;}
+
+    // add thread pool here, after the data put, get a thread from the thread pool
+    // to check filtered data there is a filter List for every block
+    bool checkDataExistance(std::string blockID, int backend);
 
   // void* getBlockPointer(std::string blockID);
 

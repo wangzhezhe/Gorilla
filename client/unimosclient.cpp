@@ -350,7 +350,7 @@ int putVTKData(UniClient* client, size_t step, std::string varName, BlockSummary
 
   // the elem size and elem length used in the block summary
   // is the size of the marshaled array, update the block summary here
-  dataSummary.addArraySummary(dataSummary.m_blockid, ArraySummary(dataSummary.m_blockid,(size_t)numComponents,(size_t)numTuples));
+  dataSummary.addArraySummary(ArraySummary(dataSummary.m_blockid,(size_t)numComponents,(size_t)numTuples));
 
   // assign the server
   if (client->m_associatedDataServer.compare("") == 0)

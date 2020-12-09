@@ -103,6 +103,10 @@ target_link_libraries(test_scheduler schedulemanager thallium)
 add_executable(test_vtkmem ./BlockData/test_vtkmem.cpp)
 target_link_libraries(test_vtkmem ${VTK_LIBRARIES} thallium blockManager)
 
+# vtk explicit array
+add_executable(test_vtkexplicit ./BlockData/test_vtkexplicit.cpp)
+target_link_libraries(test_vtkexplicit ${VTK_LIBRARIES} thallium blockManager)
+
 # deprecated
 # add_subdirectory(mock)
 
@@ -131,3 +135,5 @@ add_test( test_setting test_setting)
 add_test( NAME test_meta_bbxcover COMMAND test_meta_bbxcover)
 
 add_test( NAME test_putgetevent COMMAND test_putgetevent)
+
+add_test( NAME test_vtkexplicit COMMAND test_vtkexplicit)

@@ -33,6 +33,7 @@ enum BACKEND
   MEM,
   FILE,
   MEMVTKPTR,
+  MEMVTKEXPLICIT,
 };
 
 // This backend is stored at the metadata server
@@ -43,6 +44,7 @@ enum BACKEND
 // cartisian grid
 static std::string const DATATYPE_CARGRID = "CARGRID";
 static std::string const DATATYPE_VTKPTR = "VTKPTR";
+static std::string const DATATYPE_VTKEXPLICIT = "VTKEXPLICIT";
 
 // how to put the data, maybe there is also the lcoal put
 // for the local put, the data object and summary is managed by rawdataManager in local way
@@ -245,8 +247,9 @@ struct BlockSummary
     , m_indexub(indexub)
   {
     int arrayListSize = arrayList.size();
-    if (arrayListSize == 0 || arrayListSize > ARRAYLENINBLOCK)
+    if (arrayListSize > ARRAYLENINBLOCK)
     {
+      //it is ok to be zero. since we may add array step by step
       throw std::runtime_error(
         "size of array should in the range from 0 to " + std::to_string(ARRAYLENINBLOCK));
     }
@@ -320,7 +323,7 @@ struct BlockSummary
     }
     throw std::runtime_error("failed to find array name to get elemsize" + std::string(arrayName));
   }
-  //in the function raw, the blocksummary is might wrapped with const descriptor
+  // in the function raw, the blocksummary is might wrapped with const descriptor
   size_t getArrayElemNum(const ARRAYID arrayName) const
   {
     if (strcmp(m_dataType, DATATYPE_CARGRID.data()) != 0 &&
@@ -336,15 +339,16 @@ struct BlockSummary
       }
     }
 
-    throw std::runtime_error("addArraySummary failed to find array name to get elemnum " + std::string(arrayName));
+    throw std::runtime_error(
+      "addArraySummary failed to find array name to get elemnum " + std::string(arrayName));
   }
 
-  void addArraySummary(ARRAYID arrayName, ArraySummary as)
+  void addArraySummary(ArraySummary as)
   {
-    int i=0;
+    int i = 0;
     for (i = 0; i < m_arrayListLen; i++)
     {
-      if (strcmp(m_arrayList[i].m_arrayName, arrayName) == 0)
+      if (strcmp(m_arrayList[i].m_arrayName, as.m_arrayName) == 0)
       {
         throw std::runtime_error("failed to insert arraysummary, the name exist");
       }
@@ -357,6 +361,19 @@ struct BlockSummary
       throw std::runtime_error("the maximum array is " + std::to_string(ARRAYLENINBLOCK));
     }
     return;
+  }
+
+  ArraySummary getArraySummary(const ARRAYID arrayName)
+  {
+    int i = 0;
+    for (i = 0; i < m_arrayListLen; i++)
+    {
+      if (strcmp(m_arrayList[i].m_arrayName, arrayName) == 0)
+      {
+        return m_arrayList[i];
+      }
+    }
+    throw std::runtime_error("failed to get ArraySummary");
   }
 
   /*

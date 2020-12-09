@@ -1,20 +1,21 @@
-#ifndef VTKMEMOBJ_H
-#define VTKMEMOBJ_H
+#ifndef VTKMEMEXPLICIT_H
+#define VTKMEMEXPLICIT_H
 
 #include <blockManager/blockManager.h>
 #include <iostream>
 #include <vtkDataSet.h>
 #include <vtkSmartPointer.h>
+#include <unordered_map>
 
 namespace GORILLA
 {
 
-struct VTKMemObj : public DataBlockInterface
+struct VTKMemExplicitObj : public DataBlockInterface
 {
 
-  VTKMemObj(const char* blockid)
+  VTKMemExplicitObj(const char* blockid)
     : DataBlockInterface(blockid){
-      // std::cout << "VTKMemObj is initialised" << std::endl;
+      // std::cout << "VTKMemExplicitObj is initialised" << std::endl;
     };
 
   BlockSummary getData(void*& dataContainer);
@@ -26,15 +27,9 @@ struct VTKMemObj : public DataBlockInterface
 
   void* getrawMemPtr() { return (void*)this->m_vtkobject; };
 
-  int putArray(ArraySummary& as, void* dataSourcePtr)
-  {
-    throw std::runtime_error("unsupported yet for vtkmemobj");
-  }
+  int putArray(ArraySummary& as, void* dataSourcePtr);
 
-  int getArray(ArraySummary& as, void*& dataContainer)
-  {
-    throw std::runtime_error("unsupported yet for RawMemObj");
-  }
+  int getArray(ArraySummary& as, void*& dataContainer);
 
   BlockSummary getDataSubregion(size_t dims, std::array<int, 3> subregionlb,
     std::array<int, 3> subregionub, void*& dataContainer);
@@ -44,8 +39,10 @@ struct VTKMemObj : public DataBlockInterface
   // vtkDataObject* m_vtkobject = NULL;
   // the common pointer and smart pointer can be assigned to each other transparently
   vtkSmartPointer<vtkDataObject> m_vtkobject = NULL;
+  tl::mutex m_m_arrayMapMutex;
+  std::unordered_map<ArraySummary, vtkSmartPointer<vtkDataObject>, ArraySummaryHash > m_arrayMap;
 
-  virtual ~VTKMemObj()
+  virtual ~VTKMemExplicitObj()
   {
     // we may choose to use the pure null ptr
     // refer to https://vtk.org/Wiki/VTK/Tutorials/SmartPointers

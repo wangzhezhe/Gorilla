@@ -4,6 +4,7 @@
 // this should be put at the .cpp file instead of the .h file
 #include "fileobj/fileobj.h"
 #include "rawmemobj/rawmemobj.h"
+#include "vtkmemexplicit/vtkmemexplicit.h"
 #include "vtkmemobj/vtkmemobj.h"
 #include <iostream>
 
@@ -57,6 +58,13 @@ DataBlockInterface* BlockManager::getBlockHandle(std::string blockID, int backen
         this->DataBlockMap[blockID] = dbi;
         handle = dbi;
       }
+      else if (backend == BACKEND::MEMVTKEXPLICIT)
+      {
+        DataBlockInterface* dbi = new VTKMemExplicitObj(blockID.data());
+        // strcpy(dbi->m_blockid, blockID.data());
+        this->DataBlockMap[blockID] = dbi;
+        handle = dbi;
+      }
       else
       {
         throw std::runtime_error("unsupported block type to get block handle");
@@ -65,15 +73,54 @@ DataBlockInterface* BlockManager::getBlockHandle(std::string blockID, int backen
   }
   return handle;
 }
-//how to integrate multi array case with this one?
+
+int BlockManager::putArray(
+  BlockSummary& blockSummary, ArraySummary& as, int backend, void* dataPointer)
+{
+
+  DataBlockInterface* handle = getBlockHandle(std::string(blockSummary.m_blockid), backend);
+
+  // add the arraySummary into the block
+  blockSummary.addArraySummary(as);
+
+  // update the block summary
+  handle->m_blockSummary = blockSummary;
+  int status = handle->putArray(as, dataPointer);
+  return status;
+}
+
+int BlockManager::getArray(
+  std::string blockName, std::string arrayName, int backend, void*& dataPointer)
+{
+
+  if (this->DataBlockMap.count(blockName) == 0)
+  {
+    throw std::runtime_error("the block summary not exist in DataBlockMap");
+  }
+
+  // exist
+  this->m_DataBlockMapMutex.lock();
+  BlockSummary bs = this->DataBlockMap[blockName]->m_blockSummary;
+  this->m_DataBlockMapMutex.unlock();
+
+  // todo check the length of the arrayname
+  ArraySummary as = bs.getArraySummary(arrayName.data());
+
+  DataBlockInterface* handle = getBlockHandle(blockName, backend);
+  // get summary from the block array
+  int status = handle->getArray(as, dataPointer);
+  return status;
+}
+
 int BlockManager::putBlock(BlockSummary& blockSummary, int backend, void* dataPointer)
 {
   DataBlockInterface* handle = getBlockHandle(std::string(blockSummary.m_blockid), backend);
   // assign actual value to block summay, this information will be used for data put operation
   handle->m_blockSummary = blockSummary;
-  //check if the copy is successfuly
-  //it might be the shallow copy? since we used typedef
-  if (handle->m_blockSummary.equals(blockSummary)==false){
+  // check if the copy is successfuly
+  // it might be the shallow copy? since we used typedef
+  if (handle->m_blockSummary.equals(blockSummary) == false)
+  {
     throw std::runtime_error("copy failed");
     return -1;
   }
@@ -157,7 +204,7 @@ int BlockManager::eraseBlock(std::string blockID, int backend)
   DataBlockInterface* handle = getBlockHandle(blockID, backend);
   handle->eraseData();
   this->m_DataBlockMapMutex.unlock();
-  //the handle is assigned by new
+  // the handle is assigned by new
   delete handle;
   DataBlockMap.erase(blockID);
   this->m_DataBlockMapMutex.unlock();
