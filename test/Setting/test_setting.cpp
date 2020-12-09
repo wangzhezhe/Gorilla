@@ -3,13 +3,12 @@
 #include <string>
 #include <vector>
 
-int main()
+int main(int argc, char** argv)
 {
 
-  std::string jsonFile("~/cworkspace/src/Gorilla/server/settings_gni.json");
-
-  Settings gloablSettings = Settings::from_json(jsonFile);
-
-  gloablSettings.printsetting();
+  std::string str = "/global/homes/z/zw241/cworkspace/src/Gorilla/server/settings_gni.json";
+  Settings tempsetting = Settings::from_json(str);
+  std::cout << "use path: " << str << std::endl;
+  tempsetting.printsetting();
   return 0;
 }

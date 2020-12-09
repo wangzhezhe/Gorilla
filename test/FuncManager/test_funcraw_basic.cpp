@@ -27,8 +27,11 @@ void test_exengine_rangeG()
   parameters.push_back("G");
   parameters.push_back("0.05");
 
-  BlockSummary bs(
-    sizeof(double), len * len * len, DATATYPE_CARGRID, "12345", 3, { { 0, 0, 0 } }, { { 9, 9, 9 } });
+  ArraySummary as("12345", sizeof(double), len * len * len);
+  std::vector<ArraySummary> aslist;
+  aslist.push_back(as);
+
+  BlockSummary bs(aslist, DATATYPE_CARGRID, "12345", 3, { { 0, 0, 0 } }, { { 9, 9, 9 } });
   std::string funcName = "valueRange";
   std::string results = exengine->execute(NULL, bs, rawdata.data(), funcName, parameters);
   if (results.compare("1") != 0)
@@ -59,8 +62,11 @@ void test_exengine_rangeL()
   parameters.push_back("L");
   parameters.push_back("5");
 
-  BlockSummary bs(
-    sizeof(double), len * len * len, DATATYPE_CARGRID, "12345", 3, { { 0, 0, 0 } }, { { 9, 9, 9 } });
+  ArraySummary as("12345", sizeof(double), len * len * len);
+  std::vector<ArraySummary> aslist;
+  aslist.push_back(as);
+
+  BlockSummary bs(aslist, DATATYPE_CARGRID, "12345", 3, { { 0, 0, 0 } }, { { 9, 9, 9 } });
   std::string funcName = "valueRange";
   std::string results = exengine->execute(NULL, bs, rawdata.data(), funcName, parameters);
   if (results.compare("1") != 0)
@@ -93,8 +99,11 @@ void test_exengine_rangeB()
   parameters.push_back("0.001");
   parameters.push_back("0.002");
 
-  BlockSummary bs(
-    sizeof(double), len * len * len, DATATYPE_CARGRID, "12345", 3, { { 0, 0, 0 } }, { { 9, 9, 9 } });
+  ArraySummary as("12345", sizeof(double), len * len * len);
+  std::vector<ArraySummary> aslist;
+  aslist.push_back(as);
+
+  BlockSummary bs(aslist, DATATYPE_CARGRID, "12345", 3, { { 0, 0, 0 } }, { { 9, 9, 9 } });
   std::string funcName = "valueRange";
   std::string results = exengine->execute(NULL, bs, rawdata.data(), funcName, parameters);
   if (results.compare("0") != 0)

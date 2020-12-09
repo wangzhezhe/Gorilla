@@ -17,10 +17,12 @@ using namespace GORILLA;
 void test_marshal_unmarshal()
 {
   std::cout << "---test " << __FUNCTION__ << std::endl;
-  // create sphere source
+
+
+  //create sphere source
   vtkSmartPointer<vtkSphereSource> sphereSource = vtkSmartPointer<vtkSphereSource>::New();
-  sphereSource->SetThetaResolution(8);
-  sphereSource->SetPhiResolution(8);
+  sphereSource->SetThetaResolution(800);
+  sphereSource->SetPhiResolution(800);
   sphereSource->SetStartTheta(0.0);
   sphereSource->SetEndTheta(360.0);
   sphereSource->SetStartPhi(0.0);
@@ -68,12 +70,12 @@ void test_marshal_unmarshal()
   // when the memory of the vtkchar array is allocated???
   memcpy(recvbuffer->GetPointer(0), buffer->GetPointer(0), recvSize);
 
-  std::cout << "------check recvbuffer content: ------" << std::endl;
-  for (int i = 0; i < recvSize; i++)
-  {
-    std::cout << recvbuffer->GetValue(i);
-  }
-  std::cout << "------" << std::endl;
+  //std::cout << "------check recvbuffer content: ------" << std::endl;
+  //for (int i = 0; i < recvSize; i++)
+  //{
+  //  std::cout << recvbuffer->GetValue(i);
+  //}
+  //std::cout << "------" << std::endl;
 
   // unmarshal
   vtkSmartPointer<vtkDataObject> recvbj = vtkCommunicator::UnMarshalDataObject(recvbuffer);
@@ -107,7 +109,10 @@ void test_put(BlockManager& bm)
   std::array<int, 3> indexub = { { 10, 10, 10 } };
 
   // the both elem size and elem number is 1 useless for vtk data
-  BlockSummary bs(1, 1, DATATYPE_VTKPTR, blockid, 3, indexlb, indexub);
+  ArraySummary as(blockid, 1, 1);
+  std::vector<ArraySummary> aslist;
+  aslist.push_back(as);
+  BlockSummary bs(aslist, DATATYPE_VTKPTR, blockid, 3, indexlb, indexub);
   // the actual data is supposed to be created outof the block manager
   // and the block manager only keep the pointer to the object in this case
   bm.putBlock(bs, BACKEND::MEMVTKPTR, &polyData);

@@ -37,8 +37,7 @@ BlockSummary FileObj::getData(void*& dataContainer)
   // need to allocate memory instead of using exist structure
   rfile.read((char*)&(this->m_blockSummary), bsummarySize);
 
-  size_t blockDataSize = this->m_blockSummary.m_elemSize * this->m_blockSummary.m_elemNum;
-
+  size_t blockDataSize = this->m_blockSummary.getArraySize(this->m_blockSummary.m_blockid);
   if ((bsummarySize + blockDataSize) != fileSize)
   {
     throw std::runtime_error("size in block and summary size not match with actual file size");
@@ -72,7 +71,7 @@ int FileObj::putData(void* dataSourcePtr)
   {
     throw std::runtime_error("failed to put data into file, the blockid should not be empty");
   }
-  size_t dataSize = this->m_blockSummary.m_elemSize * this->m_blockSummary.m_elemNum;
+  size_t dataSize = this->m_blockSummary.getArraySize(this->m_blockSummary.m_blockid);
   std::string blockid = this->m_blockSummary.m_blockid;
 
   // write from the file
@@ -194,7 +193,7 @@ BlockSummary FileObj::getDataSubregion(
   }
 
   // assign mem space and get data
-  size_t memSpace = this->m_blockSummary.m_elemNum * this->m_blockSummary.m_elemSize;
+  size_t memSpace = this->m_blockSummary.getArraySize(this->m_blockSummary.m_blockid);
   void* tempData = (void*)malloc(memSpace);
 
   rfile.seekg(bsummarySize);
@@ -211,7 +210,7 @@ BlockSummary FileObj::getDataSubregion(
 
   // if the size not match with each other
   // reorganize the data
-  size_t elemSize = (size_t)this->m_blockSummary.m_elemSize;
+  size_t elemSize = this->m_blockSummary.getArrayElemSize(this->m_blockSummary.m_blockid);
   // decrease the offset
   std::array<int, 3> offset = this->m_blockSummary.m_indexlb;
   std::array<size_t, 3> subregionLbNonoffset;
@@ -236,10 +235,12 @@ BlockSummary FileObj::getDataSubregion(
     }
   }
 
-  if (this->m_blockSummary.m_elemNum < currentElemNum)
+  size_t elemNum = this->m_blockSummary.getArrayElemNum(this->m_blockSummary.m_blockid);
+
+  if (elemNum < currentElemNum)
   {
     m_blockSummary.printSummary();
-    std::cout << "m_blockSummary.m_elemNum " << m_blockSummary.m_elemNum << " currentElemNum "
+    std::cout << "elemNum " << elemNum<< " currentElemNum "
               << currentElemNum << std::endl;
     throw std::runtime_error(
       "failed to getDataSubregion, current elem number is larger than the value in Blocksummary");

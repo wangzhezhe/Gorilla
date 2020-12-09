@@ -11,8 +11,19 @@ void test_membackend_basic()
   tl::abt scope;
   BlockManager bm;
   BlockSummary bs;
+  strcpy(bs.m_dataType, DATATYPE_CARGRID.data());
   strcpy(bs.m_blockid, "123");
-  bm.putBlock(bs, BACKEND::MEM, NULL);
+  try{
+    bm.putBlock(bs, BACKEND::MEM, NULL);
+  }catch (std::exception &e) {
+    std::string excstring = std::string(e.what());
+    std::cout << "get exp: " << excstring << std::endl;
+    size_t find = excstring.find("failed to find array name");
+    if (find == std::string::npos)
+    {
+      throw std::runtime_error("failed for test_matrixcheck");
+    }
+  }
 }
 
 void test_membackend_putget()
@@ -33,7 +44,11 @@ void test_membackend_putget()
   }
 
   std::string blockid = "12345";
-  BlockSummary bs(sizeof(double), 100, DATATYPE_CARGRID, blockid, 1, indexlb, indexub);
+  ArraySummary as(blockid, sizeof(double), 100);
+  std::vector<ArraySummary> aslist;
+  aslist.push_back(as);
+
+  BlockSummary bs(aslist, DATATYPE_CARGRID, blockid, 1, indexlb, indexub);
 
   bm.putBlock(bs, BACKEND::MEM, rawdata.data());
 
@@ -43,7 +58,8 @@ void test_membackend_putget()
   std::cout << "get summary" << std::endl;
   BlockSummary bsget = bm.getBlockSummary(blockid);
   bsget.printSummary();
-  if(bsget.equals(bs)==false){
+  if (bsget.equals(bs) == false)
+  {
     throw std::runtime_error("the returned data not equal");
   }
 

@@ -32,6 +32,7 @@
 #include <vtkPointData.h>
 #include <vtkPolyData.h>
 #include <vtkSmartPointer.h>
+#include <vtkXMLPolyDataWriter.h>
 
 // timer information
 //#include "../putgetMeta/metaclient.h"
@@ -660,9 +661,10 @@ void putvtkexp(const tl::request& req, int clientID, size_t& step, std::string& 
   spdlog::debug("server transfer: {}", diff2);
 
   // extract the data and assemble them into the vtk
-  std::vector<double> bufPoints(transferSizeList[0]);
-  std::vector<double> bufNormals(transferSizeList[1]);
-  std::vector<int> bufCells(transferSizeList[2]);
+  // assume we use the polygonal data
+  std::vector<double> bufPoints(transferSizeList[0]/sizeof(double));
+  std::vector<double> bufNormals(transferSizeList[1]/sizeof(double));
+  std::vector<int> bufCells(transferSizeList[2]/sizeof(int));
 
   // assign transfered value to the vector array
   memcpy(bufPoints.data(), segments[0].first, transferSizeList[0]);
@@ -677,6 +679,13 @@ void putvtkexp(const tl::request& req, int clientID, size_t& step, std::string& 
 
   // test if poly data ok
   polydata->PrintSelf(std::cout, vtkIndent(5));
+
+  // write the data for futher checking
+  //vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+  //writer->SetFileName("./serverrecvpoly.vtp");
+  // get the specific polydata and check the results
+  //writer->SetInputData(polydata);
+  //writer->Write();
 
   req.respond(0);
   return;
@@ -707,7 +716,8 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
     "blockID is {} on server {} ", blockSummary.m_blockid, uniServer->m_addrManager->nodeAddr);
 
   // assign the memory
-  size_t transferSize = blockSummary.m_elemSize * blockSummary.m_elemNum;
+  // use the same array id with the block summary
+  size_t transferSize = blockSummary.getArraySize(blockSummary.m_blockid);
 
   // the space are allocated previously in order to save data put time
   // TODO, the client can choose how many channel are exposed at the same time
@@ -771,7 +781,7 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
     // pull the data onto the server
     dataBulk.on(ep) >> currentBulk;
 
-    clock_gettime(CLOCK_REALTIME, &end1);
+    clock_gettime(CLOCK_REALTIME, &end2);
     diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
     spdlog::debug("server put transfer : {}", diff2);
     // spdlog::debug("Server received bulk, check the contents: ");
@@ -793,8 +803,9 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
     // the data will be stored into the memory by put block operation
     // what if another request comes during the copy operation from the transferblock to real
     // block?? one transfer block only associated with one client currently
-
     // for the vtk objects, we need to marshal the data before put operation
+    size_t elemSize = blockSummary.getArrayElemSize(blockSummary.m_blockid);
+    size_t elemNum = blockSummary.getArrayElemNum(blockSummary.m_blockid);
     if (std::string(blockSummary.m_dataType) == DATATYPE_VTKPTR)
     {
 
@@ -802,16 +813,15 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
       vtkSmartPointer<vtkCharArray> recvbuffer = vtkSmartPointer<vtkCharArray>::New();
 
       // set key properties, type, numTuples, numComponents, name,
-      recvbuffer->SetNumberOfComponents(blockSummary.m_elemSize);
-      recvbuffer->SetNumberOfTuples(blockSummary.m_elemNum);
-
-      size_t recvSize = transferSize;
+      spdlog::debug("component {} tuples {} in recvbuffer", elemSize, elemNum);
+      recvbuffer->SetNumberOfComponents(elemSize);
+      recvbuffer->SetNumberOfTuples(elemNum);
 
       // try to simulate the data recv process
       // when the memory of the vtkchar array is allocated???
       // TODO add the condition varible here
       // start to memcopy when the datacontainer is not used
-      memcpy(recvbuffer->GetPointer(0), uniServer->m_dataContainerMap[clientID], recvSize);
+      memcpy(recvbuffer->GetPointer(0), uniServer->m_dataContainerMap[clientID], transferSize);
 
       // check the data content
       // recvbuffer->PrintSelf(std::cout, vtkIndent(5));
@@ -822,9 +832,15 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
       // }
       // std::cout << "------" << std::endl;
 
+      //check the recvarray
+
+
       // unmarshal
       vtkSmartPointer<vtkDataObject> recvbj = vtkCommunicator::UnMarshalDataObject(recvbuffer);
       spdlog::debug("---finish to unmarshal vtk obj");
+      //if the origianl data is poly data
+      vtkDataObject* recvptr = recvbj;
+      ((vtkPolyData*)recvptr)->PrintSelf(std::cout, vtkIndent(5));
 
       clock_gettime(CLOCK_REALTIME, &end3);
       diff3 = (end3.tv_sec - end2.tv_sec) * 1.0 + (end3.tv_nsec - end2.tv_nsec) * 1.0 / BILLION;
@@ -832,8 +848,8 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
 
       // this vtkDataObject should be managemet by the datablock manager
       // we use void* as a bridge to transfer it to the vtksmartPointer managed by the blockmanager
-      int status = uniServer->m_blockManager->putBlock(blockSummary, BACKEND::MEM, &recvbj);
-      uniServer->m_schedulerManager->assignMem(blockSummary.getTotalSize());
+      int status = uniServer->m_blockManager->putBlock(blockSummary, BACKEND::MEMVTKPTR, &recvbj);
+      uniServer->m_schedulerManager->assignMem(blockSummary.getArraySize(blockSummary.m_blockid));
 
       spdlog::debug("---put vtk block {} on server {} map size {}", blockSummary.m_blockid,
         uniServer->m_addrManager->nodeAddr, uniServer->m_blockManager->DataBlockMap.size());
@@ -854,7 +870,7 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
     {
       int status = uniServer->m_blockManager->putBlock(
         blockSummary, BACKEND::MEM, uniServer->m_dataContainerMap[clientID]);
-      uniServer->m_schedulerManager->assignMem(blockSummary.getTotalSize());
+      uniServer->m_schedulerManager->assignMem(blockSummary.getArraySize(blockSummary.m_blockid));
 
       spdlog::debug("---put block {} on server {} map size {}", blockSummary.m_blockid,
         uniServer->m_addrManager->nodeAddr, uniServer->m_blockManager->DataBlockMap.size());
@@ -1074,7 +1090,7 @@ void getDataSubregion(const tl::request& req, std::string& blockID, size_t& dims
     }
     BlockSummary bs = uniServer->m_blockManager->getBlockSummary(blockID);
     // TODO check if the summary is empty (no data id)
-    size_t elemSize = bs.m_elemSize;
+    size_t elemSize = bs.getArrayElemSize(bs.m_blockid);
     BBXTOOL::BBX bbx(dims, subregionlb, subregionub);
     size_t allocSize = elemSize * bbx.getElemNum();
     spdlog::debug("alloc size at server {} is {}", globalRank, allocSize);

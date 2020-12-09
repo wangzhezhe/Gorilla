@@ -11,7 +11,8 @@ void test_filebackend_basic()
   BlockSummary bs;
   strcpy(bs.m_dataType, DATATYPE_CARGRID.data());
   strcpy(bs.m_blockid, "testblock");
-  bs.m_elemSize = sizeof(int);
+  ArraySummary as(std::string(bs.m_blockid), sizeof(int), 1);
+  bs.addArraySummary(bs.m_blockid, as);
   int a = 123;
   bm.putBlock(bs, BACKEND::FILE, &a);
 }
@@ -32,7 +33,10 @@ void test_filebackend_putget()
   }
 
   std::string blockid = "12345";
-  BlockSummary bs(sizeof(double), 100, DATATYPE_CARGRID, blockid, 1, indexlb, indexub);
+  ArraySummary as(std::string(blockid), sizeof(double), 100);
+  std::vector<ArraySummary> aslist;
+  aslist.push_back(as);
+  BlockSummary bs(aslist, DATATYPE_CARGRID, blockid, 1, indexlb, indexub);
 
   bm.putBlock(bs, BACKEND::FILE, rawdata.data());
 
@@ -48,24 +52,24 @@ void test_filebackend_putget()
     throw std::runtime_error("failed to get the correct block summary");
   }
 
+  size_t elemNum = bsget.getArrayElemNum(bsget.m_blockid);
+  size_t elemSize = bsget.getArrayElemSize(bsget.m_blockid);
+  std::cout << "get elem num " << elemNum << " get elem size " << elemSize << std::endl; 
+  void* getContainer = (void*)calloc(elemNum, elemSize);
 
-  void* getContainer = (void*)calloc(bsget.m_elemNum, bsget.m_elemSize);
-  for (int i = 0; i < 5; i++)
+  bm.getBlock(blockid, BACKEND::FILE, getContainer);
+  if (getContainer != NULL)
   {
-    bm.getBlock(blockid, BACKEND::FILE, getContainer);
-    if (getContainer != NULL)
+    // check the results
+    for (int i = 0; i <= 99; i++)
     {
-      // check the results
-      for (int i = 0; i <= 99; i++)
-      {
-        double value = *((double*)(getContainer) + i);
-        // std::cout << "index " << i << " value " << value << std::endl;
+      double value = *((double*)(getContainer) + i);
+      std::cout << "index " << i << " value " << value << std::endl;
 
-        if (value != i * 0.1)
-        {
-          std::cout << "index " << i << " value " << value << std::endl;
-          throw std::runtime_error("return value is wrong for index");
-        }
+      if (value != i * 0.1)
+      {
+        std::cout << "index " << i << " value " << value << std::endl;
+        throw std::runtime_error("return value is wrong for index");
       }
     }
   }
@@ -127,7 +131,10 @@ void test_filebackend_erase()
   }
 
   std::string blockid = "123456";
-  BlockSummary bs(sizeof(double), 100, DATATYPE_CARGRID, blockid, 1, indexlb, indexub);
+  ArraySummary as(std::string(blockid), sizeof(int), 100);
+  std::vector<ArraySummary> aslist;
+  aslist.push_back(as);
+  BlockSummary bs(aslist, DATATYPE_CARGRID, blockid, 1, indexlb, indexub);
 
   bm.putBlock(bs, BACKEND::FILE, rawdata.data());
 

@@ -32,8 +32,12 @@ void test_executeVTK_raw()
     rawdata.push_back(i * 0.1);
   }
 
+  ArraySummary as("12345", sizeof(double), len * len * len);
+  std::vector<ArraySummary> aslist;
+  aslist.push_back(as);
+
   BlockSummary bs(
-    sizeof(double), len * len * len, DATATYPE_CARGRID, "12345", 3, { { 0, 0, 0 } }, { { 9, 9, 9 } });
+    aslist, DATATYPE_CARGRID, "12345", 3, { { 0, 0, 0 } }, { { 9, 9, 9 } });
   std::string funcName = "testvtk";
   std::vector<std::string> parameters;
   exengine->execute(NULL, bs, rawdata.data(), funcName, parameters);

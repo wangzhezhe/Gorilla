@@ -31,9 +31,15 @@ struct DataBlockInterface
   // the block id is also needed, for file based data block, this information is
   // needed
   BlOCKID m_blockid;
+
   BlockSummary m_blockSummary;
   // this might be used by the file init
   // we only know the blockid for the file driver
+  // for different implementaiton, the array is in different format
+  // for the most general form such as the data block contains mutiple array
+  // there should a map that index the array name into the data pointer
+
+
   DataBlockInterface(const char* blockid)
   {
     if (strlen(blockid) >= STRLENLONG)
@@ -51,7 +57,7 @@ struct DataBlockInterface
     strcpy(this->m_blockid, blockSummary.m_blockid);
   };
   */
-
+  //maybe add array name here???
   virtual BlockSummary getData(void*& dataContainer) = 0;
 
   // put data into coresponding data structure for specific implementation

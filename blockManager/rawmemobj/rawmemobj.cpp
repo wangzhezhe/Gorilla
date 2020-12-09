@@ -15,7 +15,9 @@ int RawMemObj::eraseData()
 
 int RawMemObj::putData(void* dataSourcePtr)
 {
-  int memSize = this->m_blockSummary.m_elemSize * this->m_blockSummary.m_elemNum;
+  // there is one array for one block, get the size of array (which shared same name with the block)
+  // from the block summary
+  int memSize = this->m_blockSummary.getArraySize(this->m_blockSummary.m_blockid);
   if (this->m_rawMemPtr != NULL)
   {
     throw std::runtime_error("failed to putData the memroy for RawMemObj, there is existing data");
@@ -72,7 +74,7 @@ BlockSummary RawMemObj::getDataSubregion(
     return this->m_blockSummary;
   }
 
-  size_t elemSize = (size_t)this->m_blockSummary.m_elemSize;
+  size_t elemSize = this->m_blockSummary.getArrayElemSize(this->m_blockSummary.m_blockid);
   // decrease the offset
   std::array<int, 3> offset = this->m_blockSummary.m_indexlb;
   std::array<size_t, 3> subregionLbNonoffset;
@@ -96,12 +98,12 @@ BlockSummary RawMemObj::getDataSubregion(
       currentElemNum = currentElemNum * globalUbNonoffset[i];
     }
   }
-
-  if (this->m_blockSummary.m_elemNum < currentElemNum)
+  size_t elemNum = this->m_blockSummary.getArrayElemNum(this->m_blockSummary.m_blockid);
+  if (elemNum < currentElemNum)
   {
     m_blockSummary.printSummary();
-    std::cout << "m_blockSummary.m_elemNum " << m_blockSummary.m_elemNum << " currentElemNum "
-              << currentElemNum << std::endl;
+    std::cout << "m_blockSummary.m_elemNum " << elemNum << " currentElemNum " << currentElemNum
+              << std::endl;
     throw std::runtime_error(
       "failed to getDataSubregion, current elem number is larger than the value in Blocksummary");
   }

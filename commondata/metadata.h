@@ -128,44 +128,107 @@ struct MetaAddrWrapper
 
 const size_t STRLENLONG = 128;
 const size_t STRLENSHORT = 64;
+// how many arrays can be stored in one block
+const size_t ARRAYLENINBLOCK = 10;
 
 typedef char DATAYPE[STRLENSHORT];
 typedef char BlOCKID[STRLENLONG];
 typedef char ARRAYID[STRLENLONG];
 typedef char EXTRAINFO[STRLENSHORT];
 
-// the Block Summary for every data block, this info is stored at the raw data
-// server
-struct BlockSummary
+// the summary of one nd array
+// all array is viewed as 1d
+// the higher level logical dimention and the bbx
+// are stored at the block summary
+// if there are only one array in one block
+// the arrayname equals to the block name
+struct ArraySummary
 {
-  // for empty meta data, the initial value is 0
-  // std::string m_typeName = "";
-
+  ArraySummary(){};
+  ArraySummary(std::string arrayName, size_t elemSize, size_t elemNum)
+    : m_elemSize(elemSize)
+    , m_elemNum(elemNum)
+  {
+    if (arrayName.size() > STRLENLONG)
+    {
+      throw std::runtime_error(
+        "length of arrayName should less than " + std::to_string(STRLENLONG));
+    }
+    strcpy(m_arrayName, arrayName.data());
+  };
+  ARRAYID m_arrayName;
   size_t m_elemSize = 0;
   size_t m_elemNum = 0;
+  ~ArraySummary(){};
 
-  // it is necessary to make the size of the blockSumamry fixed
+  template <typename A>
+  void serialize(A& ar)
+  {
+    ar& m_arrayName;
+    ar& m_elemSize;
+    ar& m_elemNum;
+  }
+
+  void printSummary()
+  {
+    std::cout << "m_arrayName " << m_arrayName << " m_elemSize " << m_elemSize << " m_elemNum "
+              << m_elemNum << std::endl;
+  }
+
+  bool operator==(const ArraySummary& a) const
+  {
+    return (strcmp(m_arrayName, a.m_arrayName) == 0 && m_elemSize == a.m_elemSize &&
+      m_elemNum == a.m_elemNum);
+  }
+};
+
+// the hash function for arraySummary
+// it might be indexed in an unordered map
+struct ArraySummaryHash
+{
+  std::size_t operator()(const ArraySummary& a) const
+  {
+    std::hash<std::string> hashFn;
+    return hashFn(std::string(a.m_arrayName));
+  }
+};
+
+// the Block Summary for every data block, this info is stored at the blockManager
+// one block might included one or multiple array summary
+// the block summary only contains the index information
+// how to bridge the blcok and the array? since the legth of the array is varied
+struct BlockSummary
+{
+  // it is necessary to make the size of the ArraySummary and the blockSummary fixed
   // since we may need to get data from the file, in that case
   // the metadata size should be a fixed size
   DATAYPE m_dataType;
+
   // this is the block identifier
   BlOCKID m_blockid;
 
   int m_backend = BACKEND::MEM;
 
+  // the bbx used by the data block
+  // maybe to support the physical domain in future
+  // currently we only support cartisian grid
   size_t m_dims = 3;
-
-  // TODO, consider to add the real bbox, since the real data dimention might be
-  // smaller than the index dimention the bounding box can be negative number,
-  // so use the int here
   std::array<int, 3> m_indexlb{ { 0, 0, 0 } };
-  // the origin can be caculated by offset
   std::array<int, 3> m_indexub{ { 0, 0, 0 } };
+
   // this is use to find the associated rdma endpoint at the server in order to
   // improve the performance
   int m_clientID;
+
+  // the message about the actual arrays
+  // the offset can be caculated automatically
+  // we only do this in linear way since there
+  // is not many array in one block and this can be
+  // optimized further such as store the name and offset in advance
+  uint8_t m_arrayListLen;
+  ArraySummary m_arrayList[ARRAYLENINBLOCK];
+
   // some extra information need to be sent from the data writer
-  // this can be used to express the 
   EXTRAINFO m_extraInfo;
 
   BlockSummary()
@@ -175,14 +238,24 @@ struct BlockSummary
     strcpy(m_blockid, "");
     strcpy(m_extraInfo, "");
   };
-  BlockSummary(size_t elemSize, size_t elemNum, std::string dataType, std::string blockid,
+  BlockSummary(std::vector<ArraySummary> arrayList, std::string dataType, std::string blockid,
     size_t dims, std::array<int, 3> indexlb, std::array<int, 3> indexub, std::string extraInfo = "")
-    : m_elemSize(elemSize)
-    , m_elemNum(elemNum)
-    , m_dims(dims)
+    : m_dims(dims)
     , m_indexlb(indexlb)
     , m_indexub(indexub)
   {
+    int arrayListSize = arrayList.size();
+    if (arrayListSize == 0 || arrayListSize > ARRAYLENINBLOCK)
+    {
+      throw std::runtime_error(
+        "size of array should in the range from 0 to " + std::to_string(ARRAYLENINBLOCK));
+    }
+
+    m_arrayListLen = arrayListSize;
+    for (int i = 0; i < arrayListSize; i++)
+    {
+      m_arrayList[i] = arrayList[i];
+    }
 
     if (strlen(dataType.data()) >= STRLENSHORT)
     {
@@ -212,19 +285,78 @@ struct BlockSummary
       shape[i] = m_indexub[i] - m_indexlb[i] + 1;
     }
     return shape;
-  };
+  }
 
-  size_t getTotalSize()
+  size_t getArraySize(ARRAYID arrayName)
   {
-    if (strcmp(m_dataType, DATATYPE_CARGRID.data()) == 0 ||
-      strcmp(m_dataType, DATATYPE_VTKPTR.data()) == 0)
+    if (strcmp(m_dataType, DATATYPE_CARGRID.data()) != 0 &&
+      strcmp(m_dataType, DATATYPE_VTKPTR.data()) != 0)
     {
-      return m_elemNum * m_elemSize;
+      throw std::runtime_error("unsupported getsize for " + std::string(m_dataType));
     }
-    else
+    for (int i = 0; i < m_arrayListLen; i++)
     {
-      throw std::runtime_error("unsuportted getsize for " + std::string(m_dataType));
+      if (strcmp(m_arrayList[i].m_arrayName, arrayName) == 0)
+      {
+        return m_arrayList[i].m_elemNum * m_arrayList[i].m_elemSize;
+      }
     }
+    throw std::runtime_error("failed to find array name to get array " + std::string(m_dataType));
+  }
+
+  size_t getArrayElemSize(const ARRAYID arrayName) const
+  {
+    if (strcmp(m_dataType, DATATYPE_CARGRID.data()) != 0 &&
+      strcmp(m_dataType, DATATYPE_VTKPTR.data()) != 0)
+    {
+      throw std::runtime_error("unsupported getArrayElemSize for " + std::string(m_dataType));
+    }
+    for (int i = 0; i < m_arrayListLen; i++)
+    {
+      if (strcmp(m_arrayList[i].m_arrayName, arrayName) == 0)
+      {
+        return m_arrayList[i].m_elemSize;
+      }
+    }
+    throw std::runtime_error("failed to find array name to get elemsize" + std::string(arrayName));
+  }
+  //in the function raw, the blocksummary is might wrapped with const descriptor
+  size_t getArrayElemNum(const ARRAYID arrayName) const
+  {
+    if (strcmp(m_dataType, DATATYPE_CARGRID.data()) != 0 &&
+      strcmp(m_dataType, DATATYPE_VTKPTR.data()) != 0)
+    {
+      throw std::runtime_error("unsupported getArrayElemNum for " + std::string(m_dataType));
+    }
+    for (int i = 0; i < m_arrayListLen; i++)
+    {
+      if (strcmp(m_arrayList[i].m_arrayName, arrayName) == 0)
+      {
+        return m_arrayList[i].m_elemNum;
+      }
+    }
+
+    throw std::runtime_error("addArraySummary failed to find array name to get elemnum " + std::string(arrayName));
+  }
+
+  void addArraySummary(ARRAYID arrayName, ArraySummary as)
+  {
+    int i=0;
+    for (i = 0; i < m_arrayListLen; i++)
+    {
+      if (strcmp(m_arrayList[i].m_arrayName, arrayName) == 0)
+      {
+        throw std::runtime_error("failed to insert arraysummary, the name exist");
+      }
+    }
+    m_arrayList[i] = as;
+    // TODO add lock here?
+    m_arrayListLen++;
+    if (m_arrayListLen >= 10)
+    {
+      throw std::runtime_error("the maximum array is " + std::to_string(ARRAYLENINBLOCK));
+    }
+    return;
   }
 
   /*
@@ -259,25 +391,21 @@ struct BlockSummary
 
   void printSummary()
   {
-    std::cout << "m_elemSize " << m_elemSize << " m_elemNum " << m_elemNum << " m_dataType "
-              << m_dataType << " m_blockid " << m_blockid << " m_dims " << m_dims << ", m_indexlb "
-              << m_indexlb[0] << " " << m_indexlb[1] << " " << m_indexlb[2] << ", m_indexub "
-              << m_indexub[0] << " " << m_indexub[1] << " " << m_indexub[2]
+    std::cout << " m_dataType " << m_dataType << " m_blockid " << m_blockid << " m_dims " << m_dims
+              << ", m_indexlb " << m_indexlb[0] << " " << m_indexlb[1] << " " << m_indexlb[2]
+              << ", m_indexub " << m_indexub[0] << " " << m_indexub[1] << " " << m_indexub[2]
               << "extra info: " << m_extraInfo << std::endl;
+    for (int i = 0; i < m_arrayListLen; i++)
+    {
+      m_arrayList[i].printSummary();
+    }
 
     return;
   }
 
   bool equals(BlockSummary& other)
   {
-    if (this->m_elemSize != other.m_elemSize)
-    {
-      return false;
-    }
-    if (this->m_elemNum != other.m_elemNum)
-    {
-      return false;
-    }
+
     if (strcmp(this->m_dataType, other.m_dataType) != 0)
     {
       return false;
@@ -321,14 +449,14 @@ struct BlockSummary
   template <typename A>
   void serialize(A& ar)
   {
-    ar& m_elemSize;
-    ar& m_elemNum;
     ar& m_dataType;
     ar& m_blockid;
     ar& m_backend;
     ar& m_dims;
     ar& m_indexlb;
     ar& m_indexub;
+    ar& m_arrayListLen;
+    ar& m_arrayList;
     ar& m_extraInfo;
   }
 };
@@ -541,6 +669,5 @@ struct EventWrapper
     ar& m_indexub;
   }
 };
-
 }
 #endif

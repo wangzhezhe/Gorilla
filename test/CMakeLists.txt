@@ -25,6 +25,9 @@ target_link_libraries(test_membackend thallium blockManager)
 add_executable(test_filebackend ./BlockData/test_filebackend.cpp)
 target_link_libraries(test_filebackend thallium blockManager)
 
+add_executable(test_blockwitharray ./BlockData/test_blockwitharray.cpp)
+target_link_libraries(test_blockwitharray thallium blockManager)
+
 add_executable(test_funcraw_vtk ./FuncManager/test_funcraw_vtk.cpp)
 target_link_libraries(test_funcraw_vtk PRIVATE thallium adios2::adios2 rawexec ${VTK_LIBRARIES})
 
@@ -113,6 +116,8 @@ add_test( NAME test_membackend COMMAND test_membackend)
 
 add_test( NAME test_filebackend COMMAND test_filebackend)
 
+add_test( NAME test_blockwitharray COMMAND test_blockwitharray)
+
 add_test( NAME test_vtkmem COMMAND test_vtkmem)
 
 add_test( NAME test_funcmeta COMMAND test_funcmeta)
@@ -121,7 +126,7 @@ add_test( NAME test_addrManager COMMAND test_addrManager)
 
 add_test( NAME test_trigger COMMAND test_trigger)
 
-add_test( NAME test_setting COMMAND test_setting)
+add_test( test_setting test_setting)
 
 add_test( NAME test_meta_bbxcover COMMAND test_meta_bbxcover)
 

@@ -44,10 +44,11 @@ std::string valueRange(FunctionManagerRaw *fmr, const BlockSummary &bs, void *in
     }
     */
     //range all the elements
-
-    for (int i = 0; i < bs.m_elemNum; i++)
+    size_t elemNum = bs.getArrayElemNum(bs.m_blockid);
+    size_t elemSize = bs.getArrayElemSize(bs.m_blockid);
+    for (int i = 0; i < elemNum; i++)
     {
-        if (bs.m_elemSize == 8)
+        if (elemSize == 8)
         {
             double tempData = *((double *)inputData + i);
             double threshA, threshB;
@@ -93,7 +94,7 @@ std::string valueRange(FunctionManagerRaw *fmr, const BlockSummary &bs, void *in
         }
         else
         {
-            throw std::runtime_error("unsuported data length " + std::to_string(bs.m_elemSize));
+            throw std::runtime_error("unsuported data length " + std::to_string(elemSize));
         }
     }
 

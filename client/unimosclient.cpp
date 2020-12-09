@@ -177,7 +177,7 @@ int putCarGrid(UniClient* client, size_t step, std::string varName, BlockSummary
   struct timespec start, end1, end2;
   double diff1, diff2;
   clock_gettime(CLOCK_REALTIME, &start);
-  size_t dataTransferSize = dataSummary.getTotalSize();
+  size_t dataTransferSize = dataSummary.getArraySize(dataSummary.m_blockid);
   // currently, when there is no associated data server
   // the data bulk (memory space) is not assigned
   // when there is assiciated data server, we assume the size of the data bulk is fixed
@@ -350,8 +350,7 @@ int putVTKData(UniClient* client, size_t step, std::string varName, BlockSummary
 
   // the elem size and elem length used in the block summary
   // is the size of the marshaled array, update the block summary here
-  dataSummary.m_elemSize = numComponents;
-  dataSummary.m_elemNum = numTuples;
+  dataSummary.addArraySummary(dataSummary.m_blockid, ArraySummary(dataSummary.m_blockid,(size_t)numComponents,(size_t)numTuples));
 
   // assign the server
   if (client->m_associatedDataServer.compare("") == 0)
@@ -436,6 +435,12 @@ int putVTKData(UniClient* client, size_t step, std::string varName, BlockSummary
   return 0;
 }
 
+//non block version 
+int putVTKDataExpNBLK(UniClient* client, size_t step, std::string varName, BlockSummary& dataSummary,
+  void* dataContainerSrc){
+  return 0;
+}
+
 // this is experimental function, we extract the data from the vtk poly and then
 // transfer them to server and assembe back to vtk data there
 int putVTKDataExp(UniClient* client, size_t step, std::string varName, BlockSummary& dataSummary,
@@ -464,7 +469,7 @@ int putVTKDataExp(UniClient* client, size_t step, std::string varName, BlockSumm
   //std::string arrayName = polyData->GetPointData()->GetArrayName(0);
   //size_t arrayTuple = polyData->GetPointData()->GetArray(0)->GetNumberOfTuples();
   //size_t arraycomponent = polyData->GetPointData()->GetArray(0)->GetNumberOfComponents();
-  //DEBUG("numPointArray size is " << numPointArray << " arrayName " << arrayName << " arrayTuple " << arrayTuple << " arraycomponent " << arraycomponent);
+  DEBUG("numCells " << numCells << " numPoints " << numPoints);
 
   std::vector<double> points(numPoints * 3);
   std::vector<double> normals(numPoints * 3);
@@ -477,7 +482,7 @@ int putVTKDataExp(UniClient* client, size_t step, std::string varName, BlockSumm
   cellArray->InitTraversal();
 
   // Iterate through cells
-  for (int i = 0; i < polyData->GetNumberOfPolys(); i++)
+  for (int i = 0; i < numCells; i++)
   {
     auto idList = vtkSmartPointer<vtkIdList>::New();
 
@@ -590,8 +595,12 @@ int UniClient::putrawdata(
   }
   else if (dataType == DATATYPE_VTKPTR)
   {
-     int status = putVTKData(this, step, varName, dataSummary, dataContainerSrc);
-    //int status = putVTKDataExp(this, step, varName, dataSummary, dataContainerSrc);
+    //check original data
+    //((vtkPolyData*)dataContainerSrc)->PrintSelf(std::cout, vtkIndent(5));
+    //this is the continuous mem space version
+    //int status = putVTKData(this, step, varName, dataSummary, dataContainerSrc);
+    //this is the descrete mem space version
+    int status = putVTKDataExp(this, step, varName, dataSummary, dataContainerSrc);
     if (status != 0)
     {
       throw std::runtime_error("failed to put the vtk data");

@@ -65,12 +65,18 @@ DataBlockInterface* BlockManager::getBlockHandle(std::string blockID, int backen
   }
   return handle;
 }
-
+//how to integrate multi array case with this one?
 int BlockManager::putBlock(BlockSummary& blockSummary, int backend, void* dataPointer)
 {
   DataBlockInterface* handle = getBlockHandle(std::string(blockSummary.m_blockid), backend);
   // assign actual value to block summay, this information will be used for data put operation
   handle->m_blockSummary = blockSummary;
+  //check if the copy is successfuly
+  //it might be the shallow copy? since we used typedef
+  if (handle->m_blockSummary.equals(blockSummary)==false){
+    throw std::runtime_error("copy failed");
+    return -1;
+  }
   int status = handle->putData(dataPointer);
   return status;
 }
@@ -113,7 +119,7 @@ BlockSummary BlockManager::getBlockSubregion(std::string blockID, int backend, s
     DataBlockMap[blockID]->getDataSubregion(dims, subregionlb, subregionub, dataContainer);
   return bs;
 }
-
+/* deprecated, it should be the getArraySize in specific block
 size_t BlockManager::getBlockSize(std::string blockID, int backend)
 {
   if (backend == BACKEND::FILE)
@@ -129,7 +135,7 @@ size_t BlockManager::getBlockSize(std::string blockID, int backend)
   this->m_DataBlockMapMutex.unlock();
   return bs.m_elemNum * bs.m_elemSize;
 }
-
+*/
 bool BlockManager::checkDataExistance(std::string blockID, int backend)
 {
   if (backend == BACKEND::FILE)
