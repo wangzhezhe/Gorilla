@@ -56,7 +56,7 @@ int VTKMemExplicitObj::putArray(ArraySummary& as, void* dataSourcePtr)
 int VTKMemExplicitObj::getArray(ArraySummary& as, void*& dataContainer)
 {
 
-  std::cout << "debug VTKMemExplicitObj::getArray is called" <<std::endl; 
+  //std::cout << "debug VTKMemExplicitObj::getArray is called" <<std::endl; 
   m_m_arrayMapMutex.lock();
   int tempcount = this->m_arrayMap.count(as);
   m_m_arrayMapMutex.unlock();

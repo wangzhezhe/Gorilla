@@ -207,7 +207,7 @@ struct BlockSummary
   DATAYPE m_dataType;
 
   // this is the block identifier
-  BlOCKID m_blockid;
+  BlOCKID m_blockid="";
 
   int m_backend = BACKEND::MEM;
 
@@ -373,7 +373,7 @@ struct BlockSummary
         return m_arrayList[i];
       }
     }
-    throw std::runtime_error("failed to get ArraySummary");
+    throw std::runtime_error("failed to get ArraySummary: " + std::string(arrayName));
   }
 
   /*

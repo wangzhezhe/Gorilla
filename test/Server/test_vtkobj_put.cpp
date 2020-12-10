@@ -74,7 +74,8 @@ void test_put_vtk(int pointNum)
 
   size_t elemSize = 1;
   size_t elemNum = 1;
-  std::string dataType = DATATYPE_VTKPTR;
+  // std::string dataType = DATATYPE_VTKPTR;
+  std::string dataType = DATATYPE_VTKEXPLICIT;
   size_t dims = 3;
   std::array<int, 3> indexlb = { { 0, 0, 0 } };
   std::array<int, 3> indexub = { { 10, 10, 10 } };
@@ -82,7 +83,7 @@ void test_put_vtk(int pointNum)
   std::string blockid = "block_0" + std::to_string(pointNum);
 
   // allocate vtk data
-  
+
   vtkSmartPointer<vtkSphereSource> sphereSource = vtkSmartPointer<vtkSphereSource>::New();
   sphereSource->SetThetaResolution(pointNum);
   sphereSource->SetPhiResolution(pointNum);
@@ -94,25 +95,26 @@ void test_put_vtk(int pointNum)
 
   sphereSource->Update();
   vtkSmartPointer<vtkPolyData> polyData = sphereSource->GetOutput();
-  
+
   /* there is no normal valur for cone source
   vtkSmartPointer<vtkConeSource> coneSource = vtkSmartPointer<vtkConeSource>::New();
   coneSource->Update();
   vtkSmartPointer<vtkPolyData> polyData = coneSource->GetOutput();
   */
   // write the data for futher checking
-  //vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
-  //writer->SetFileName("./originalpoly.vtp");
+  // vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+  // writer->SetFileName("./originalpoly.vtp");
   // get the specific polydata and check the results
-  //writer->SetInputData(polyData);
-  //writer->Write();
+  // writer->SetInputData(polyData);
+  // writer->Write();
 
   // generate raw data summary block
   ArraySummary as(blockid, elemSize, elemNum);
   std::vector<ArraySummary> aslist;
   aslist.push_back(as);
   BlockSummary bs(aslist, dataType, blockid, dims, indexlb, indexub);
-
+  bs.m_backend = BACKEND::MEMVTKEXPLICIT;
+  
   // generate raw data
   UniClient* uniclient = new UniClient(&globalclientEngine, "./unimos_server.conf", 0);
   // The server may do things in different order

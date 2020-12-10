@@ -662,9 +662,9 @@ void putvtkexp(const tl::request& req, int clientID, size_t& step, std::string& 
 
   // extract the data and assemble them into the vtk
   // assume we use the polygonal data
-  std::vector<double> bufPoints(transferSizeList[0]/sizeof(double));
-  std::vector<double> bufNormals(transferSizeList[1]/sizeof(double));
-  std::vector<int> bufCells(transferSizeList[2]/sizeof(int));
+  std::vector<double> bufPoints(transferSizeList[0] / sizeof(double));
+  std::vector<double> bufNormals(transferSizeList[1] / sizeof(double));
+  std::vector<int> bufCells(transferSizeList[2] / sizeof(int));
 
   // assign transfered value to the vector array
   memcpy(bufPoints.data(), segments[0].first, transferSizeList[0]);
@@ -681,12 +681,139 @@ void putvtkexp(const tl::request& req, int clientID, size_t& step, std::string& 
   polydata->PrintSelf(std::cout, vtkIndent(5));
 
   // write the data for futher checking
-  //vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
-  //writer->SetFileName("./serverrecvpoly.vtp");
+  // vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+  // writer->SetFileName("./serverrecvpoly.vtp");
   // get the specific polydata and check the results
-  //writer->SetInputData(polydata);
-  //writer->Write();
+  // writer->SetInputData(polydata);
+  // writer->Write();
+  // release the memory space of the segments
+  for (int i = 0; i < segments.size(); i++)
+  {
+    if (segments[i].first != NULL)
+    {
+      free(segments[i].first);
+    }
+  }
+  req.respond(0);
+  return;
+}
 
+void expcheckdata(const tl::request& req, BlockSummary& blockSummary)
+{
+  // extract the necessary info to assemble the full data
+  // the data might not regonized well in this case
+  // since we use the async call
+
+  void* pointArrayptr = NULL;
+  void* polyArrayPtr = NULL;
+  void* normalArrayPtr = NULL;
+
+  uniServer->m_blockManager->getArray(
+    blockSummary.m_blockid, "points", BACKEND::MEMVTKEXPLICIT, pointArrayptr);
+  uniServer->m_blockManager->getArray(
+    blockSummary.m_blockid, "cells", BACKEND::MEMVTKEXPLICIT, polyArrayPtr);
+  uniServer->m_blockManager->getArray(
+    blockSummary.m_blockid, "normals", BACKEND::MEMVTKEXPLICIT, normalArrayPtr);
+
+  // after normal put (the last one)
+  // try to assemble the data into the poly
+  auto polyData = vtkSmartPointer<vtkPolyData>::New();
+  polyData->SetPoints((vtkPoints*)pointArrayptr);
+  polyData->SetPolys((vtkCellArray*)polyArrayPtr);
+  polyData->GetPointData()->SetNormals((vtkDoubleArray*)normalArrayPtr);
+
+  polyData->PrintSelf(std::cout, vtkIndent(5));
+
+  return;
+}
+
+// step and varname are not necessary here
+// it only useful to update the metadata
+void putArrayIntoBlock(const tl::request& req, BlockSummary& blockSummary,
+  ArraySummary& arraySummary, tl::bulk& dataBulk)
+{
+
+  // get the size of the data
+  size_t transferSize = arraySummary.m_elemNum * arraySummary.m_elemSize;
+  // get the transfered data
+  std::vector<std::pair<void*, std::size_t> > segments(1);
+  void* memspace = (void*)malloc(transferSize);
+  segments[0].first = memspace;
+  segments[0].second = transferSize;
+
+  // transfer data
+  tl::bulk currentBulk = globalServerEnginePtr->expose(segments, tl::bulk_mode::write_only);
+
+  tl::endpoint ep = req.get_endpoint();
+  // pull the data onto the server
+  dataBulk.on(ep) >> currentBulk;
+
+  // put the data into the manager
+  // TODO, update this part, we hardcode the typical array here
+  // we need to process the type messages here
+  int nPoints = arraySummary.m_elemNum / 3;
+  int nCells = arraySummary.m_elemNum / 3;
+
+  std::cout << "---debug nPoints " << nPoints << " nCells " << nCells << std::endl;
+
+  if (strcmp(arraySummary.m_arrayName, "points") == 0)
+  {
+    std::cout << "---debug points recv" << std::endl;
+    auto points = vtkSmartPointer<vtkPoints>::New();
+    points->SetNumberOfPoints(nPoints);
+    for (vtkIdType i = 0; i < nPoints; i++)
+    {
+      const double* temp = (double*)memspace;
+      points->SetPoint(i, temp + (i * 3));
+    }
+    // use the putArray interface
+    uniServer->m_blockManager->putArray(
+      blockSummary, arraySummary, blockSummary.m_backend, &points);
+  }
+  else if (strcmp(arraySummary.m_arrayName, "normals") == 0)
+  {
+    std::cout << "---debug normals recv" << std::endl;
+
+    auto normals = vtkSmartPointer<vtkDoubleArray>::New();
+    normals->SetNumberOfComponents(3);
+    const double* temp = (double*)memspace;
+
+    for (vtkIdType i = 0; i < nPoints; i++)
+    {
+      normals->InsertNextTuple(temp + (i * 3));
+    }
+    // use the putArray interface
+    uniServer->m_blockManager->putArray(
+      blockSummary, arraySummary, blockSummary.m_backend, &normals);
+  }
+  else if (strcmp(arraySummary.m_arrayName, "cells") == 0)
+  {
+    std::cout << "---debug cells recv" << std::endl;
+
+    auto polys = vtkSmartPointer<vtkCellArray>::New();
+    const int* temp = (int*)memspace;
+
+    for (vtkIdType i = 0; i < nCells; i++)
+    {
+      vtkIdType a = *(temp + (i * 3 + 0));
+      vtkIdType b = *(temp + (i * 3 + 1));
+      vtkIdType c = *(temp + (i * 3 + 2));
+
+      polys->InsertNextCell(3);
+      polys->InsertCellPoint(a);
+      polys->InsertCellPoint(b);
+      polys->InsertCellPoint(c);
+    }
+    // use the putArray interface
+    uniServer->m_blockManager->putArray(blockSummary, arraySummary, blockSummary.m_backend, &polys);
+  }
+  else
+  {
+    throw std::runtime_error("unsupported array name");
+  }
+
+  // free registered space
+  free(memspace);
   req.respond(0);
   return;
 }
@@ -832,13 +959,12 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
       // }
       // std::cout << "------" << std::endl;
 
-      //check the recvarray
-
+      // check the recvarray
 
       // unmarshal
       vtkSmartPointer<vtkDataObject> recvbj = vtkCommunicator::UnMarshalDataObject(recvbuffer);
       spdlog::debug("---finish to unmarshal vtk obj");
-      //if the origianl data is poly data
+      // if the origianl data is poly data
       vtkDataObject* recvptr = recvbj;
       ((vtkPolyData*)recvptr)->PrintSelf(std::cout, vtkIndent(5));
 
@@ -1289,6 +1415,9 @@ void runRerver(std::string networkingType)
   globalServerEnginePtr->define("getEvent", getEvent);
   globalServerEnginePtr->define("deleteMetaStep", deleteMetaStep);
   globalServerEnginePtr->define("putvtkexp", putvtkexp);
+  globalServerEnginePtr->define("putArrayIntoBlock", putArrayIntoBlock);
+    globalServerEnginePtr->define("expcheckdata", expcheckdata);
+
 
   globalServerEnginePtr->define("startTimer", startTimer).disable_response();
   globalServerEnginePtr->define("endTimer", endTimer).disable_response();

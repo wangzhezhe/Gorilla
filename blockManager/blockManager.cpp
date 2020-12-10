@@ -80,11 +80,17 @@ int BlockManager::putArray(
 
   DataBlockInterface* handle = getBlockHandle(std::string(blockSummary.m_blockid), backend);
 
-  // add the arraySummary into the block
-  blockSummary.addArraySummary(as);
+  // if the block summary exist
+  if (strcmp(handle->m_blockSummary.m_blockid, "") == 0)
+  {
+    // this is empty and not initilized
+    // update the block summary
+    handle->m_blockSummary = blockSummary;
+  }
 
-  // update the block summary
-  handle->m_blockSummary = blockSummary;
+  // add the arraySummary into the block
+  handle->m_blockSummary.addArraySummary(as);
+
   int status = handle->putArray(as, dataPointer);
   return status;
 }
@@ -126,6 +132,19 @@ int BlockManager::putBlock(BlockSummary& blockSummary, int backend, void* dataPo
   }
   int status = handle->putData(dataPointer);
   return status;
+}
+
+bool BlockManager::blockSummaryExist(std::string blockID)
+{
+  this->m_DataBlockMapMutex.lock();
+  int count = this->DataBlockMap.count(blockID);
+  this->m_DataBlockMapMutex.unlock();
+
+  if (count == 0)
+  {
+    return false;
+  }
+  return true;
 }
 
 // This only works for mem obj currently

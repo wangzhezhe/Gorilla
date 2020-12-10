@@ -120,19 +120,20 @@ public:
 
   int putArray(BlockSummary& blockSummary, ArraySummary& as, int backend, void* dataPointer);
   int getArray(std::string blockName, std::string arrayName, int backend, void*& dataPointer);
+  bool blockSummaryExist(std::string blockID);
 
-    // execute the data checking service
-    // void doChecking(DataMeta &dataMeta, size_t blockID);
-    // void loadFilterManager(FilterManager*
-    // fmanager){m_filterManager=fmanager;return;}
+  // execute the data checking service
+  // void doChecking(DataMeta &dataMeta, size_t blockID);
+  // void loadFilterManager(FilterManager*
+  // fmanager){m_filterManager=fmanager;return;}
 
-    // add thread pool here, after the data put, get a thread from the thread pool
-    // to check filtered data there is a filter List for every block
-    bool checkDataExistance(std::string blockID, int backend);
+  // add thread pool here, after the data put, get a thread from the thread pool
+  // to check filtered data there is a filter List for every block
+  bool checkDataExistance(std::string blockID, int backend);
 
   // void* getBlockPointer(std::string blockID);
 
-  ~BlockManager() {}
+  ~BlockManager() {};
 
   // private:
   tl::mutex m_DataBlockMapMutex;

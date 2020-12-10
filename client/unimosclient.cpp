@@ -316,7 +316,7 @@ int putCarGrid(UniClient* client, size_t step, std::string varName, BlockSummary
 int putVTKData(UniClient* client, size_t step, std::string varName, BlockSummary& dataSummary,
   void* dataContainerSrc)
 {
-    struct timespec start, end1, end2, end3;
+  struct timespec start, end1, end2, end3;
   double diff1, diff2, diff3;
   clock_gettime(CLOCK_REALTIME, &start);
 
@@ -336,10 +336,9 @@ int putVTKData(UniClient* client, size_t step, std::string varName, BlockSummary
 
   DEBUG("vtk dataTransferSize: " << dataTransferSize);
 
-
   clock_gettime(CLOCK_REALTIME, &end1);
   diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
-  DEBUG("stage marshal : " << diff1);  
+  DEBUG("stage marshal : " << diff1);
 
   // std::cout << "------check vtkbuffer content: ------" << std::endl;
   // for (int i = 0; i < dataTransferSize; i++)
@@ -350,7 +349,8 @@ int putVTKData(UniClient* client, size_t step, std::string varName, BlockSummary
 
   // the elem size and elem length used in the block summary
   // is the size of the marshaled array, update the block summary here
-  dataSummary.addArraySummary(ArraySummary(dataSummary.m_blockid,(size_t)numComponents,(size_t)numTuples));
+  dataSummary.addArraySummary(
+    ArraySummary(dataSummary.m_blockid, (size_t)numComponents, (size_t)numTuples));
 
   // assign the server
   if (client->m_associatedDataServer.compare("") == 0)
@@ -435,9 +435,150 @@ int putVTKData(UniClient* client, size_t step, std::string varName, BlockSummary
   return 0;
 }
 
-//non block version 
-int putVTKDataExpNBLK(UniClient* client, size_t step, std::string varName, BlockSummary& dataSummary,
-  void* dataContainerSrc){
+// non block version
+int putArrayIntoBlock(UniClient* client, BlockSummary& dataSummary, void* dataContainerSrc)
+{
+
+  struct timespec start, end1, end2, end3;
+  double diff1, diff2, diff3;
+  clock_gettime(CLOCK_REALTIME, &start);
+  // start to marshal
+  // we only support the polydata for this method for experiment
+  // vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
+  // polyData.TakeReference((vtkPolyData*)dataContainerSrc);
+  vtkSmartPointer<vtkPolyData> polyData = (vtkPolyData*)dataContainerSrc;
+  // extract arrays
+  int numCells = polyData->GetNumberOfPolys();
+  int numPoints = polyData->GetNumberOfPoints();
+
+  // if there are multiple array
+  // refer to
+  // https://github.com/pnorbert/adiosvm/blob/master/Tutorial/gray-scott/analysis/isosurface.cpp
+  // refer to
+  // https://github.com/pnorbert/adiosvm/blob/master/Tutorial/gray-scott/analysis/find_blobs.cpp
+  // TODO support this further
+  // for the test data, there is only one filed array namely the normal data
+  // int numPointArray = polyData->GetPointData()->GetNumberOfArrays();
+  // std::string arrayName = polyData->GetPointData()->GetArrayName(0);
+  // size_t arrayTuple = polyData->GetPointData()->GetArray(0)->GetNumberOfTuples();
+  // size_t arraycomponent = polyData->GetPointData()->GetArray(0)->GetNumberOfComponents();
+  DEBUG("putArrayIntoBlock numCells " << numCells << " numPoints " << numPoints);
+
+  std::vector<double> points(numPoints * 3);
+  std::vector<double> normals(numPoints * 3);
+  std::vector<int> cells(numCells * 3); // Assumes that cells are triangles
+
+  double coords[3];
+  auto cellArray = polyData->GetPolys();
+  cellArray->InitTraversal();
+
+  // Iterate through cells
+  for (int i = 0; i < numCells; i++)
+  {
+    auto idList = vtkSmartPointer<vtkIdList>::New();
+
+    cellArray->GetNextCell(idList);
+
+    // Iterate through points of a cell
+    for (int j = 0; j < idList->GetNumberOfIds(); j++)
+    {
+      auto id = idList->GetId(j);
+
+      cells[i * 3 + j] = id;
+
+      polyData->GetPoint(id, coords);
+
+      points[id * 3 + 0] = coords[0];
+      points[id * 3 + 1] = coords[1];
+      points[id * 3 + 2] = coords[2];
+    }
+  }
+  // start to transfer the data
+  if (client->m_associatedDataServer.compare("") == 0)
+  {
+    client->m_associatedDataServer = client->getServerAddr();
+  }
+
+  tl::remote_procedure remoteputArrayIntoBlock =
+    client->m_clientEnginePtr->define("putArrayIntoBlock");
+  tl::endpoint serverEndpoint = client->lookup(client->m_associatedDataServer);
+  // send the points and cell
+  std::vector<std::pair<void*, std::size_t> > pointssegments(1);
+  pointssegments[0].first = points.data();
+  pointssegments[0].second = points.size() * sizeof(double);
+  tl::bulk pointBulk = client->m_clientEnginePtr->expose(pointssegments, tl::bulk_mode::read_only);
+
+  ArraySummary aspoints("points", sizeof(double), points.size());
+  auto pointresponse =
+    remoteputArrayIntoBlock.on(serverEndpoint).async(dataSummary, aspoints, pointBulk);
+  // auto pointresponse = remoteputArrayIntoBlock.on(serverEndpoint)(dataSummary, aspoints,
+  // pointBulk);
+
+  DEBUG("async points");
+
+  std::vector<std::pair<void*, std::size_t> > cellsegments(1);
+  cellsegments[0].first = cells.data();
+  cellsegments[0].second = cells.size() * sizeof(int);
+  ArraySummary ascells("cells", sizeof(int), cells.size());
+  tl::bulk cellsBulk = client->m_clientEnginePtr->expose(cellsegments, tl::bulk_mode::read_only);
+  auto cellresponse =
+    remoteputArrayIntoBlock.on(serverEndpoint).async(dataSummary, ascells, cellsBulk);
+  // auto cellresponse = remoteputArrayIntoBlock.on(serverEndpoint)(dataSummary, ascells,
+  // cellsBulk);
+
+  DEBUG("async cells");
+
+  // Extract normals
+  auto normalArray = polyData->GetPointData()->GetNormals();
+  for (int i = 0; i < normalArray->GetNumberOfTuples(); i++)
+  {
+    normalArray->GetTuple(i, coords);
+
+    normals[i * 3 + 0] = coords[0];
+    normals[i * 3 + 1] = coords[1];
+    normals[i * 3 + 2] = coords[2];
+  }
+
+  std::vector<std::pair<void*, std::size_t> > normalsegments(1);
+  normalsegments[0].first = normals.data();
+  normalsegments[0].second = normals.size() * sizeof(double);
+  ArraySummary asnormals("normals", sizeof(double), normals.size());
+  tl::bulk normalsBulk =
+    client->m_clientEnginePtr->expose(normalsegments, tl::bulk_mode::read_only);
+  auto normalresponse =
+    remoteputArrayIntoBlock.on(serverEndpoint).async(dataSummary, asnormals, normalsBulk);
+
+  // auto normalresponse =
+  //  remoteputArrayIntoBlock.on(serverEndpoint)(dataSummary, asnormals, normalsBulk);
+
+  DEBUG("async normals");
+
+  // wait transfer to finish
+
+  int ret = pointresponse.wait();
+  if (ret != 0)
+  {
+    throw std::runtime_error("failed for pointresponse");
+  }
+  ret = cellresponse.wait();
+  if (ret != 0)
+  {
+    throw std::runtime_error("failed for cellresponse");
+  }
+  ret = normalresponse.wait();
+  if (ret != 0)
+  {
+    throw std::runtime_error("failed for normalresponse");
+  }
+
+  clock_gettime(CLOCK_REALTIME, &end1);
+  diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+  DEBUG("time spent on putarrayintoblock : " << diff1);
+
+  // check if the data is complete when all put operation finish
+  tl::remote_procedure remoteexpcheckdata = client->m_clientEnginePtr->define("expcheckdata");
+  remoteexpcheckdata.on(serverEndpoint)(dataSummary);
+
   return 0;
 }
 
@@ -465,10 +606,10 @@ int putVTKDataExp(UniClient* client, size_t step, std::string varName, BlockSumm
   // https://github.com/pnorbert/adiosvm/blob/master/Tutorial/gray-scott/analysis/find_blobs.cpp
   // TODO support this further
   // for the test data, there is only one filed array namely the normal data
-  //int numPointArray = polyData->GetPointData()->GetNumberOfArrays();
-  //std::string arrayName = polyData->GetPointData()->GetArrayName(0);
-  //size_t arrayTuple = polyData->GetPointData()->GetArray(0)->GetNumberOfTuples();
-  //size_t arraycomponent = polyData->GetPointData()->GetArray(0)->GetNumberOfComponents();
+  // int numPointArray = polyData->GetPointData()->GetNumberOfArrays();
+  // std::string arrayName = polyData->GetPointData()->GetArrayName(0);
+  // size_t arrayTuple = polyData->GetPointData()->GetArray(0)->GetNumberOfTuples();
+  // size_t arraycomponent = polyData->GetPointData()->GetArray(0)->GetNumberOfComponents();
   DEBUG("numCells " << numCells << " numPoints " << numPoints);
 
   std::vector<double> points(numPoints * 3);
@@ -515,7 +656,6 @@ int putVTKDataExp(UniClient* client, size_t step, std::string varName, BlockSumm
     normals[i * 3 + 2] = coords[2];
   }
 
-
   // start to transfer, use the putvtkdataexp
   // for this method, we will not reuse the segments allocated at the server end
   // we expose three segments
@@ -527,8 +667,6 @@ int putVTKDataExp(UniClient* client, size_t step, std::string varName, BlockSumm
   segments[1].second = normals.size() * sizeof(double);
   segments[2].first = cells.data();
   segments[2].second = cells.size() * sizeof(int);
-
-
 
   std::vector<size_t> transferSizeList;
   for (int i = 0; i < segments.size(); i++)
@@ -595,12 +733,20 @@ int UniClient::putrawdata(
   }
   else if (dataType == DATATYPE_VTKPTR)
   {
-    //check original data
+    // check original data
     //((vtkPolyData*)dataContainerSrc)->PrintSelf(std::cout, vtkIndent(5));
-    //this is the continuous mem space version
-    //int status = putVTKData(this, step, varName, dataSummary, dataContainerSrc);
-    //this is the descrete mem space version
+    // this is the continuous mem space version
+    // int status = putVTKData(this, step, varName, dataSummary, dataContainerSrc);
+    // this is the descrete mem space version
     int status = putVTKDataExp(this, step, varName, dataSummary, dataContainerSrc);
+    if (status != 0)
+    {
+      throw std::runtime_error("failed to put the vtk data");
+    }
+  }
+  else if (dataType == DATATYPE_VTKEXPLICIT)
+  {
+    int status = putArrayIntoBlock(this, dataSummary, dataContainerSrc);
     if (status != 0)
     {
       throw std::runtime_error("failed to put the vtk data");
