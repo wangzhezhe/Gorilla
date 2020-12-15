@@ -492,15 +492,22 @@ void putmetadata(const tl::request& req, size_t& step, std::string& varName, Blo
     {
       // create thread on a particular and put it into the pool associated with
       // margo instance, mix it with the pool to process the rpc
+      // put the timer here, start to put the task
+      std::string timerNameWait = rde.m_rawDataID + "_wait";
+      uniServer->m_frawmanager->m_statefulConfig->startTimer(timerNameWait);
       globalServerEnginePtr->get_handler_pool().make_thread(
         [=]() {
-          // the rde here is the copy version of the original rde
-          uniServer->m_dtmanager->initstart("InitTrigger", step, varName, rde);
           // time it
-          if (globalRank == 0)
-          {
-            uniServer->m_frawmanager->m_statefulConfig->timeit();
-          }
+          // if (globalRank == 0)
+          //{
+          // time it to get the wait time
+          uniServer->m_frawmanager->m_statefulConfig->endTimer(timerNameWait);
+
+          std::string timerNameExecute = rde.m_rawDataID + "_execute";
+          uniServer->m_frawmanager->m_statefulConfig->startTimer(timerNameExecute);
+          //}
+          uniServer->m_dtmanager->initstart("InitTrigger", step, varName, rde);
+          uniServer->m_frawmanager->m_statefulConfig->endTimer(timerNameExecute);
         },
         tl::anonymous());
       // it is unnecessary to store the thread by using the anonymous pattern
@@ -966,8 +973,11 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
       spdlog::debug("---finish to unmarshal vtk obj");
       // if the origianl data is poly data
       vtkDataObject* recvptr = recvbj;
-      ((vtkPolyData*)recvptr)->PrintSelf(std::cout, vtkIndent(5));
-
+      // how to decide what data it is here???maybe contains the data type???
+      // TODO, maybe implements the array or block expression, and let the data type to be more
+      // specific
+      // ((vtkPolyData*)recvptr)->PrintSelf(std::cout, vtkIndent(5));
+      (recvptr)->PrintSelf(std::cout, vtkIndent(5));
       clock_gettime(CLOCK_REALTIME, &end3);
       diff3 = (end3.tv_sec - end2.tv_sec) * 1.0 + (end3.tv_nsec - end2.tv_nsec) * 1.0 / BILLION;
       spdlog::debug("server put unmarshal : {}", diff3);
@@ -1161,17 +1171,24 @@ void getBlockDescriptorList(const tl::request& req, size_t& step, std::string& v
 
 void startTimer(const tl::request& req)
 {
-  uniServer->m_frawmanager->m_statefulConfig->initTimer();
+  std::string timerName = "main";
+  uniServer->m_frawmanager->m_statefulConfig->startTimer(timerName);
   spdlog::info("start timer for rank {}", globalRank);
   return;
 }
 
 void endTimer(const tl::request& req)
 {
-  uniServer->m_frawmanager->m_statefulConfig->endTimer();
+  std::string timerName = "main";
+  uniServer->m_frawmanager->m_statefulConfig->endTimer(timerName);
   return;
 }
 
+// this basic function that is called on the node
+// with the block data mamager
+// it basically extract the necessary data and execute particular function on it
+// it looks this should be the syncronous call
+// since we need the direct results here
 void executeRawFunc(const tl::request& req, std::string& blockID, std::string& functionName,
   std::vector<std::string>& funcParameters)
 {
@@ -1188,14 +1205,21 @@ void executeRawFunc(const tl::request& req, std::string& blockID, std::string& f
   }
 
   DataBlockInterface* dbi = uniServer->m_blockManager->DataBlockMap[blockID];
+  // get particular data
   void* rawDataPtr = dbi->getrawMemPtr();
 
-  // TODO init the adios if need to put
+  std::string timerNameExecute = blockID + "_execute";
+  uniServer->m_frawmanager->m_statefulConfig->startTimer(timerNameExecute);
 
+  // for testing, use the thred pool
   std::string exeResults = uniServer->m_frawmanager->execute(
     uniServer->m_frawmanager, bs, rawDataPtr, functionName, funcParameters);
-  req.respond(exeResults);
+  uniServer->m_frawmanager->m_statefulConfig->endTimer(timerNameExecute);
 
+  // it is unnecessary to store the thread by using the anonymous pattern
+  spdlog::debug("finish execution blockID {}", blockID);
+
+  req.respond(exeResults);
   return;
 }
 
@@ -1416,8 +1440,7 @@ void runRerver(std::string networkingType)
   globalServerEnginePtr->define("deleteMetaStep", deleteMetaStep);
   globalServerEnginePtr->define("putvtkexp", putvtkexp);
   globalServerEnginePtr->define("putArrayIntoBlock", putArrayIntoBlock);
-    globalServerEnginePtr->define("expcheckdata", expcheckdata);
-
+  globalServerEnginePtr->define("expcheckdata", expcheckdata);
 
   globalServerEnginePtr->define("startTimer", startTimer).disable_response();
   globalServerEnginePtr->define("endTimer", endTimer).disable_response();

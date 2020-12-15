@@ -144,9 +144,12 @@ void UniClient::initPutRawData(size_t dataTransferSize)
     // register the memory
     this->m_dataBulk = this->m_clientEnginePtr->expose(this->m_segments, tl::bulk_mode::read_only);
   }
-  else if (this->m_bulkSize >= dataTransferSize)
+  else if (this->m_bulkSize > dataTransferSize)
   {
     // do nothing if current bulk size is larger then malloc size
+    // update the segment value
+    DEBUG("new dataTransferSize is" << dataTransferSize);
+    this->m_segments[0].second = dataTransferSize;
     return;
   }
   else
@@ -358,8 +361,10 @@ int putVTKData(UniClient* client, size_t step, std::string varName, BlockSummary
     client->m_associatedDataServer = client->getServerAddr();
     DEBUG("m_position " << client->m_position << " m_associatedDataServer "
                         << client->m_associatedDataServer);
-    client->initPutRawData(dataTransferSize);
   }
+  // resize the mem space if the datatransfersize change
+
+  client->initPutRawData(dataTransferSize);
 
   tl::remote_procedure remotegetInfoForPut = client->m_clientEnginePtr->define("getinfoForput");
   tl::endpoint serverEndpoint = client->lookup(client->m_associatedDataServer);
@@ -594,6 +599,16 @@ int putVTKDataExp(UniClient* client, size_t step, std::string varName, BlockSumm
   // we only support the polydata for this method for experiment
   // vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
   // polyData.TakeReference((vtkPolyData*)dataContainerSrc);
+  // try to downcast to the poly to try to see it satisfy requirments
+  // it is illeagle to cast the void* to class by this way
+  // this might break up the type safety anyway
+  /*
+  vtkPolyData* polyptr = dynamic_cast<vtkPolyData*>(()dataContainerSrc);
+  if (polyptr == nullptr)
+  {
+    throw std::runtime_error("only support poly data for putvtkdataexp");
+  }
+  */
   vtkSmartPointer<vtkPolyData> polyData = (vtkPolyData*)dataContainerSrc;
   // extract arrays
   int numCells = polyData->GetNumberOfPolys();
@@ -736,9 +751,9 @@ int UniClient::putrawdata(
     // check original data
     //((vtkPolyData*)dataContainerSrc)->PrintSelf(std::cout, vtkIndent(5));
     // this is the continuous mem space version
-    // int status = putVTKData(this, step, varName, dataSummary, dataContainerSrc);
+    int status = putVTKData(this, step, varName, dataSummary, dataContainerSrc);
     // this is the descrete mem space version
-    int status = putVTKDataExp(this, step, varName, dataSummary, dataContainerSrc);
+    // int status = putVTKDataExp(this, step, varName, dataSummary, dataContainerSrc);
     if (status != 0)
     {
       throw std::runtime_error("failed to put the vtk data");

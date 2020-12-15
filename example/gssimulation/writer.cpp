@@ -11,6 +11,7 @@
 #include <vtkXMLDataSetWriter.h>
 #include <vtkXMLImageDataWriter.h>
 #include <vtkXMLPolyDataWriter.h>
+#include <vtkSmartPointer.h>
 
 void Writer::writeImageData(const GrayScott& sim, std::string fileName)
 {

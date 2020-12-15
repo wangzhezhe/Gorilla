@@ -6,7 +6,8 @@
 #include <vector>
 #include <queue>
 #include <memory>
-class Mandelbulb;
+#include "Mandelbulb_dynamic.hpp"
+
 
 namespace InSitu
 {

@@ -57,5 +57,6 @@ add_executable(sim-inline-adios
 
 target_link_libraries(sim-inline-adios adios2::adios2 ${VTK_LIBRARIES} MPI::MPI_C)
 
-
-# mandelbulb simulation
+# the mb simulation
+# TODO, extract the gssimualtion in cmake
+add_subdirectory(mbsimulation)

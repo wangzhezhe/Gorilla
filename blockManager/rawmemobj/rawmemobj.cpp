@@ -22,7 +22,7 @@ int RawMemObj::putData(void* dataSourcePtr)
   {
     throw std::runtime_error("failed to putData the memroy for RawMemObj, there is existing data");
   }
-  this->m_rawMemPtr = (void*)malloc(memSize);
+  this->m_rawMemPtr = (void*)::operator new(memSize);
   if (m_rawMemPtr == NULL)
   {
     throw std::runtime_error("failed to allocate the memroy for RawMemObj");

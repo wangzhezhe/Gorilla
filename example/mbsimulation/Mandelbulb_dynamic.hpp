@@ -1,8 +1,16 @@
+#ifndef __MANDELBULBDYNAMIC
+#define __MANDELBULBDYNAMIC
+
 #include <cmath>
 #include <fstream>
 #include <iostream>
 #include <mpi.h>
 #include <vector>
+
+static unsigned WIDTH = 30;
+static unsigned HEIGHT = 30;
+static unsigned DEPTH = 30;
+static unsigned Globalpid = 0;
 
 class Mandelbulb
 {
@@ -121,3 +129,5 @@ private:
    float m_range;
    unsigned m_nblocks;
 };
+
+#endif

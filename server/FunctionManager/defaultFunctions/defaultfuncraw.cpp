@@ -100,12 +100,12 @@ std::string valueRange(FunctionManagerRaw *fmr, const BlockSummary &bs, void *in
 
     return "0";
 }
-
+//this function assume that the input data is the cartisian grid
 std::string testvtk(FunctionManagerRaw *fmr, const BlockSummary &bs, void *inputData, const std::vector<std::string> &parameters)
 {
     // load to vtk data and execute write option
 
-    std::cout << "debug\n";
+    std::cout << "debug testvtk\n";
 
     std::cout << bs.m_indexlb[0] << "," << bs.m_indexlb[1] << "," << bs.m_indexlb[2] << std::endl;
     std::cout << bs.m_indexub[0] << "," << bs.m_indexub[1] << "," << bs.m_indexub[2] << std::endl;

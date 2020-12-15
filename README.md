@@ -19,6 +19,12 @@ source ~/.gorilla
 cmake ~/cworkspace/src/Gorilla/ -DCMAKE_CXX_COMPILER=CC -DCMAKE_C_COMPILER=cc -DVTK_DIR=~/cworkspace/src/VTK/build/ -DUSE_GNI=ON -DADIOS2_DIR=/global/cscratch1/sd/zw241/build_adios
 ```
 
+If the paraveiw is used for particular test
+
+```
+cmake ~/cworkspace/src/Gorilla/ -DCMAKE_CXX_COMPILER=CC -DCMAKE_C_COMPILER=cc -DVTK_DIR=$SCRATCH/build_paraview_matthieu/ -DUSE_GNI=ON -DADIOS2_DIR=/global/cscratch1/sd/zw241/build_adios -DParaView_DIR=$SCRATCH/build_paraview_matthieu
+```
+
 this is the content of the `~/.gorilla` file on cori cluster:
 
 ```

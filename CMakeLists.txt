@@ -164,5 +164,7 @@ endif()
 # the grpc only works for one level cmake, not sure the reason
 
 if(ENABLE_EXAMPLE)
+  find_package (Python3)
+  find_package(ParaView 5.8 REQUIRED COMPONENTS Catalyst PythonCatalyst)
   add_subdirectory(example)
 endif()
