@@ -8,7 +8,8 @@
 #include <vector>
 #include "../client/unimosclient.h"
 #include "../../commondata/metadata.h"
-
+#include <vtkPolyData.h>
+#include <vtkSmartPointer.h>
 
 namespace tl = thallium;
 using namespace GORILLA;
@@ -16,6 +17,7 @@ using namespace GORILLA;
 class Writer
 {
 public:
+    Writer(){};
     Writer(tl::engine *clientEnginePtr, int rank)
     {
         m_uniclient = new UniClient(clientEnginePtr, "unimos_server.conf", rank);
@@ -47,7 +49,13 @@ public:
 
     void writeImageData(const GrayScott &sim, std::string fileName);
 
+    void isosurfacePolyNum(const GrayScott& sim, int rank, double iso, int step);
+
     void write(const GrayScott &sim, size_t step, int rank, std::string recordInfo = "");
+
+    vtkSmartPointer<vtkPolyData> getPoly(const GrayScott& sim, int rank, double iso, int step);
+
+    void polyProcess(vtkSmartPointer<vtkPolyData> polyData, int step);
 
     UniClient *m_uniclient = NULL;
 

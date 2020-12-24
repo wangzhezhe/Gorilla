@@ -99,7 +99,7 @@ int main(int argc, char **argv)
     {
         std::cout << "--use protocol: " << protocol << std::endl;
     }
-
+//assum that the serverCred is initilized by the data server service
 #ifdef USE_GNI
     //get the drc id from the shared file
     std::ifstream infile(serverCred);
@@ -257,8 +257,8 @@ int main(int argc, char **argv)
         //else
         //{
 
-        bool ifStage = true;
-        int detectionTime = 0.5 * 1000;
+        //bool ifStage = true;
+        //int detectionTime = 0.5 * 1000;
 
         //percentage of the in-staging execution
         //if (step % 5 == 1)
@@ -272,17 +272,17 @@ int main(int argc, char **argv)
         //}
 
         //if test the in-staging checking, all step is written into the staging service
-        if (ifStage)
-        {
+        //if (ifStage)
+        //{
             //write to the stage server
-            dataWriter.write(sim, step, rank);
-        }
+        //    dataWriter.write(sim, step, rank);
+        //}
 
         //}
-        //char countstr[50];
-        //sprintf(countstr, "%03d_%04d", step, rank);
-        //std::string fname = "./vtkdataraw/vtkiso_" + std::string(countstr) + ".vti";
-        //dataWriter.writeImageData(sim,fname);
+        char countstr[50];
+        sprintf(countstr, "%03d_%04d", step, rank);
+        std::string fname = "./gsdataraw/vtkiso_" + std::string(countstr) + ".vti";
+        dataWriter.writeImageData(sim,fname);
 
 #ifdef ENABLE_TIMERS
 
