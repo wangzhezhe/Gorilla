@@ -5,20 +5,13 @@
 
 #include <mpi.h>
 #include <thread>
-#include <vtkAppendFilter.h>
-#include <vtkAppendPolyData.h>
-#include <vtkCleanPolyData.h>
-#include <vtkGeometryFilter.h>
-#include <vtkMPI.h>
-#include <vtkMPIController.h>
-#include <vtkPolyData.h>
-#include <vtkUnstructuredGrid.h>
 
 #include "gray-scott.h"
 #include "timer.hpp"
 #include "writer.h"
 
 #include <stdio.h>
+#include <thallium.hpp>
 #include <time.h>
 #include <unistd.h>
 
@@ -73,6 +66,7 @@ int main(int argc, char** argv)
 
   MPI_Init(&argc, &argv);
   int rank, procs, wrank;
+
   MPI_Comm_rank(MPI_COMM_WORLD, &wrank);
 
   const unsigned int color = 1;
@@ -81,9 +75,6 @@ int main(int argc, char** argv)
 
   MPI_Comm_rank(comm, &rank);
   MPI_Comm_size(comm, &procs);
-
-  vtkMPIController* vtkcontroller = vtkMPIController::New();
-  vtkcontroller->Initialize(&argc, &argv, 1);
 
   if (argc < 3)
   {
@@ -106,43 +97,41 @@ int main(int argc, char** argv)
   {
     std::cout << "--use protocol: " << protocol << std::endl;
   }
-  /*
-  #ifdef USE_GNI
-      //get the drc id from the shared file
-      std::ifstream infile(serverCred);
-      std::string cred_id;
-      std::getline(infile, cred_id);
-      if (rank == 0)
-      {
-          std::cout << "load cred_id: " << cred_id << std::endl;
-      }
+// assum that the serverCred is initilized by the data server service
+#ifdef USE_GNI
+  // get the drc id from the shared file
+  std::ifstream infile(serverCred);
+  std::string cred_id;
+  std::getline(infile, cred_id);
+  if (rank == 0)
+  {
+    std::cout << "load cred_id: " << cred_id << std::endl;
+  }
 
-      struct hg_init_info hii;
-      memset(&hii, 0, sizeof(hii));
-      char drc_key_str[256] = {0};
-      uint32_t drc_cookie;
-      uint32_t drc_credential_id;
-      drc_info_handle_t drc_credential_info;
-      int ret;
-      drc_credential_id = (uint32_t)atoi(cred_id.c_str());
+  struct hg_init_info hii;
+  memset(&hii, 0, sizeof(hii));
+  char drc_key_str[256] = { 0 };
+  uint32_t drc_cookie;
+  uint32_t drc_credential_id;
+  drc_info_handle_t drc_credential_info;
+  int ret;
+  drc_credential_id = (uint32_t)atoi(cred_id.c_str());
 
-      ret = drc_access(drc_credential_id, 0, &drc_credential_info);
-      DIE_IF(ret != DRC_SUCCESS, "drc_access %u", drc_credential_id);
-      drc_cookie = drc_get_first_cookie(drc_credential_info);
+  ret = drc_access(drc_credential_id, 0, &drc_credential_info);
+  DIE_IF(ret != DRC_SUCCESS, "drc_access %u", drc_credential_id);
+  drc_cookie = drc_get_first_cookie(drc_credential_info);
 
-      sprintf(drc_key_str, "%u", drc_cookie);
-      hii.na_init_info.auth_key = drc_key_str;
-      //printf("use the drc_key_str %s\n", drc_key_str);
+  sprintf(drc_key_str, "%u", drc_cookie);
+  hii.na_init_info.auth_key = drc_key_str;
+  // printf("use the drc_key_str %s\n", drc_key_str);
 
-      margo_instance_id mid;
-      mid = margo_init_opt("gni", MARGO_CLIENT_MODE, &hii, 0, 1);
-      tl::engine globalclientEngine(mid);
-  #else
+  margo_instance_id mid;
+  mid = margo_init_opt("gni", MARGO_CLIENT_MODE, &hii, 0, 1);
+  tl::engine globalclientEngine(mid);
+#else
 
-
-      tl::engine globalclientEngine(protocol, THALLIUM_CLIENT_MODE);
-  #endif
-  */
+  tl::engine globalclientEngine(protocol, THALLIUM_CLIENT_MODE);
+#endif
 
   // TODO broadcast
   /*
@@ -166,8 +155,8 @@ int main(int argc, char** argv)
       MPI_COMM_WORLD)
   */
 
-  // Writer dataWriter(&globalclientEngine, rank);
-  Writer dataWriter;
+  Writer dataWriter(&globalclientEngine, rank);
+
   // writer_main.open(settings.output);
 
   if (rank == 0)
@@ -194,6 +183,12 @@ int main(int argc, char** argv)
   // log << "step\ttotal_gs\tcompute_gs\twrite_gs" << std::endl;
 
 #endif
+
+   if (rank == 0)
+  {
+  // start the timer explicitly
+    dataWriter.startwftimer();
+  }
 
   for (int i = 0; i < settings.steps;)
   {
@@ -262,118 +257,38 @@ int main(int argc, char** argv)
     //{
 
     // bool ifStage = true;
+    // int detectionTime = 0.5 * 1000;
 
-    // int anaTime = 5.0 * 1000;
-    // int detectionTime = 3.0 * 1000;
-    // bool ifAna = false;
-
-    // std::this_thread::sleep_for(std::chrono::milliseconds(detectionTime));
-
-    // if (step % 5 == 1 || step % 5 == 2 || step % 5 == 3)
+    // percentage of the in-staging execution
+    // if (step % 5 == 1)
     //{
-    //    ifAna = true;
-    //}
-
-    // if (ifAna)
-    //{
-    //    if (rank == 0)
-    //    {
-    //        std::cout << "inline ana/vis for step " << step << std::endl;
-    //    }
-    // execute the analytics
-    //    std::this_thread::sleep_for(std::chrono::milliseconds(anaTime));
-    //}
-
-    // if (ifStage)
-    //{
-    //    //write to the stage server
-    //    dataWriter.write(sim, step);
+    // bool ifStage = true;
     //}
     // else
     //{
     // execute the analytics
-    //    std::this_thread::sleep_for(std::chrono::milliseconds(anaTime));
+    //    std::this_thread::sleep_for(std::chrono::milliseconds(detectionTime));
     //}
 
-    //}
-    // dataWriter.isosurfacePolyNum(sim, rank, 0.3, step);
-    // dataWriter.isosurfacePolyNum(sim, rank, 0.5, step);
-    // dataWriter.isosurfacePolyNum(sim, rank, 0.7, step);
-
-    // get poly time
+    // if test the in-staging checking, all step is written into the staging service
+    // if (ifStage)
+    //{
+    // write to the stage server
+    std::string blockSuffix = dataWriter.extractAndwrite(sim, step, rank);
+    // assume all put operation finish
     MPI_Barrier(comm);
-    struct timespec getpolys, getpolye;
-    double polydiff;
-    clock_gettime(CLOCK_REALTIME, &getpolys); /* mark start time */
-
-    auto polydata = dataWriter.getPoly(sim, 0.5);
-    // std::cout << "cell number before transfer: " << polydata->GetNumberOfPolys() << std::endl;
-
-    MPI_Barrier(comm);
-    clock_gettime(CLOCK_REALTIME, &getpolye); /* mark start time */
-    polydiff = (getpolye.tv_sec - getpolys.tv_sec) * 1.0 +
-      (getpolye.tv_nsec - getpolys.tv_nsec) * 1.0 / BILLION;
-
-    double sumpolydiff;
-    MPI_Reduce(&polydiff, &sumpolydiff, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
 
     if (rank == 0)
     {
-      std::cout << "step " << i << " avg extract poly " << sumpolydiff / procs << std::endl;
+      dataWriter.triggerRemoteAsync(step, blockSuffix);
     }
+    //}
 
-    // aggregate
-    // int Gather(vtkDataObject* sendBuffer, std::vector<vtkSmartPointer<vtkDataObject>>&
-    // recvBuffer, int destProcessId)
-    // init the vtkcontroller
-
-    // gather time
-    std::vector<vtkSmartPointer<vtkDataObject> > recvlist;
-    int status = vtkcontroller->Gather(polydata, recvlist, 0);
-    if (!status)
-    {
-      throw std::runtime_error("failed to gather poly data");
-    }
-
-    if (rank == 0)
-    {
-      // std::cout << "size of recvlist: " << recvlist.size() << std::endl;
-      // other process time
-      // merge the vtk
-      // Append the two meshes
-      // vtkSmartPointer<vtkAppendFilter> appendFilter = vtkSmartPointer<vtkAppendFilter>::New();
-      vtkSmartPointer<vtkAppendPolyData> appendFilter = vtkSmartPointer<vtkAppendPolyData>::New();
-      for (int i = 0; i < recvlist.size(); i++)
-      {
-        // refer to https://vtk.org/Wiki/VTK/Examples/Cxx/PolyData/GeometryFilter
-        vtkSmartPointer<vtkGeometryFilter> tempgeometryFilter =
-          vtkSmartPointer<vtkGeometryFilter>::New();
-
-        // transfer unstructure grid to polydata
-        // refer to https://vtk.org/Wiki/VTK/Examples/Cxx/PolyData/GeometryFilter
-        tempgeometryFilter->SetInputData(recvlist[i]);
-        tempgeometryFilter->Update();
-        vtkSmartPointer<vtkPolyData> tempPoly = tempgeometryFilter->GetOutput();
-        // std::cout << "recv cell number for: " << i << " is " << tempPoly->GetNumberOfPolys()
-        //          << std::endl;
-
-        // transfer to poly to check the results
-        appendFilter->AddInputData(tempPoly);
-      }
-      // appendFilter->Update();
-      // vtkSmartPointer<vtkPolyData> output = appendFilter->GetOutput();
-      // std::cout << "appended cell " << output->GetNumberOfPolys() << std::endl;
-
-      // Remove any duplicate points.
-      vtkSmartPointer<vtkCleanPolyData> cleanFilter = vtkSmartPointer<vtkCleanPolyData>::New();
-      cleanFilter->SetInputConnection(appendFilter->GetOutputPort());
-      cleanFilter->Update();
-
-      // generate the merged polydata
-      vtkSmartPointer<vtkPolyData> mergedPolydata = cleanFilter->GetOutput();
-      // other processes based on polyonal
-      dataWriter.polyProcess(mergedPolydata, step);
-    }
+    //}
+    // char countstr[50];
+    // sprintf(countstr, "%03d_%04d", step, rank);
+    // std::string fname = "./gsdataraw/vtkiso_" + std::string(countstr) + ".vti";
+    // dataWriter.writeImageData(sim,fname);
 
 #ifdef ENABLE_TIMERS
 
@@ -392,13 +307,8 @@ int main(int argc, char** argv)
 
     if (rank == 0)
     {
-      std::cout << "step " << i << " avg insitu execution " << time_sum_write / procs << std::endl;
+      std::cout << "step " << i << " avg write " << time_sum_write / procs << std::endl;
     }
-
-    // char countstr[50];
-    // sprintf(countstr, "%03d_%04d", step, rank);
-    // std::string fname = "./gsdataraw/vtkiso_" + std::string(countstr) + ".vti";
-    // dataWriter.writeImageData(sim, fname);
 
 #endif
 
@@ -409,9 +319,11 @@ int main(int argc, char** argv)
   clock_gettime(CLOCK_REALTIME, &wfend); /* mark end time */
   wfdiff =
     (wfend.tv_sec - wfstart.tv_sec) * 1.0 + (wfend.tv_nsec - wfstart.tv_nsec) * 1.0 / BILLION;
-  if (rank < 10)
+
+  if (rank == 0)
   {
-    std::cout << "wf time " << wfdiff << std::endl;
+    std::cout << "sim executiontime " << wfdiff << std::endl;
+    // both ana and sim set tick, compare the maximum one
     // dataWriter.endwftimer();
   }
   MPI_Finalize();

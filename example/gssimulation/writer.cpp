@@ -48,7 +48,7 @@ void Writer::writeImageData(const GrayScott& sim, std::string fileName)
   writer->Write();
 }
 
-vtkSmartPointer<vtkPolyData> Writer::getPoly(const GrayScott& sim, int rank, double iso, int step)
+vtkSmartPointer<vtkPolyData> Writer::getPoly(const GrayScott& sim, double iso)
 {
   std::vector<double> u = sim.u_noghost();
   std::array<int, 3> indexlb = { { (int)sim.offset_x, (int)sim.offset_y, (int)sim.offset_z } };
@@ -249,4 +249,70 @@ void Writer::write(const GrayScott& sim, size_t step, int rank, std::string reco
   {
     throw std::runtime_error("failed to put data for step " + std::to_string(step));
   }
+}
+
+// extract the data into the polydata and then write data into the staging
+// return the blockid for future use
+std::string Writer::extractAndwrite(
+  const GrayScott& sim, size_t step, int rank, std::string recordInfo)
+{
+
+  std::array<int, 3> indexlb = { { (int)sim.offset_x, (int)sim.offset_y, (int)sim.offset_z } };
+  std::array<int, 3> indexub = { { (int)(sim.offset_x + sim.size_x - 1),
+    (int)(sim.offset_y + sim.size_y - 1), (int)(sim.offset_z + sim.size_z - 1) } };
+
+  int blockindex = 0;
+  std::string VarNameU = "grascott_u";
+
+  // contains varname and step
+  std::string blockidSuffix = VarNameU + "_" + std::to_string(step);
+
+  std::string blockid =
+    blockidSuffix + "_" + std::to_string(rank) + "_" + std::to_string(blockindex);
+
+  // extract poly
+  auto polyData = this->getPoly(sim, 0.5);
+
+  // only transfer data when polydata cell is larger than 0
+  int polyNum = polyData->GetNumberOfPolys();
+
+  if (polyNum != 0)
+  {
+    // generate raw data summary block
+    // the elemnum and elemsize is 1 in this case
+    // since the actual data is self contained
+    // ArraySummary as(blockid, 1, 1);
+    std::vector<ArraySummary> aslist;
+    // aslist.push_back(as);
+
+    BlockSummary bs(aslist, DATATYPE_VTKEXPLICIT, blockid, 3, indexlb, indexub, recordInfo);
+    bs.m_backend = BACKEND::MEMVTKEXPLICIT;
+    int status = m_uniclient->putrawdata(step, VarNameU, bs, polyData.GetPointer());
+    if (status != 0)
+    {
+      throw std::runtime_error("failed to put data for step " + std::to_string(step));
+    }
+  }
+  // we assume that the interesting data contains in every step in this exp
+  // but actually, there might not interesting data in specific step
+  // maybe one aggregate operation needed here
+  // to make sure if there is actual data
+  return blockidSuffix;
+}
+
+// this is only called once for all
+void Writer::triggerRemoteAsync(int step, std::string blockidSuffix)
+{
+  // since we may not sure which rank has the non zero polygonal data
+  // only few of them execute to the last step
+  // make sure the send step finish for all
+
+  std::cout << "debug try executeAsyncExp " << std::endl;
+  // the step is used for rrb
+  // the task might be triggered at different servers for load balancing
+  // TODO split the code base for client used for user and inner service
+  // currently we only use the step since we do not know which step is sent out
+  m_uniclient->executeAsyncExp(step, blockidSuffix);
+
+  return;
 }

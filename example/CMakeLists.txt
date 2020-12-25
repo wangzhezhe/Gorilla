@@ -12,6 +12,13 @@ add_executable(gray-scott-stg
   ./gssimulation/settings.cpp
 )
 
+add_executable(gray-scott-hybrid
+  ./gssimulation/main_hybrid.cpp
+  ./gssimulation/gray-scott.cpp
+  ./gssimulation/writer.cpp
+  ./gssimulation/settings.cpp
+)
+
 add_executable(isosurface
    ./analytics/isosurface_pulldata.cpp
    ./gssimulation/settings.cpp)
@@ -27,6 +34,9 @@ thallium unimos_client metaclient)
   target_link_libraries(gray-scott-stg ${DRC_LIBRARIES} MPI::MPI_C ${VTK_LIBRARIES}
 thallium unimos_client metaclient)
 
+  target_link_libraries(gray-scott-hybrid ${DRC_LIBRARIES} MPI::MPI_C ${VTK_LIBRARIES}
+thallium unimos_client metaclient)
+
   target_link_libraries(isosurface ${DRC_LIBRARIES} MPI::MPI_C ${VTK_LIBRARIES}
 thallium unimos_client metaclient)
 
@@ -38,6 +48,9 @@ else()
 thallium unimos_client metaclient)
 
   target_link_libraries(gray-scott-stg MPI::MPI_C ${VTK_LIBRARIES}
+thallium unimos_client metaclient)
+
+  target_link_libraries(gray-scott-hybrid MPI::MPI_C ${VTK_LIBRARIES}
 thallium unimos_client metaclient)
 
   target_link_libraries(isosurface MPI::MPI_C ${VTK_LIBRARIES}

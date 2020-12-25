@@ -310,9 +310,10 @@ int main(int argc, char **argv)
         //the adis needed to be installed before using
     }
 
+#ifdef ENABLE_TIMERS    
     clock_gettime(CLOCK_REALTIME, &wfend); /* mark end time */
     wfdiff = (wfend.tv_sec - wfstart.tv_sec) * 1.0 + (wfend.tv_nsec - wfstart.tv_nsec) * 1.0 / BILLION;
-
+#endif
 
     if (rank == 0)
     {

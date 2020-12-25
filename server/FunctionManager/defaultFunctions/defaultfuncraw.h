@@ -18,6 +18,12 @@ const BlockSummary &bs,
 void *inputData,
 const std::vector<std::string>& parameters);
 
+std::string polyAggreProcess(
+FunctionManagerRaw* fmr,
+const BlockSummary &bs, 
+void *inputData,
+const std::vector<std::string>& parameters);
+
 std::string testvtk(
 FunctionManagerRaw*fmr,
 const BlockSummary &bs, 

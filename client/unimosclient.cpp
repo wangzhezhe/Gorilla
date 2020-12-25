@@ -581,8 +581,10 @@ int putArrayIntoBlock(UniClient* client, BlockSummary& dataSummary, void* dataCo
   DEBUG("time spent on putarrayintoblock : " << diff1);
 
   // check if the data is complete when all put operation finish
-  tl::remote_procedure remoteexpcheckdata = client->m_clientEnginePtr->define("expcheckdata");
-  remoteexpcheckdata.on(serverEndpoint)(dataSummary);
+  // check the data at the server end when it is necessary
+  // tl::remote_procedure remoteexpcheckdata =
+  //  client->m_clientEnginePtr->define("expcheckdata").disable_response();
+  // remoteexpcheckdata.on(serverEndpoint)(dataSummary);
 
   return 0;
 }
@@ -1087,6 +1089,77 @@ void UniClient::deleteMetaStep(size_t step)
     remotedeleteMeta.on(kv.second)(step);
   }
   return;
+}
+
+void UniClient::executeAsyncExp(int step, std::string blockid)
+{
+  // get the server id by rrb
+  if (this->m_serverIDToAddr.size() == 0)
+  {
+    throw std::runtime_error("the m_serverIDToAddr is supposed to initilized");
+  }
+  int serverid = step % m_serverIDToAddr.size();
+
+  std::cout << "---debug executeAsyncExp serverid is " << serverid << std::endl;
+
+  // send the trigger operation
+  std::string serverAddr = this->m_serverIDToAddr[serverid];
+
+  tl::remote_procedure remoteexecuteAsyncExp =
+    this->m_clientEnginePtr->define("executeAsyncExp").disable_response();
+  tl::endpoint serverEndpoint = this->lookup(serverAddr);
+  std::string funcName = "testaggrefunc";
+  std::vector<std::string> funcparameter;
+  remoteexecuteAsyncExp.on(serverEndpoint)(blockid, funcName, funcparameter);
+  return;
+}
+
+// TODO update this
+// currently we basic ask every stage if there are required data
+std::vector<BlockSummary> UniClient::getBlockSummaryListBySuffix(std::string blockIDSuffix)
+{
+  // send request to all stages nodes
+  tl::remote_procedure remotegetBlockSummayBySuffix =
+    this->m_clientEnginePtr->define("getBlockSummayBySuffix");
+
+  std::vector<BlockSummary> bslist;
+  
+
+
+  for (auto& kv : this->m_serverToEndpoints)
+  {
+    tl::endpoint serverEndpoint = kv.second;
+    std::vector<BlockSummary> tempbsList =
+      remotegetBlockSummayBySuffix.on(serverEndpoint)(blockIDSuffix);
+    std::cout << "check server: " << kv.first << std::endl;
+    for (auto& v : tempbsList)
+    {
+      v.printSummary();
+
+      //maybe try to transfer data here
+      //assign the space
+      //create the bulk
+      //get the poly data back
+      //points, normals, cells
+ 
+        std::vector<std::pair<void*, std::size_t> > segments(3);
+
+      
+
+
+      //extract the three array
+
+
+
+      //since we know the endpoint position
+      //and assmeble the extracted data into the poly
+      //then put the poly into the filter
+      //call the filter update after the iteration finish
+    }
+    bslist.insert(bslist.end(), tempbsList.begin(), tempbsList.end());
+  }
+  // getBlockSummayBySuffix
+  return bslist;
 }
 
 }

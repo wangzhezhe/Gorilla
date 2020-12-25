@@ -183,6 +183,11 @@ struct UniClient
   void eraseRawData(std::string serverAddr, std::string blockID);
 
   void deleteMetaStep(size_t step);
+
+  void executeAsyncExp(int step, std::string blockid);
+
+  std::vector<BlockSummary> getBlockSummaryListBySuffix(std::string blockIDSuffix);
+  
 };
 
 }

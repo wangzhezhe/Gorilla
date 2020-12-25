@@ -11,7 +11,7 @@ add_definitions(-DENABLE_TIMERS)
 find_package(MPI REQUIRED) 
 
 #use the debug build when it is necessary
-SET(CMAKE_CXX_FLAGS  "-DDEBUG_BUILD")
+#SET(CMAKE_CXX_FLAGS  "-DDEBUG_BUILD")
 
 # add our cmake module directory to the path
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}

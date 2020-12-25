@@ -48,7 +48,8 @@ int VTKMemExplicitObj::putArray(ArraySummary& as, void* dataSourcePtr)
   }
 
   m_m_arrayMapMutex.lock();
-  this->m_arrayMap[as] = *(static_cast<vtkSmartPointer<vtkDataObject>*>(dataSourcePtr));
+  // this->m_arrayMap[as] = *(static_cast<vtkSmartPointer<vtkDataObject>*>(dataSourcePtr));
+  this->m_arrayMap[as] = dataSourcePtr;
   m_m_arrayMapMutex.unlock();
   return 0;
 }
@@ -56,7 +57,7 @@ int VTKMemExplicitObj::putArray(ArraySummary& as, void* dataSourcePtr)
 int VTKMemExplicitObj::getArray(ArraySummary& as, void*& dataContainer)
 {
 
-  //std::cout << "debug VTKMemExplicitObj::getArray is called" <<std::endl; 
+  // std::cout << "debug VTKMemExplicitObj::getArray is called" <<std::endl;
   m_m_arrayMapMutex.lock();
   int tempcount = this->m_arrayMap.count(as);
   m_m_arrayMapMutex.unlock();

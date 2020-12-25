@@ -9,6 +9,7 @@
 #include <map>
 #include <vector>
 #include <blockManager/blockManager.h>
+#include <client/unimosclient.h>
 
 namespace tl = thallium;
 
@@ -69,6 +70,13 @@ struct FunctionManagerRaw
         FunctionManagerRaw *fmr,
         const BlockSummary &bs,
         void *inputData,
+        std::string fiunctionName,
+        const std::vector<std::string> &parameters);
+
+
+    std::string aggregateProcess(
+        UniClient *uniclient,
+        std::string blockIDSuffix,
         std::string fiunctionName,
         const std::vector<std::string> &parameters);
 

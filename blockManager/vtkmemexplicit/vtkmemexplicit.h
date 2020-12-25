@@ -3,9 +3,9 @@
 
 #include <blockManager/blockManager.h>
 #include <iostream>
+#include <unordered_map>
 #include <vtkDataSet.h>
 #include <vtkSmartPointer.h>
-#include <unordered_map>
 
 namespace GORILLA
 {
@@ -25,7 +25,7 @@ struct VTKMemExplicitObj : public DataBlockInterface
 
   int eraseData();
 
-  void* getrawMemPtr() { return (void*)this->m_vtkobject; };
+  void* getrawMemPtr() { return nullptr; };
 
   int putArray(ArraySummary& as, void* dataSourcePtr);
 
@@ -38,22 +38,26 @@ struct VTKMemExplicitObj : public DataBlockInterface
   // otherwise, the data will be deleted if the outer smart pointer out of the scope
   // vtkDataObject* m_vtkobject = NULL;
   // the common pointer and smart pointer can be assigned to each other transparently
-  vtkSmartPointer<vtkDataObject> m_vtkobject = NULL;
   tl::mutex m_m_arrayMapMutex;
-  std::unordered_map<ArraySummary, vtkSmartPointer<vtkDataObject>, ArraySummaryHash > m_arrayMap;
+  // std::unordered_map<ArraySummary, vtkSmartPointer<vtkDataObject>, ArraySummaryHash > m_arrayMap;
+  // TODO add the type message into the arraysummary??? such as uint or int, that is different
+  // although there is same size, but the data value can be different
+  std::unordered_map<ArraySummary, void*, ArraySummaryHash> m_arrayMap;
 
   virtual ~VTKMemExplicitObj()
   {
     // we may choose to use the pure null ptr
     // refer to https://vtk.org/Wiki/VTK/Tutorials/SmartPointers
-    if (m_vtkobject != NULL)
+    // go through the map and delete pointer in it
+    for (auto& kv : this->m_arrayMap)
     {
-      // refer to
-      // https://stackoverflow.com/questions/16497930/how-to-free-a-vtksmartpointer
-      // previous data will be deleted if we assign it to null
-      m_vtkobject = NULL;
+      if (kv.second != nullptr)
+      {
+        // release the memory space
+        // assume we use operator new to allocate the space
+        ::operator delete(kv.second);
+      }
     }
-    // std::cout << "VTKMemObj is erased" << std::endl;
   };
 };
 }

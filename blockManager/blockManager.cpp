@@ -95,7 +95,7 @@ int BlockManager::putArray(
   return status;
 }
 
-int BlockManager::getArray(
+ArraySummary BlockManager::getArray(
   std::string blockName, std::string arrayName, int backend, void*& dataPointer)
 {
 
@@ -115,7 +115,10 @@ int BlockManager::getArray(
   DataBlockInterface* handle = getBlockHandle(blockName, backend);
   // get summary from the block array
   int status = handle->getArray(as, dataPointer);
-  return status;
+  if(status!=0){
+    throw std::runtime_error("failed to get array with arrayName");
+  }
+  return as;
 }
 
 int BlockManager::putBlock(BlockSummary& blockSummary, int backend, void* dataPointer)
@@ -156,7 +159,11 @@ BlockSummary BlockManager::getBlockSummary(std::string blockID)
 
   if (this->DataBlockMap.count(blockID) == 0)
   {
-    throw std::runtime_error("the block summary not exist in DataBlockMap");
+    // throw std::runtime_error("the block summary not exist in DataBlockMap");
+    // return an empty blocksummary
+    // the block id is empty
+    // the caller need to check if the blocksummary is a valid one
+    return BlockSummary();
   }
 
   // exist
@@ -169,6 +176,22 @@ BlockSummary BlockManager::getBlockSummary(std::string blockID)
 // this might be called with without put operation firstly
 BlockSummary BlockManager::getBlock(std::string blockID, int backend, void*& dataContainer)
 {
+  // if it is the backend is VTK
+  // the data put should be executed firstly
+  if (backend == MEMVTKPTR || backend == MEMVTKEXPLICIT || backend == MEM)
+  {
+    //check if the data exist
+    this->m_DataBlockMapMutex.lock();
+    int count = this->DataBlockMap.count(blockID);
+    this->m_DataBlockMapMutex.unlock();
+    if (count == 0)
+    {
+      // return an empty block summary if it is empty
+      return BlockSummary();
+    }
+  }
+  //for the file backend, it is ok if the data does not exist previously
+  //we may need to load data from the file
   DataBlockInterface* handle = getBlockHandle(blockID, backend);
   BlockSummary bs = handle->getData(dataContainer);
   return bs;

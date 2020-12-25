@@ -2,6 +2,10 @@
 #include <vtkImageData.h>
 #include <vtkImageImport.h>
 #include <vtkSmartPointer.h>
+#include <time.h>
+#include <unistd.h>
+
+#define BILLION 1000000000L
 
 void Writer::writetoStaging(
   size_t step, std::vector<Mandelbulb>& mandelbulbList, int block_number_offset, int global_blocks)
@@ -34,9 +38,9 @@ void Writer::writetoStaging(
 
     std::array<int, 3> indexlb = { { blockIndex + DEPTH, 0, 0 } };
     std::array<int, 3> indexub = { { (blockIndex + 1) * DEPTH, HEIGHT, WIDTH } };
-    
-    //it is ok to provide the empty aslist here
-    //the addsumary operation will be exeuted in client
+
+    // it is ok to provide the empty aslist here
+    // the addsumary operation will be exeuted in client
     std::vector<ArraySummary> aslist;
     BlockSummary bs(aslist, DATATYPE_VTKPTR, blockName, 3, indexlb, indexub);
 
@@ -48,11 +52,21 @@ void Writer::writetoStaging(
     }
 
     // trigger specific task
+    // add the timer
     std::vector<std::string> parameters;
+    struct timespec start, end;
+    double diff;
+    clock_gettime(CLOCK_REALTIME, &start);
+
     std::string resutls = this->m_uniclient->executeRawFunc(
       this->m_uniclient->m_associatedDataServer, blockName, "test", parameters);
+    
+    clock_gettime(CLOCK_REALTIME, &end);
+    double timespan =
+      (end.tv_sec - start.tv_sec) * 1.0 + (end.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+    std::cout << blockName << " time span: " << timespan << std::endl;
 
-    std::cout << "exec resuts for block: " << blockName << ": " << resutls << std::endl;
+    // std::cout << "exec resuts for block: " << blockName << ": " << resutls << std::endl;
 
     index++;
   }

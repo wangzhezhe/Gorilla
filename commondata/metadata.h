@@ -227,6 +227,9 @@ struct BlockSummary
   // we only do this in linear way since there
   // is not many array in one block and this can be
   // optimized further such as store the name and offset in advance
+  // this message might be write into the file
+  // so we try to make the header as the fixed value
+  // instead of using the vector
   uint8_t m_arrayListLen;
   ArraySummary m_arrayList[ARRAYLENINBLOCK];
 

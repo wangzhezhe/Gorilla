@@ -1,0 +1,32 @@
+#!/bin/bash
+#SBATCH --qos=debug
+#SBATCH --nodes=2
+#SBATCH --tasks-per-node=32
+#SBATCH --time=10:00
+#SBATCH --licenses=cscratch1
+#SBATCH --constraint=haswell
+
+# copy metadata server to current dir
+rm unimos_server.conf Gorila_cred_conf gray_scott_pe_* conf* core cred hybrid_*.log
+
+# key varaibles
+SIMTASK=32
+STAGETASK=4
+
+source ~/.gorilla
+
+#start the server
+srun -C haswell -N 1 -n $STAGETASK -c 1 --cpu_bind=cores ./unimos_server ~/cworkspace/src/Gorilla/server/settings_gs_gni.json &> hybrid_stage.log &
+
+while [ ! -f ./unimos_server.conf ]
+do
+    sleep 0.01
+done
+
+sleep 1
+
+#if we do not make sure how many node that stage servers use 
+#it always keeps busy such as "Requested nodes are busy"
+srun -C haswell -N 1 -n $SIMTASK -c 1 --cpu_bind=cores ./example/gray-scott-hybrid ~/cworkspace/src/Gorilla/example/gssimulation/settings.json gni &> hybrid_sim.log 
+
+sleep 5

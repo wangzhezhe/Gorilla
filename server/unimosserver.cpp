@@ -638,6 +638,7 @@ void putvtkexp(const tl::request& req, int clientID, size_t& step, std::string& 
   struct timespec start, end1, end2, end3;
   double diff1, diff2, diff3;
   clock_gettime(CLOCK_REALTIME, &start);
+
   // get data and change it into the vtk object
   // the size of the segment should be a list in this case
   // this can be optimized for multiple objects
@@ -715,22 +716,60 @@ void expcheckdata(const tl::request& req, BlockSummary& blockSummary)
   void* polyArrayPtr = NULL;
   void* normalArrayPtr = NULL;
 
-  uniServer->m_blockManager->getArray(
+  ArraySummary arrayPoints = uniServer->m_blockManager->getArray(
     blockSummary.m_blockid, "points", BACKEND::MEMVTKEXPLICIT, pointArrayptr);
-  uniServer->m_blockManager->getArray(
+  ArraySummary arrayCells = uniServer->m_blockManager->getArray(
     blockSummary.m_blockid, "cells", BACKEND::MEMVTKEXPLICIT, polyArrayPtr);
-  uniServer->m_blockManager->getArray(
+  ArraySummary arrayNormals = uniServer->m_blockManager->getArray(
     blockSummary.m_blockid, "normals", BACKEND::MEMVTKEXPLICIT, normalArrayPtr);
 
   // after normal put (the last one)
   // try to assemble the data into the poly
+
+  // generate the points array
+  int nPoints = arrayPoints.m_elemNum / 3;
+  auto points = vtkSmartPointer<vtkPoints>::New();
+  points->SetNumberOfPoints(nPoints);
+  for (vtkIdType i = 0; i < nPoints; i++)
+  {
+    const double* tempp = (double*)pointArrayptr;
+    points->SetPoint(i, tempp + (i * 3));
+  }
+
+  // generate normal array
+  auto normals = vtkSmartPointer<vtkDoubleArray>::New();
+  normals->SetNumberOfComponents(3);
+  const double* tempn = (double*)normalArrayPtr;
+
+  for (vtkIdType i = 0; i < nPoints; i++)
+  {
+    normals->InsertNextTuple(tempn + (i * 3));
+  }
+
+  // generate cell array
+  int nCells = arrayCells.m_elemNum / 3;
+  auto polys = vtkSmartPointer<vtkCellArray>::New();
+  const int* tempc = (int*)polyArrayPtr;
+
+  for (vtkIdType i = 0; i < nCells; i++)
+  {
+    vtkIdType a = *(tempc + (i * 3 + 0));
+    vtkIdType b = *(tempc + (i * 3 + 1));
+    vtkIdType c = *(tempc + (i * 3 + 2));
+
+    polys->InsertNextCell(3);
+    polys->InsertCellPoint(a);
+    polys->InsertCellPoint(b);
+    polys->InsertCellPoint(c);
+  }
+
   auto polyData = vtkSmartPointer<vtkPolyData>::New();
-  polyData->SetPoints((vtkPoints*)pointArrayptr);
-  polyData->SetPolys((vtkCellArray*)polyArrayPtr);
-  polyData->GetPointData()->SetNormals((vtkDoubleArray*)normalArrayPtr);
+  polyData->SetPoints(points);
+  polyData->SetPolys(polys);
+  polyData->GetPointData()->SetNormals(normals);
 
-  polyData->PrintSelf(std::cout, vtkIndent(5));
-
+  // polyData->PrintSelf(std::cout, vtkIndent(5));
+  std::cout << "expcheckdata cell number: " << polyData->GetNumberOfPolys() << std::endl;
   return;
 }
 
@@ -742,9 +781,11 @@ void putArrayIntoBlock(const tl::request& req, BlockSummary& blockSummary,
 
   // get the size of the data
   size_t transferSize = arraySummary.m_elemNum * arraySummary.m_elemSize;
-  // get the transfered data
+  // operator new only allocate memory without calling constructor
+  void* memspace = (void*)::operator new(transferSize);
+  
+  // get the transfered data by exposing the mem space
   std::vector<std::pair<void*, std::size_t> > segments(1);
-  void* memspace = (void*)malloc(transferSize);
   segments[0].first = memspace;
   segments[0].second = transferSize;
 
@@ -755,72 +796,8 @@ void putArrayIntoBlock(const tl::request& req, BlockSummary& blockSummary,
   // pull the data onto the server
   dataBulk.on(ep) >> currentBulk;
 
-  // put the data into the manager
-  // TODO, update this part, we hardcode the typical array here
-  // we need to process the type messages here
-  int nPoints = arraySummary.m_elemNum / 3;
-  int nCells = arraySummary.m_elemNum / 3;
-
-  std::cout << "---debug nPoints " << nPoints << " nCells " << nCells << std::endl;
-
-  if (strcmp(arraySummary.m_arrayName, "points") == 0)
-  {
-    std::cout << "---debug points recv" << std::endl;
-    auto points = vtkSmartPointer<vtkPoints>::New();
-    points->SetNumberOfPoints(nPoints);
-    for (vtkIdType i = 0; i < nPoints; i++)
-    {
-      const double* temp = (double*)memspace;
-      points->SetPoint(i, temp + (i * 3));
-    }
-    // use the putArray interface
-    uniServer->m_blockManager->putArray(
-      blockSummary, arraySummary, blockSummary.m_backend, &points);
-  }
-  else if (strcmp(arraySummary.m_arrayName, "normals") == 0)
-  {
-    std::cout << "---debug normals recv" << std::endl;
-
-    auto normals = vtkSmartPointer<vtkDoubleArray>::New();
-    normals->SetNumberOfComponents(3);
-    const double* temp = (double*)memspace;
-
-    for (vtkIdType i = 0; i < nPoints; i++)
-    {
-      normals->InsertNextTuple(temp + (i * 3));
-    }
-    // use the putArray interface
-    uniServer->m_blockManager->putArray(
-      blockSummary, arraySummary, blockSummary.m_backend, &normals);
-  }
-  else if (strcmp(arraySummary.m_arrayName, "cells") == 0)
-  {
-    std::cout << "---debug cells recv" << std::endl;
-
-    auto polys = vtkSmartPointer<vtkCellArray>::New();
-    const int* temp = (int*)memspace;
-
-    for (vtkIdType i = 0; i < nCells; i++)
-    {
-      vtkIdType a = *(temp + (i * 3 + 0));
-      vtkIdType b = *(temp + (i * 3 + 1));
-      vtkIdType c = *(temp + (i * 3 + 2));
-
-      polys->InsertNextCell(3);
-      polys->InsertCellPoint(a);
-      polys->InsertCellPoint(b);
-      polys->InsertCellPoint(c);
-    }
-    // use the putArray interface
-    uniServer->m_blockManager->putArray(blockSummary, arraySummary, blockSummary.m_backend, &polys);
-  }
-  else
-  {
-    throw std::runtime_error("unsupported array name");
-  }
-
-  // free registered space
-  free(memspace);
+  uniServer->m_blockManager->putArray(blockSummary, arraySummary, blockSummary.m_backend, memspace);
+  // the memspace will be deleted when the object is deleted
   req.respond(0);
   return;
 }
@@ -857,6 +834,7 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
   // TODO, the client can choose how many channel are exposed at the same time
   // currently we assume there is one channel per client
   // create the new memory space when the clientid is not exist
+
   uniServer->m_bulkMapmutex.lock();
   if (uniServer->m_bulkMap.find(clientID) == uniServer->m_bulkMap.end())
   {
@@ -877,9 +855,11 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
   }
   else
   {
+    // TODO need to be updated here, even for the same client
+    // the data size can also change？how to process this?
     size_t oldSize = uniServer->m_bulkMap[clientID].size();
-    // if old size is too small we may resize it
-    if (oldSize < transferSize)
+    // if old size not equal with the previous one
+    if (oldSize != transferSize)
     {
       // create the new mem when the client exists but the memsize is not enough
       if (uniServer->m_dataContainerMap[clientID] != nullptr)
@@ -890,16 +870,18 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
 
       uniServer->m_schedulerManager->assignMem(transferSize);
       uniServer->m_dataContainerMap[clientID] = (void*)malloc(transferSize);
-
-      std::vector<std::pair<void*, std::size_t> > segments(1);
-      segments[0].first = uniServer->m_dataContainerMap[clientID];
-      segments[0].second = transferSize;
-
-      uniServer->m_bulkMap[clientID] =
-        globalServerEnginePtr->expose(segments, tl::bulk_mode::write_only);
-
-      spdlog::info("resize the new memsize of client {} to {}", clientID, transferSize);
     }
+
+    // if the size is not equal with the previous one
+    // just resize it(we need to create a new bulk), no matter it is larger or smaller
+    std::vector<std::pair<void*, std::size_t> > segments(1);
+    segments[0].first = uniServer->m_dataContainerMap[clientID];
+    segments[0].second = transferSize;
+
+    uniServer->m_bulkMap[clientID] =
+      globalServerEnginePtr->expose(segments, tl::bulk_mode::write_only);
+
+    spdlog::info("resize the new memsize of client {} to {}", clientID, transferSize);
   }
 
   tl::bulk currentBulk = uniServer->m_bulkMap[clientID];
@@ -977,7 +959,7 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
       // TODO, maybe implements the array or block expression, and let the data type to be more
       // specific
       // ((vtkPolyData*)recvptr)->PrintSelf(std::cout, vtkIndent(5));
-      (recvptr)->PrintSelf(std::cout, vtkIndent(5));
+      // (recvptr)->PrintSelf(std::cout, vtkIndent(5));
       clock_gettime(CLOCK_REALTIME, &end3);
       diff3 = (end3.tv_sec - end2.tv_sec) * 1.0 + (end3.tv_nsec - end2.tv_nsec) * 1.0 / BILLION;
       spdlog::debug("server put unmarshal : {}", diff3);
@@ -1112,6 +1094,35 @@ void getmetaServerList(
   }
 }
 
+// TODO one issue here
+// this blockmap is supposed to be cleaned periodically
+// otherwise, it will getting slower for the large step
+// since we basically range the map to get if there are required variable
+// oneway is to put the data into the metadata, retrieve metadata server to get required data
+// firstly another way is to add another layer (step) when storing the rawdata maybe use a doube map
+// here? map<step, map<varname,interface >> if current strategy is not efficient
+void getBlockSummayBySuffix(const tl::request& req, std::string& varSuffix)
+{
+  std::vector<BlockSummary> blockSummaryList;
+  // range the map
+  // DataBlockMap
+  // add lock
+  uniServer->m_blockManager->m_DataBlockMapMutex.lock();
+
+  for (auto& kv : uniServer->m_blockManager->DataBlockMap)
+  {
+    // put the blockSummary into the list
+    if (kv.first.find(varSuffix) != std::string::npos)
+    {
+      // the key contains the suffix
+      blockSummaryList.push_back(kv.second->m_blockSummary);
+    }
+  }
+  uniServer->m_blockManager->m_DataBlockMapMutex.unlock();
+  req.respond(blockSummaryList);
+  return;
+}
+
 void getBlockDescriptorList(const tl::request& req, size_t& step, std::string& varName,
   size_t& dims, std::array<int, 3>& indexlb, std::array<int, 3>& indexub)
 {
@@ -1184,10 +1195,28 @@ void endTimer(const tl::request& req)
   return;
 }
 
+// execute raw func in async way
+// this function will trigger one function
+// this function will gather all polydata firstly and then execute the filter action
+// no not need the return value
+void executeAsyncExp(const tl::request& req, std::string& blockIDSuffix, std::string& functionName,
+  std::vector<std::string>& funcParameters)
+{
+  spdlog::debug("---server rank {} start executeAsyncExp for block {}", globalRank, blockIDSuffix);
+  globalServerEnginePtr->get_handler_pool().make_thread(
+    [=]() {
+      uniServer->m_frawmanager->aggregateProcess(
+        uniClient, blockIDSuffix, functionName, funcParameters);
+    },
+    tl::anonymous());
+
+  return;
+}
+
 // this basic function that is called on the node
 // with the block data mamager
 // it basically extract the necessary data and execute particular function on it
-// it looks this should be the syncronous call
+// it looks this should be the syncronous call (we also provide the async version)
 // since we need the direct results here
 void executeRawFunc(const tl::request& req, std::string& blockID, std::string& functionName,
   std::vector<std::string>& funcParameters)
@@ -1221,6 +1250,17 @@ void executeRawFunc(const tl::request& req, std::string& blockID, std::string& f
 
   req.respond(exeResults);
   return;
+}
+
+// std::string blockID, int backend
+void getPolyMeta()
+{
+  // check if reguired data is in the current server
+  // return the array size in the vtk object
+
+  // get block
+  // return ArraySummary
+  // return 0 size if there is no poly data
 }
 
 // This function is only called for the mem backend
@@ -1440,7 +1480,9 @@ void runRerver(std::string networkingType)
   globalServerEnginePtr->define("deleteMetaStep", deleteMetaStep);
   globalServerEnginePtr->define("putvtkexp", putvtkexp);
   globalServerEnginePtr->define("putArrayIntoBlock", putArrayIntoBlock);
-  globalServerEnginePtr->define("expcheckdata", expcheckdata);
+  globalServerEnginePtr->define("expcheckdata", expcheckdata).disable_response();
+  globalServerEnginePtr->define("executeAsyncExp", executeAsyncExp).disable_response();
+  globalServerEnginePtr->define("getBlockSummayBySuffix", getBlockSummayBySuffix);
 
   globalServerEnginePtr->define("startTimer", startTimer).disable_response();
   globalServerEnginePtr->define("endTimer", endTimer).disable_response();

@@ -24,15 +24,6 @@ public:
         //the cache should be attached with the client firstly
         m_uniclient->getAllServerAddr();
         m_uniclient->m_totalServerNum = m_uniclient->m_serverIDToAddr.size();
-
-        //start the timer for the master server
-        if (rank == 0)
-        {   
-            //register trigger by separate service
-            //registerRtrigger(1);
-            m_uniclient->startTimer();
-            //std::cout << "ok to register the trigger and timer\n";
-        }
     };
 
     void startwftimer()
@@ -53,9 +44,14 @@ public:
 
     void write(const GrayScott &sim, size_t step, int rank, std::string recordInfo = "");
 
-    vtkSmartPointer<vtkPolyData> getPoly(const GrayScott& sim, int rank, double iso, int step);
+    std::string extractAndwrite(const GrayScott& sim, size_t step, int rank, std::string recordInfo= "");
+
+    void triggerRemoteAsync(int step, std::string blockidSuffix);
+
+    vtkSmartPointer<vtkPolyData> getPoly(const GrayScott& sim, double iso);
 
     void polyProcess(vtkSmartPointer<vtkPolyData> polyData, int step);
+
 
     UniClient *m_uniclient = NULL;
 

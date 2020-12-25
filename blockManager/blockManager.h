@@ -119,7 +119,7 @@ public:
     std::array<int, 3> subregionlb, std::array<int, 3> subregionub, void*& dataContainer);
 
   int putArray(BlockSummary& blockSummary, ArraySummary& as, int backend, void* dataPointer);
-  int getArray(std::string blockName, std::string arrayName, int backend, void*& dataPointer);
+  ArraySummary getArray(std::string blockName, std::string arrayName, int backend, void*& dataPointer);
   bool blockSummaryExist(std::string blockID);
 
   // execute the data checking service
