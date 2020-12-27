@@ -256,6 +256,9 @@ void Writer::write(const GrayScott& sim, size_t step, int rank, std::string reco
 std::string Writer::extractAndwrite(
   const GrayScott& sim, size_t step, int rank, std::string recordInfo)
 {
+  struct timespec start, end;
+  double diff;
+  clock_gettime(CLOCK_REALTIME, &start);
 
   std::array<int, 3> indexlb = { { (int)sim.offset_x, (int)sim.offset_y, (int)sim.offset_z } };
   std::array<int, 3> indexub = { { (int)(sim.offset_x + sim.size_x - 1),
@@ -276,6 +279,14 @@ std::string Writer::extractAndwrite(
   // only transfer data when polydata cell is larger than 0
   int polyNum = polyData->GetNumberOfPolys();
 
+  clock_gettime(CLOCK_REALTIME, &end); /* mark end time */
+  diff = (end.tv_sec - start.tv_sec) * 1.0 + (end.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+  if (rank == 0)
+  {
+    std::cout << "poly extraction time: " << diff << std::endl;
+  }
+  
+  // caculate extract time
   if (polyNum != 0)
   {
     // generate raw data summary block

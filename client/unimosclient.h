@@ -13,6 +13,14 @@
 #include <thallium.hpp>
 #include <vector>
 
+
+#include <vtkCharArray.h>
+#include <vtkCommunicator.h>
+#include <vtkDoubleArray.h>
+#include <vtkPointData.h>
+#include <vtkPolyData.h>
+#include <vtkSmartPointer.h>
+
 namespace tl = thallium;
 
 #ifdef DEBUG_BUILD
@@ -186,8 +194,8 @@ struct UniClient
 
   void executeAsyncExp(int step, std::string blockid);
 
-  std::vector<BlockSummary> getBlockSummaryListBySuffix(std::string blockIDSuffix);
-  
+  std::vector<vtkSmartPointer<vtkPolyData> > aggregatePolyBySuffix(std::string blockIDSuffix);
+
 };
 
 }

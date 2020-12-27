@@ -713,13 +713,13 @@ void expcheckdata(const tl::request& req, BlockSummary& blockSummary)
   // since we use the async call
 
   void* pointArrayptr = NULL;
-  void* polyArrayPtr = NULL;
+  void* cellArrayPtr = NULL;
   void* normalArrayPtr = NULL;
 
   ArraySummary arrayPoints = uniServer->m_blockManager->getArray(
     blockSummary.m_blockid, "points", BACKEND::MEMVTKEXPLICIT, pointArrayptr);
   ArraySummary arrayCells = uniServer->m_blockManager->getArray(
-    blockSummary.m_blockid, "cells", BACKEND::MEMVTKEXPLICIT, polyArrayPtr);
+    blockSummary.m_blockid, "cells", BACKEND::MEMVTKEXPLICIT, cellArrayPtr);
   ArraySummary arrayNormals = uniServer->m_blockManager->getArray(
     blockSummary.m_blockid, "normals", BACKEND::MEMVTKEXPLICIT, normalArrayPtr);
 
@@ -749,7 +749,7 @@ void expcheckdata(const tl::request& req, BlockSummary& blockSummary)
   // generate cell array
   int nCells = arrayCells.m_elemNum / 3;
   auto polys = vtkSmartPointer<vtkCellArray>::New();
-  const int* tempc = (int*)polyArrayPtr;
+  const int* tempc = (int*)cellArrayPtr;
 
   for (vtkIdType i = 0; i < nCells; i++)
   {
@@ -773,6 +773,44 @@ void expcheckdata(const tl::request& req, BlockSummary& blockSummary)
   return;
 }
 
+void getArraysExplicit(const tl::request& req, std::string& blockID, tl::bulk& clientBulk)
+{
+
+  // check existance of the block
+  void* pointArrayptr = NULL;
+  void* normalArrayPtr = NULL;
+  void* cellArrayPtr = NULL;
+
+  ArraySummary arrayPoints =
+    uniServer->m_blockManager->getArray(blockID, "points", BACKEND::MEMVTKEXPLICIT, pointArrayptr);
+  ArraySummary arrayNormals = uniServer->m_blockManager->getArray(
+    blockID, "normals", BACKEND::MEMVTKEXPLICIT, normalArrayPtr);
+  ArraySummary arrayCells =
+    uniServer->m_blockManager->getArray(blockID, "cells", BACKEND::MEMVTKEXPLICIT, cellArrayPtr);
+
+  if (pointArrayptr == NULL || cellArrayPtr == NULL || normalArrayPtr == NULL)
+  {
+    throw std::runtime_error("failed to extract array for getArraysExplicit");
+  }
+
+  // expose the region, points, normals, cells
+  std::vector<std::pair<void*, std::size_t> > segments(3);
+  segments[0].first = pointArrayptr;
+  segments[0].second = arrayPoints.m_elemNum * arrayPoints.m_elemSize;
+
+  segments[1].first = normalArrayPtr;
+  segments[1].second = arrayNormals.m_elemNum * arrayNormals.m_elemSize;
+
+  segments[2].first = cellArrayPtr;
+  segments[2].second = arrayCells.m_elemNum * arrayCells.m_elemSize;
+
+  // transfer data
+  tl::bulk returnBulk = globalServerEnginePtr->expose(segments, tl::bulk_mode::read_only);
+  tl::endpoint ep = req.get_endpoint();
+  clientBulk.on(ep) << returnBulk;
+  req.respond(0);
+}
+
 // step and varname are not necessary here
 // it only useful to update the metadata
 void putArrayIntoBlock(const tl::request& req, BlockSummary& blockSummary,
@@ -783,7 +821,7 @@ void putArrayIntoBlock(const tl::request& req, BlockSummary& blockSummary,
   size_t transferSize = arraySummary.m_elemNum * arraySummary.m_elemSize;
   // operator new only allocate memory without calling constructor
   void* memspace = (void*)::operator new(transferSize);
-  
+
   // get the transfered data by exposing the mem space
   std::vector<std::pair<void*, std::size_t> > segments(1);
   segments[0].first = memspace;
@@ -1104,11 +1142,10 @@ void getmetaServerList(
 void getBlockSummayBySuffix(const tl::request& req, std::string& varSuffix)
 {
   std::vector<BlockSummary> blockSummaryList;
-  // range the map
-  // DataBlockMap
-  // add lock
+  bool needCheck = false;
   uniServer->m_blockManager->m_DataBlockMapMutex.lock();
-
+  // TODO how to update this?
+  // if there are multiple data blocks, the operation of iterating map is time consuming
   for (auto& kv : uniServer->m_blockManager->DataBlockMap)
   {
     // put the blockSummary into the list
@@ -1116,9 +1153,36 @@ void getBlockSummayBySuffix(const tl::request& req, std::string& varSuffix)
     {
       // the key contains the suffix
       blockSummaryList.push_back(kv.second->m_blockSummary);
+      if (kv.second->m_blockSummary.m_arrayListLen != 3)
+      {
+        needCheck = true;
+      }
     }
   }
   uniServer->m_blockManager->m_DataBlockMapMutex.unlock();
+
+  // check the array len
+  // if it is less then three
+  // the data might not put into the block since the all threads are executed asynronously
+  // require these data
+  if (needCheck)
+  {
+
+    for (int i = 0; i < blockSummaryList.size(); i++)
+    {
+      if (blockSummaryList[i].m_arrayListLen != 3)
+      {
+
+        std::string blockid = blockSummaryList[i].m_blockid;
+        while (uniServer->m_blockManager->DataBlockMap[blockid]->m_blockSummary.m_arrayListLen != 3)
+        {
+          tl::thread::sleep(*globalServerEnginePtr, 200);
+        }
+        blockSummaryList[i] = uniServer->m_blockManager->DataBlockMap[blockid]->m_blockSummary;
+      }
+    }
+  }
+
   req.respond(blockSummaryList);
   return;
 }
@@ -1483,6 +1547,7 @@ void runRerver(std::string networkingType)
   globalServerEnginePtr->define("expcheckdata", expcheckdata).disable_response();
   globalServerEnginePtr->define("executeAsyncExp", executeAsyncExp).disable_response();
   globalServerEnginePtr->define("getBlockSummayBySuffix", getBlockSummayBySuffix);
+  globalServerEnginePtr->define("getArraysExplicit", getArraysExplicit);
 
   globalServerEnginePtr->define("startTimer", startTimer).disable_response();
   globalServerEnginePtr->define("endTimer", endTimer).disable_response();
