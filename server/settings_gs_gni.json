@@ -6,6 +6,6 @@
     "protocol": "gni",
     "masterInfo":"./unimos_server.conf",
     "addTrigger": false,
-    "memLimit": "1G",
+    "memLimit": "100G",
     "logLevel":0
 }

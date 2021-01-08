@@ -908,6 +908,7 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
 
       uniServer->m_schedulerManager->assignMem(transferSize);
       uniServer->m_dataContainerMap[clientID] = (void*)malloc(transferSize);
+      spdlog::info("resize the new memsize of client {} to {}", clientID, transferSize);
     }
 
     // if the size is not equal with the previous one
@@ -918,8 +919,6 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
 
     uniServer->m_bulkMap[clientID] =
       globalServerEnginePtr->expose(segments, tl::bulk_mode::write_only);
-
-    spdlog::info("resize the new memsize of client {} to {}", clientID, transferSize);
   }
 
   tl::bulk currentBulk = uniServer->m_bulkMap[clientID];

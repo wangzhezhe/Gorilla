@@ -215,6 +215,7 @@ int main(int argc, char** argv)
       // sprintf(tempstr,"step %d rank %d put %f\n",i,rank,diff);
 
       // std::cout << tempstr << std::endl;
+      std::cout << "step " << i << " rank " << rank << " detailediter " << iterdiff << std::endl;
 
       // caculate the avg
       double sumiterdiff;
@@ -274,14 +275,14 @@ int main(int argc, char** argv)
     // if (ifStage)
     //{
     // write to the stage server
-    std::string blockSuffix = dataWriter.extractAndwrite(sim, step, rank);
+    //std::string blockSuffix = dataWriter.extractAndwrite(sim, step, rank);
     // assume all put operation finish
-    MPI_Barrier(comm);
+    //MPI_Barrier(comm);
 
-    if (rank == 0)
-    {
-      dataWriter.triggerRemoteAsync(step, blockSuffix);
-    }
+    //if (rank == 0)
+    //{
+    //  dataWriter.triggerRemoteAsync(step, blockSuffix);
+    //}
     //}
 
     //}
