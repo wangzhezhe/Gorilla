@@ -13,14 +13,19 @@
 #include <vtkSphereSource.h>
 #include <vtkXMLPolyDataWriter.h>
 
+#include <stdio.h>
+#include <time.h>
+#include <unistd.h>
+#define BILLION 1000000000L
+
 using namespace GORILLA;
 
 void test_explicitput(BlockManager& bm)
 {
   std::cout << "---test " << __FUNCTION__ << std::endl;
   vtkSmartPointer<vtkSphereSource> sphereSource = vtkSmartPointer<vtkSphereSource>::New();
-  sphereSource->SetThetaResolution(8);
-  sphereSource->SetPhiResolution(8);
+  sphereSource->SetThetaResolution(1024);
+  sphereSource->SetPhiResolution(1024);
   sphereSource->SetStartTheta(0.0);
   sphereSource->SetEndTheta(360.0);
   sphereSource->SetStartPhi(0.0);
@@ -32,6 +37,10 @@ void test_explicitput(BlockManager& bm)
 
   int numCells = polyData->GetNumberOfPolys();
   int numPoints = polyData->GetNumberOfPoints();
+
+  struct timespec start, end;
+  double diff1;
+  clock_gettime(CLOCK_REALTIME, &start);
 
   // get specific array and put it into the block obj
   double* bufPoints = (double*)::operator new(sizeof(double) * numPoints * 3);
@@ -84,6 +93,10 @@ void test_explicitput(BlockManager& bm)
   std::array<int, 3> indexlb = { { 0, 0, 0 } };
   std::array<int, 3> indexub = { { 10, 0, 0 } };
   BlockSummary bs(aslist, DATATYPE_VTKEXPLICIT, blockid, 1, indexlb, indexub);
+
+  clock_gettime(CLOCK_REALTIME, &end);
+  diff1 = (end.tv_sec - start.tv_sec) * 1.0 + (end.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+  std::cout << "decompose time " << diff1 << std::endl;
 
   std::cout << "put points array" << std::endl;
   // the elem size can be the original buff poly data

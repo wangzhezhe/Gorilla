@@ -1,8 +1,8 @@
 {
-    "lenArray":[512,512,512],
+    "lenArray":[10,10,10],
     "partitionMethod":"manual",    
-    "metaserverNum": 4,
-    "partitionLayout":[2,2,1],
+    "metaserverNum": 1,
+    "partitionLayout":[1,1,1],
     "protocol": "gni",
     "masterInfo":"./unimos_server.conf",
     "addTrigger": false,

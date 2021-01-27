@@ -29,6 +29,7 @@
 #include <vtkCharArray.h>
 #include <vtkCommunicator.h>
 #include <vtkDoubleArray.h>
+#include <vtkFloatArray.h>
 #include <vtkPointData.h>
 #include <vtkPolyData.h>
 #include <vtkSmartPointer.h>
@@ -587,6 +588,66 @@ void getinfoForput(const tl::request& req, size_t step, size_t objSize, size_t b
   req.respond(ifp);
 }
 
+vtkSmartPointer<vtkPolyData> read_mesh2(const std::vector<float>& bufPoints,
+  const std::vector<long>& bufOffsetCells, const std::vector<long>& bufConnectCells,
+  const std::vector<float>& bufNormals)
+{
+
+  int nPoints = bufPoints.size() / 3;
+
+  // get points
+  auto points = vtkSmartPointer<vtkPoints>::New();
+
+  points->SetNumberOfPoints(nPoints);
+
+  for (vtkIdType i = 0; i < nPoints; i++)
+  {
+    // std::cout << "set point value " << *(tempp + (i * 3)) << " " << *(tempp + (i * 3) + 1) << " "
+    //          << *(tempp + (i * 3) + 2) << std::endl;
+    points->SetPoint(i, &bufPoints[i * 3]);
+  }
+
+  // get cells
+  auto polys = vtkSmartPointer<vtkCellArray>::New();
+
+  auto newoffsetArray = vtkSmartPointer<vtkTypeInt64Array>::New();
+  newoffsetArray->SetNumberOfComponents(1);
+  newoffsetArray->SetNumberOfTuples(bufOffsetCells.size());
+
+  for (vtkIdType i = 0; i < bufOffsetCells.size(); i++)
+  {
+    newoffsetArray->SetValue(i, bufOffsetCells[i]);
+  }
+
+  auto newconnectivityArray = vtkSmartPointer<vtkTypeInt64Array>::New();
+  newconnectivityArray->SetNumberOfComponents(1);
+  newconnectivityArray->SetNumberOfTuples(bufConnectCells.size());
+
+  for (vtkIdType i = 0; i < bufConnectCells.size(); i++)
+  {
+    newconnectivityArray->SetValue(i, bufConnectCells[i]);
+  }
+
+  polys->SetData(newoffsetArray, newconnectivityArray);
+
+  // get normal
+  auto normals = vtkSmartPointer<vtkFloatArray>::New();
+  normals->SetNumberOfComponents(3);
+
+  for (vtkIdType i = 0; i < nPoints; i++)
+  {
+    normals->InsertNextTuple(&bufNormals[i * 3]);
+  }
+
+  // generate poly data
+  auto newpolyData = vtkSmartPointer<vtkPolyData>::New();
+  newpolyData->SetPoints(points);
+  newpolyData->SetPolys(polys);
+  newpolyData->GetPointData()->SetNormals(normals);
+
+  return newpolyData;
+}
+
 vtkSmartPointer<vtkPolyData> read_mesh(const std::vector<double>& bufPoints,
   const std::vector<int>& bufCells, const std::vector<double>& bufNormals)
 {
@@ -627,6 +688,84 @@ vtkSmartPointer<vtkPolyData> read_mesh(const std::vector<double>& bufPoints,
 
   return polyData;
 }
+
+void putvtkexpzero(const tl::request& req, int clientID, size_t& step, std::string& varName,
+  BlockSummary& blockSummary, tl::bulk& dataBulk, std::vector<size_t>& transferSizeList)
+{
+
+  struct timespec start, end1, end2, end3;
+  double diff1, diff2, diff3;
+  clock_gettime(CLOCK_REALTIME, &start);
+
+  // get data and change it into the vtk object
+  // the size of the segment should be a list in this case
+  // this can be optimized for multiple objects
+  // there is also memory leak for this way
+  // the server may need to maintain a list of segments for every attached client
+  std::vector<std::pair<void*, std::size_t> > segments(transferSizeList.size());
+  for (int i = 0; i < transferSizeList.size(); i++)
+  {
+    segments[i].first = (void*)malloc(transferSizeList[i]);
+    segments[i].second = transferSizeList[i];
+  }
+
+  spdlog::debug("ok for init segments list size is {} ", transferSizeList.size());
+
+  // transfer data
+  tl::bulk currentBulk = globalServerEnginePtr->expose(segments, tl::bulk_mode::write_only);
+
+  clock_gettime(CLOCK_REALTIME, &end1);
+  diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+  spdlog::debug("server registermem: {}", diff1);
+
+  tl::endpoint ep = req.get_endpoint();
+  // pull the data onto the server
+  dataBulk.on(ep) >> currentBulk;
+
+  clock_gettime(CLOCK_REALTIME, &end2);
+  diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
+  spdlog::debug("server transfer: {}", diff2);
+
+  // extract the data and assemble them into the vtk
+  // assume we use the polygonal data
+  std::vector<float> bufPoints(transferSizeList[0] / sizeof(float));
+  std::vector<float> bufNormals(transferSizeList[1] / sizeof(float));
+  std::vector<long> bufOffsetCells(transferSizeList[2] / sizeof(long));
+  std::vector<long> bufConnectCells(transferSizeList[3] / sizeof(long));
+
+  // assign transfered value to the vector array
+  memcpy(bufPoints.data(), segments[0].first, transferSizeList[0]);
+  memcpy(bufNormals.data(), segments[1].first, transferSizeList[1]);
+  memcpy(bufOffsetCells.data(), segments[2].first, transferSizeList[2]);
+  memcpy(bufConnectCells.data(), segments[3].first, transferSizeList[3]);
+
+  auto polydata = read_mesh2(bufPoints, bufOffsetCells, bufConnectCells, bufNormals);
+
+  clock_gettime(CLOCK_REALTIME, &end3);
+  diff3 = (end3.tv_sec - end2.tv_sec) * 1.0 + (end3.tv_nsec - end2.tv_nsec) * 1.0 / BILLION;
+  spdlog::debug("server unmarshal: {}", diff3);
+
+  // test if poly data ok
+  polydata->PrintSelf(std::cout, vtkIndent(5));
+
+  // write the data for futher checking
+  // vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+  // writer->SetFileName("./serverrecvpoly.vtp");
+  // get the specific polydata and check the results
+  // writer->SetInputData(polydata);
+  // writer->Write();
+  // release the memory space of the segments
+  for (int i = 0; i < segments.size(); i++)
+  {
+    if (segments[i].first != NULL)
+    {
+      free(segments[i].first);
+    }
+  }
+  req.respond(0);
+  return;
+}
+
 // some issues to use this
 // maintain more segments, this will increase the complexity of managing the transfer process
 // the number of the segments is hard to know in advance
@@ -826,6 +965,9 @@ void putArrayIntoBlock(const tl::request& req, BlockSummary& blockSummary,
   std::vector<std::pair<void*, std::size_t> > segments(1);
   segments[0].first = memspace;
   segments[0].second = transferSize;
+
+  spdlog::debug(
+    "recv array {} size {}", std::string(arraySummary.m_arrayName), transferSize);
 
   // transfer data
   tl::bulk currentBulk = globalServerEnginePtr->expose(segments, tl::bulk_mode::write_only);
@@ -1542,6 +1684,8 @@ void runRerver(std::string networkingType)
   globalServerEnginePtr->define("getEvent", getEvent);
   globalServerEnginePtr->define("deleteMetaStep", deleteMetaStep);
   globalServerEnginePtr->define("putvtkexp", putvtkexp);
+  globalServerEnginePtr->define("putvtkexpzero", putvtkexpzero);
+
   globalServerEnginePtr->define("putArrayIntoBlock", putArrayIntoBlock);
   globalServerEnginePtr->define("expcheckdata", expcheckdata).disable_response();
   globalServerEnginePtr->define("executeAsyncExp", executeAsyncExp).disable_response();

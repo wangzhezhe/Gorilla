@@ -116,6 +116,10 @@ ${gorilla_SOURCE_DIR}/server/FunctionManager/functionManagerRaw.cpp
 )
 target_link_libraries(rawexec adios2::adios2 ${VTK_LIBRARIES} unimos_client)
 
+add_library(metricmanager 
+${gorilla_SOURCE_DIR}/metricManager/metricManager.cpp
+)
+
 # add enable_testing
 # test everything ok before integrating them into a server
 

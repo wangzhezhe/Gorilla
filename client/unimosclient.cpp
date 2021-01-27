@@ -3,6 +3,7 @@
 #include <time.h>
 #include <unistd.h>
 #define BILLION 1000000000L
+namespace tl = thallium;
 
 namespace GORILLA
 {
@@ -434,6 +435,141 @@ int putVTKData(UniClient* client, size_t step, std::string varName, BlockSummary
   return 0;
 }
 
+int putArrayIntoBlockZero(UniClient* client, BlockSummary& dataSummary, void* dataContainerSrc)
+{
+  struct timespec start, end1;
+  double diff1;
+  clock_gettime(CLOCK_REALTIME, &start);
+  // start to marshal
+  // we only support the polydata for this method for experiment
+  // vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
+  // polyData.TakeReference((vtkPolyData*)dataContainerSrc);
+  vtkSmartPointer<vtkPolyData> polyData = (vtkPolyData*)dataContainerSrc;
+  // extract arrays
+  int numCells = polyData->GetNumberOfPolys();
+  int numPoints = polyData->GetNumberOfPoints();
+  DEBUG("putArrayIntoBlock numCells " << numCells << " numPoints " << numPoints);
+
+  // prepare for transfering data
+  if (client->m_associatedDataServer.compare("") == 0)
+  {
+    client->m_associatedDataServer = client->getServerAddr();
+  }
+  tl::remote_procedure remoteputArrayIntoBlock =
+    client->m_clientEnginePtr->define("putArrayIntoBlock");
+  tl::endpoint serverEndpoint = client->lookup(client->m_associatedDataServer);
+
+  // extract cell array
+  auto cellArray = polyData->GetPolys();
+  vtkDataArray* offsetArray = cellArray->GetOffsetsArray();
+  vtkDataArray* connectivyArray = cellArray->GetConnectivityArray();
+
+  vtkTypeInt64Array* arrayoffset64 = cellArray->GetOffsetsArray64();
+  void* arrayoffsetptr = (void*)arrayoffset64->GetVoidPointer(0);
+
+  size_t offsetTotalSize =
+    arrayoffset64->GetNumberOfTuples() * arrayoffset64->GetNumberOfComponents();
+
+  std::vector<std::pair<void*, std::size_t> > cellOffsetsegments(1);
+  cellOffsetsegments[0].first = arrayoffsetptr;
+  cellOffsetsegments[0].second = offsetTotalSize * sizeof(long);
+  ArraySummary ascellsoffset("cellsOffset", sizeof(long), offsetTotalSize);
+  tl::bulk cellsOffsetBulk =
+    client->m_clientEnginePtr->expose(cellOffsetsegments, tl::bulk_mode::read_only);
+  auto cellOffsetresponse =
+    remoteputArrayIntoBlock.on(serverEndpoint).async(dataSummary, ascellsoffset, cellsOffsetBulk);
+  // auto cellresponse = remoteputArrayIntoBlock.on(serverEndpoint)(dataSummary, ascells,
+  // cellsBulk);
+
+  DEBUG("async cells offset");
+
+  vtkTypeInt64Array* arrayConnectivety64 = cellArray->GetConnectivityArray64();
+  void* arrayconnptr = (void*)arrayConnectivety64->GetVoidPointer(0);
+
+  size_t connecTotalSize =
+    arrayConnectivety64->GetNumberOfTuples() * arrayConnectivety64->GetNumberOfComponents();
+
+  std::vector<std::pair<void*, std::size_t> > cellConnectsegments(1);
+  cellConnectsegments[0].first = arrayconnptr;
+  cellConnectsegments[0].second = connecTotalSize * sizeof(long);
+  ArraySummary ascellsconnect("cellsConnect", sizeof(long), connecTotalSize);
+  tl::bulk cellsConnectBulk =
+    client->m_clientEnginePtr->expose(cellConnectsegments, tl::bulk_mode::read_only);
+  auto cellConnectresponse =
+    remoteputArrayIntoBlock.on(serverEndpoint).async(dataSummary, ascellsconnect, cellsConnectBulk);
+  // auto cellresponse = remoteputArrayIntoBlock.on(serverEndpoint)(dataSummary, ascells,
+  // cellsBulk);
+
+  DEBUG("async cells connect");
+
+  // extract points array
+  vtkPoints* pointsarray = polyData->GetPoints();
+  void* pointsPtr = (void*)(pointsarray->GetVoidPointer(0));
+  size_t totalPointNum = pointsarray->GetNumberOfPoints() * 3;
+
+  // send the points and cell
+  std::vector<std::pair<void*, std::size_t> > pointssegments(1);
+  pointssegments[0].first = pointsPtr;
+  pointssegments[0].second = totalPointNum * sizeof(float);
+  tl::bulk pointBulk = client->m_clientEnginePtr->expose(pointssegments, tl::bulk_mode::read_only);
+
+  ArraySummary aspoints("points", sizeof(float), totalPointNum);
+  auto pointresponse =
+    remoteputArrayIntoBlock.on(serverEndpoint).async(dataSummary, aspoints, pointBulk);
+  // auto pointresponse = remoteputArrayIntoBlock.on(serverEndpoint)(dataSummary, aspoints,
+  // pointBulk);
+
+  DEBUG("async points");
+
+  // extract normal array
+  auto normalArray = polyData->GetPointData()->GetNormals();
+  size_t noramlTotalSize = normalArray->GetNumberOfTuples() * normalArray->GetNumberOfComponents();
+  // get the normal array addr
+  void* buffernormalArray = (void*)normalArray->GetVoidPointer(0);
+
+  std::vector<std::pair<void*, std::size_t> > normalsegments(1);
+  normalsegments[0].first = (void*)buffernormalArray;
+  normalsegments[0].second = noramlTotalSize * sizeof(float);
+  ArraySummary asnormals("normals", sizeof(float), noramlTotalSize);
+  tl::bulk normalsBulk =
+    client->m_clientEnginePtr->expose(normalsegments, tl::bulk_mode::read_only);
+  auto normalresponse =
+    remoteputArrayIntoBlock.on(serverEndpoint).async(dataSummary, asnormals, normalsBulk);
+
+  DEBUG("async normals");
+
+
+  int ret = cellOffsetresponse.wait();
+  if (ret != 0)
+  {
+    throw std::runtime_error("failed for cellOffsetresponse");
+  }
+
+  ret = cellConnectresponse.wait();
+  if (ret != 0)
+  {
+    throw std::runtime_error("failed for cellConnectresponse");
+  }
+
+  ret = pointresponse.wait();
+  if (ret != 0)
+  {
+    throw std::runtime_error("failed for pointresponse");
+  }
+
+  ret = normalresponse.wait();
+  if (ret != 0)
+  {
+    throw std::runtime_error("failed for normalresponse");
+  }
+
+  clock_gettime(CLOCK_REALTIME, &end1);
+  diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+  DEBUG("time spent on putarrayintoblock zero copy: " << diff1);
+
+  return 0;
+}
+
 // non block version
 int putArrayIntoBlock(UniClient* client, BlockSummary& dataSummary, void* dataContainerSrc)
 {
@@ -529,6 +665,8 @@ int putArrayIntoBlock(UniClient* client, BlockSummary& dataSummary, void* dataCo
 
   // Extract normals
   auto normalArray = polyData->GetPointData()->GetNormals();
+  // TODO we do not really need the normal vector here
+  // since we can use the zero copy for normal array, this is the continuous array
   for (int i = 0; i < normalArray->GetNumberOfTuples(); i++)
   {
     normalArray->GetTuple(i, coords);
@@ -580,6 +718,112 @@ int putArrayIntoBlock(UniClient* client, BlockSummary& dataSummary, void* dataCo
   //  client->m_clientEnginePtr->define("expcheckdata").disable_response();
   // remoteexpcheckdata.on(serverEndpoint)(dataSummary);
 
+  return 0;
+}
+
+// experimental function with zero copy
+int putVTKDataExpZeroOneRpc(UniClient* client, size_t step, std::string varName,
+  BlockSummary& dataSummary, void* dataContainerSrc)
+{
+  struct timespec start, end1, end2, end3;
+  double diff1, diff2, diff3;
+  clock_gettime(CLOCK_REALTIME, &start);
+  // start to marshal
+  // we only support the polydata for this method for experiment
+  // vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
+  // polyData.TakeReference((vtkPolyData*)dataContainerSrc);
+  // try to downcast to the poly to try to see it satisfy requirments
+  // it is illeagle to cast the void* to class by this way
+  // this might break up the type safety anyway
+  /*
+  vtkPolyData* polyptr = dynamic_cast<vtkPolyData*>(()dataContainerSrc);
+  if (polyptr == nullptr)
+  {
+    throw std::runtime_error("only support poly data for putvtkdataexp");
+  }
+  */
+  vtkSmartPointer<vtkPolyData> polyData = (vtkPolyData*)dataContainerSrc;
+
+  // extract cell array
+  auto cellArray = polyData->GetPolys();
+  vtkDataArray* offsetArray = cellArray->GetOffsetsArray();
+  vtkDataArray* connectivyArray = cellArray->GetConnectivityArray();
+
+  vtkTypeInt64Array* arrayoffset64 = cellArray->GetOffsetsArray64();
+  long* arrayoffsetptr = (long*)arrayoffset64->GetVoidPointer(0);
+
+  size_t offsetTotalSize =
+    arrayoffset64->GetNumberOfTuples() * arrayoffset64->GetNumberOfComponents();
+
+  vtkTypeInt64Array* arrayConnectivety64 = cellArray->GetConnectivityArray64();
+  long* arrayconnptr = (long*)arrayConnectivety64->GetVoidPointer(0);
+
+  size_t connecTotalSize =
+    arrayConnectivety64->GetNumberOfTuples() * arrayConnectivety64->GetNumberOfComponents();
+
+  // extract points array
+  vtkPoints* pointsarray = polyData->GetPoints();
+  float* pointsPtr = (float*)(pointsarray->GetVoidPointer(0));
+  size_t totalPointNum = pointsarray->GetNumberOfPoints() * 3;
+
+  // extract normal array
+  auto normalArray = polyData->GetPointData()->GetNormals();
+  size_t noramlTotalSize = normalArray->GetNumberOfTuples() * normalArray->GetNumberOfComponents();
+  // get the normal array addr
+  float* buffernormalArray = (float*)normalArray->GetVoidPointer(0);
+
+  std::vector<std::pair<void*, std::size_t> > segments(4);
+  segments[0].first = pointsPtr;
+  segments[0].second = totalPointNum * sizeof(float);
+  segments[1].first = buffernormalArray;
+  segments[1].second = noramlTotalSize * sizeof(float);
+  segments[2].first = arrayoffsetptr;
+  segments[2].second = offsetTotalSize * sizeof(long);
+  segments[3].first = arrayconnptr;
+  segments[3].second = connecTotalSize * sizeof(long);
+
+  std::vector<size_t> transferSizeList;
+  for (int i = 0; i < segments.size(); i++)
+  {
+    transferSizeList.push_back(segments[i].second);
+  }
+
+  clock_gettime(CLOCK_REALTIME, &end1);
+  diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+  DEBUG("stage marshal : " << diff1);
+
+  DEBUG("point size  " << segments[0].second << " normal size " << segments[1].second
+                       << " cell offset size " << segments[2].second << " cell connective size "
+                       << segments[3].second);
+  // organize it into the bulk and register memory
+  tl::bulk expdataBulk = client->m_clientEnginePtr->expose(segments, tl::bulk_mode::read_only);
+
+  if (client->m_associatedDataServer.compare("") == 0)
+  {
+    client->m_associatedDataServer = client->getServerAddr();
+  }
+
+  clock_gettime(CLOCK_REALTIME, &end2);
+  diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
+  DEBUG("stage registermem : " << diff2);
+
+  DEBUG("server addr is " << client->m_associatedDataServer);
+  tl::remote_procedure remoteputvtkexp = client->m_clientEnginePtr->define("putvtkexpzero");
+  tl::endpoint serverEndpoint = client->lookup(client->m_associatedDataServer);
+  int status = remoteputvtkexp.on(serverEndpoint)(
+    client->m_position, step, varName, dataSummary, expdataBulk, transferSizeList);
+
+  if (status != 0)
+  {
+    throw std::runtime_error("failed to put the exp vtk data");
+    return -1;
+  }
+
+  clock_gettime(CLOCK_REALTIME, &end3);
+  diff3 = (end3.tv_sec - end2.tv_sec) * 1.0 + (end3.tv_nsec - end2.tv_nsec) * 1.0 / BILLION;
+  DEBUG("stage transfer : " << diff3);
+
+  // do not update the metadata for the experimental version
   return 0;
 }
 
@@ -747,9 +991,11 @@ int UniClient::putrawdata(
     // check original data
     //((vtkPolyData*)dataContainerSrc)->PrintSelf(std::cout, vtkIndent(5));
     // this is the continuous mem space version
-    int status = putVTKData(this, step, varName, dataSummary, dataContainerSrc);
+    // int status = putVTKData(this, step, varName, dataSummary, dataContainerSrc);
     // this is the descrete mem space version
     // int status = putVTKDataExp(this, step, varName, dataSummary, dataContainerSrc);
+    int status = putVTKDataExpZeroOneRpc(this, step, varName, dataSummary, dataContainerSrc);
+
     if (status != 0)
     {
       throw std::runtime_error("failed to put the vtk data");
@@ -757,7 +1003,8 @@ int UniClient::putrawdata(
   }
   else if (dataType == DATATYPE_VTKEXPLICIT)
   {
-    int status = putArrayIntoBlock(this, dataSummary, dataContainerSrc);
+    // int status = putArrayIntoBlock(this, dataSummary, dataContainerSrc);
+    int status = putArrayIntoBlockZero(this, dataSummary, dataContainerSrc);
     if (status != 0)
     {
       throw std::runtime_error("failed to put the vtk data");
@@ -1142,7 +1389,8 @@ std::vector<vtkSmartPointer<vtkPolyData> > UniClient::aggregatePolyBySuffix(
       // go through array
       if (v.m_arrayListLen != 3)
       {
-        throw std::runtime_error("the array len is supposed to be 3, but now it is: " + std::to_string(v.m_arrayListLen));
+        throw std::runtime_error(
+          "the array len is supposed to be 3, but now it is: " + std::to_string(v.m_arrayListLen));
       }
       std::vector<std::pair<void*, std::size_t> > segments(3);
       for (int i = 0; i < 3; i++)
@@ -1229,7 +1477,7 @@ std::vector<vtkSmartPointer<vtkPolyData> > UniClient::aggregatePolyBySuffix(
       polyData->GetPointData()->SetNormals(normals);
 
       // polyData->PrintSelf(std::cout, vtkIndent(5));
-      //std::cout << "aggregate blockid " << v.m_blockid
+      // std::cout << "aggregate blockid " << v.m_blockid
       //          << " cell number: " << polyData->GetNumberOfPolys() << std::endl;
       polylist.push_back(polyData);
 

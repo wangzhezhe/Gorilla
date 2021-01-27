@@ -22,7 +22,7 @@ cmake ~/cworkspace/src/Gorilla/ -DCMAKE_CXX_COMPILER=CC -DCMAKE_C_COMPILER=cc -D
 If the paraveiw is used for particular test
 
 ```
-cmake ~/cworkspace/src/Gorilla/ -DCMAKE_CXX_COMPILER=CC -DCMAKE_C_COMPILER=cc -DVTK_DIR=$SCRATCH/build_paraview_matthieu/ -DUSE_GNI=ON -DADIOS2_DIR=/global/cscratch1/sd/zw241/build_adios -DParaView_DIR=$SCRATCH/build_paraview_matthieu
+cmake ~/cworkspace/src/Gorilla/ -DCMAKE_CXX_COMPILER=CC -DCMAKE_C_COMPILER=cc -DVTK_DIR=$SCRATCH/build_paraview_matthieu/ -DUSE_GNI=ON -DADIOS2_DIR=/global/cscratch1/sd/zw241/build_adios -DParaView_DIR=$SCRATCH/build_paraview_matthieu -DBUILD_SHARED_LIBS=ON
 ```
 
 this is the content of the `~/.gorilla` file on cori cluster:
@@ -30,15 +30,24 @@ this is the content of the `~/.gorilla` file on cori cluster:
 ```
 #!/bin/bash
 source ~/.color
-module swap PrgEnv-intel PrgEnv-gnu
 module load cmake/3.18.2
+module load python/3.7-anaconda-2019.10
 module load spack
+#spack load cmake@3.18.2%gcc@8.2.0
 
-spack load -r mochi-thallium@master
+module swap PrgEnv-intel PrgEnv-gnu
+module swap gcc/8.3.0 gcc/8.2.0
+
+spack load -r mochi-thallium
 spack load mochi-cfg
-spack load -r mochi-abt-io@master
+spack load -r mochi-abt-io
+
 export CRAYPE_LINK_TYPE=dynamic
 cd $SCRATCH/build_Gorilla
+
+export MPICH_GNI_NDREG_ENTRIES=1024 
+# get more mercury info
+export HG_NA_LOG_LEVEL=debug
 ```
 
 refer to the ./scripts dir to check exmaples of running multiple servers. The configuration of the server contains item such as protocol used by communication layer, the log level, the global domain and if the trigger is started and so on. The example of the configuration is in ./server/settings.json
@@ -77,3 +86,18 @@ memory and file backend
 (file backend will be used when there is not enough mem space)
 
 in-memory data trigger (experimental)
+
+
+### related issue
+
+
+```
+/usr/bin/ld: /global/common/sw/cray/sles15/x86_64/mesa/18.3.6/gcc/8.2.0/qozjngg/lib/libOSMesa.so: undefined reference to `del_curterm@NCURSES6_TINFO_5.0.19991023'
+```
+try this:
+
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ltinfo")
+
+refer to
+
+https://github.com/halide/Halide/issues/1112

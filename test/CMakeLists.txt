@@ -64,9 +64,13 @@ add_executable(test_addtrigger ./Trigger/test_trigger.cpp)
 target_link_libraries(test_addtrigger thallium metatrigger unimos_client)
 
 
+add_executable(test_metricManager ./Metrics/test_metricManager.cpp)
+target_link_libraries(test_metricManager metricmanager thallium)
+
 
 file(COPY ${gorilla_SOURCE_DIR}/server/settings.json
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
 add_executable(test_setting ./Setting/test_setting.cpp ${gorilla_SOURCE_DIR}/server/settings.cpp)
 target_link_libraries(test_setting)
 
@@ -107,6 +111,10 @@ target_link_libraries(test_vtkmem ${VTK_LIBRARIES} thallium blockManager)
 add_executable(test_vtkexplicit ./BlockData/test_vtkexplicit.cpp)
 target_link_libraries(test_vtkexplicit ${VTK_LIBRARIES} thallium blockManager)
 
+# vtk explicit array with zero copy
+add_executable(test_vtkexplicitzero ./BlockData/test_vtkexplicitzero.cpp)
+target_link_libraries(test_vtkexplicitzero ${VTK_LIBRARIES} thallium blockManager)
+
 # deprecated
 # add_subdirectory(mock)
 
@@ -137,3 +145,5 @@ add_test( NAME test_meta_bbxcover COMMAND test_meta_bbxcover)
 add_test( NAME test_putgetevent COMMAND test_putgetevent)
 
 add_test( NAME test_vtkexplicit COMMAND test_vtkexplicit)
+
+add_test( NAME test_metricManager COMMAND test_metricManager)

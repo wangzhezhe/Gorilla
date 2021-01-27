@@ -102,19 +102,22 @@ void test_put_vtk(int pointNum)
   vtkSmartPointer<vtkPolyData> polyData = coneSource->GetOutput();
   */
   // write the data for futher checking
-  // vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
-  // writer->SetFileName("./originalpoly.vtp");
+  /*
+  vtkSmartPointer<vtkXMLPolyDataWriter> writer = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+  std::string fileName = "./originalpoly_" + std::to_string(pointNum) + ".vtp";
+  writer->SetFileName(fileName.data());
   // get the specific polydata and check the results
-  // writer->SetInputData(polyData);
-  // writer->Write();
-
+  writer->SetInputData(polyData);
+  writer->Write();
+  */
+  
   // generate raw data summary block
   ArraySummary as(blockid, elemSize, elemNum);
   std::vector<ArraySummary> aslist;
   aslist.push_back(as);
   BlockSummary bs(aslist, dataType, blockid, dims, indexlb, indexub);
   bs.m_backend = BACKEND::MEMVTKEXPLICIT;
-  
+
   // generate raw data
   UniClient* uniclient = new UniClient(&globalclientEngine, "./unimos_server.conf", 0);
   // The server may do things in different order
@@ -127,6 +130,7 @@ void test_put_vtk(int pointNum)
   {
     throw std::runtime_error("failed to put data for step " + std::to_string(0));
   }
+  
 }
 
 int main(int argc, char** argv)
