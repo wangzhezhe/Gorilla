@@ -16,6 +16,18 @@
 #include <vtkXMLImageDataWriter.h>
 #include <vtkXMLPolyDataWriter.h>
 
+void Writer::writePolyDataFile(vtkSmartPointer<vtkPolyData> polyData, std::string fileName){
+    vtkSmartPointer<vtkXMLDataSetWriter> writer =
+        vtkSmartPointer<vtkXMLDataSetWriter>::New();
+    writer->SetFileName(fileName.data());
+    // get the specific polydata and check the results
+    writer->SetInputData(polyData);
+    // Optional - set the mode. The default is binary.
+    writer->SetDataModeToBinary();
+    // writer->SetDataModeToAscii();
+    writer->Write();
+}
+
 void Writer::writeImageData(const GrayScott& sim, std::string fileName)
 {
 

@@ -1,5 +1,4 @@
 #include "defaultfuncraw.h"
-#include <adios2.h>
 #include <sstream>
 #include <string>
 #include <unistd.h>
@@ -174,6 +173,7 @@ std::string testvtk(FunctionManagerRaw* fmr, const BlockSummary& bs, void* input
 
 // there are some issues for using adios. maybe it is the problem of the multithread using of adios
 // https://github.com/ornladios/ADIOS2/issues/2076
+/*deprecated
 std::string adiosWrite(FunctionManagerRaw* fmr, const BlockSummary& bs, void* inputData,
   const std::vector<std::string>& parameters)
 {
@@ -254,5 +254,6 @@ std::string adiosWrite(FunctionManagerRaw* fmr, const BlockSummary& bs, void* in
 
   return "OK";
 }
+*/
 
 }

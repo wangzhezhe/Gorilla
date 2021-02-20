@@ -4,7 +4,7 @@ Gorilla framework is a in-memory data management servie. The name of the framewo
 
 (1) suppot M:N data put/get for data based on grid mesh. 
 
-(2)User can use customized trigger to express the logic flow of the task executions. The implementation of in-memory data storage service layer is inspired by the [DataSpaces](https://github.com/philip-davis/dataspaces) and the [ADIOS](https://github.com/ornladios/ADIOS2) projects. 
+(2)User can use customized trigger to express the logic flow of the task executions. The implementation of in-memory data storage service layer is inspired by the [DataSpaces](https://github.com/philip-davis/dataspaces) and the [ADIOS](https://github.com/ornladios/ADIOS2) projects. [adios test case is deprecated] 
 
 (3)There is specific event queue binded with the trigger to support the data-driven task executions, the properties of the data can be captured and client can acquire the metadata of the raw data by poll events. The idea of data driven approach mainly comes from the [OSTI technical report](https://www.osti.gov/biblio/1493245).
 
@@ -16,13 +16,13 @@ this is an eample to compile the gorilla server on cori cluster
 
 ```
 source ~/.gorilla
-cmake ~/cworkspace/src/Gorilla/ -DCMAKE_CXX_COMPILER=CC -DCMAKE_C_COMPILER=cc -DVTK_DIR=~/cworkspace/src/VTK/build/ -DUSE_GNI=ON -DADIOS2_DIR=/global/cscratch1/sd/zw241/build_adios
+cmake ~/cworkspace/src/Gorilla/ -DCMAKE_CXX_COMPILER=CC -DCMAKE_C_COMPILER=cc -DVTK_DIR=~/cworkspace/src/VTK/build/ -DUSE_GNI=ON
 ```
 
 If the paraveiw is used for particular test
 
 ```
-cmake ~/cworkspace/src/Gorilla/ -DCMAKE_CXX_COMPILER=CC -DCMAKE_C_COMPILER=cc -DVTK_DIR=$SCRATCH/build_paraview_matthieu/ -DUSE_GNI=ON -DADIOS2_DIR=/global/cscratch1/sd/zw241/build_adios -DParaView_DIR=$SCRATCH/build_paraview_matthieu -DBUILD_SHARED_LIBS=ON
+cmake ~/cworkspace/src/Gorilla/ -DCMAKE_CXX_COMPILER=CC -DCMAKE_C_COMPILER=cc -DVTK_DIR=$SCRATCH/build_paraview_matthieu_release/ -DUSE_GNI=ON -DParaView_DIR=$SCRATCH/build_paraview_matthieu/ -DBUILD_SHARED_LIBS=ON
 ```
 
 this is the content of the `~/.gorilla` file on cori cluster:
@@ -31,12 +31,12 @@ this is the content of the `~/.gorilla` file on cori cluster:
 #!/bin/bash
 source ~/.color
 module load cmake/3.18.2
-module load python/3.7-anaconda-2019.10
 module load spack
 #spack load cmake@3.18.2%gcc@8.2.0
 
 module swap PrgEnv-intel PrgEnv-gnu
-module swap gcc/8.3.0 gcc/8.2.0
+# ssg works well for gcc 9.3.0, sometimes it can not be installed with 8.3.0
+module swap gcc/8.3.0 gcc/9.3.0
 
 spack load -r mochi-thallium
 spack load mochi-cfg
@@ -44,6 +44,7 @@ spack load -r mochi-abt-io
 
 export CRAYPE_LINK_TYPE=dynamic
 cd $SCRATCH/build_Gorilla
+
 
 export MPICH_GNI_NDREG_ENTRIES=1024 
 # get more mercury info
@@ -101,3 +102,5 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ltinfo")
 refer to
 
 https://github.com/halide/Halide/issues/1112
+
+make -j may hide some potential cmake mistakes, try to use make if there is specific link issue

@@ -55,7 +55,7 @@ public:
   void putMetric(std::string metricName, double metricValue);
   // get the latest N matrix
   // return all values if there are less then N values
-  std::vector<double> getNmetrics(std::string metricName, uint32_t number);
+  std::vector<double> getLastNmetrics(std::string metricName, uint32_t number);
 
 private:
   size_t m_slot;

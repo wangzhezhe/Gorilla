@@ -1,18 +1,37 @@
 
 #include <vector>
-#include "../../client/unimosclient.h"
+#include "../../client/ClientForSim.hpp"
 #include "../../commondata/metadata.h"
 #include <thallium.hpp>
 
 namespace tl = thallium;
 using namespace GORILLA;
 
+std::string loadMasterAddr(std::string masterConfigFile)
+{
+
+  std::ifstream infile(masterConfigFile);
+  std::string content = "";
+  std::getline(infile, content);
+  // spdlog::debug("load master server conf {}, content -{}-", masterConfigFile,content);
+  if (content.compare("") == 0)
+  {
+    std::getline(infile, content);
+    if (content.compare("") == 0)
+    {
+      throw std::runtime_error("failed to load the master server\n");
+    }
+  }
+  return content;
+}
+
 void add_insitu_exp()
 {
     //TODO add gni initilization
     //client engine
     tl::engine clientEngine("verbs", THALLIUM_CLIENT_MODE);
-     GORILLA::UniClient *uniclient = new UniClient(&clientEngine, "./unimos_server.conf",0);
+  std::string addrServer = loadMasterAddr("./unimos_server.conf");
+  ClientForSim* uniclient = new ClientForSim(&clientEngine, addrServer, 0);
 
     //add the init trigger
     std::string triggerNameInit = "InitTrigger";

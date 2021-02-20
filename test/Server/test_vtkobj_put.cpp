@@ -1,5 +1,5 @@
 
-#include "../../client/unimosclient.h"
+#include "../../client/ClientForSim.hpp"
 #include "../../commondata/metadata.h"
 #include <thallium.hpp>
 #include <vector>
@@ -34,6 +34,24 @@ extern "C"
 
 namespace tl = thallium;
 using namespace GORILLA;
+
+std::string loadMasterAddr(std::string masterConfigFile)
+{
+
+  std::ifstream infile(masterConfigFile);
+  std::string content = "";
+  std::getline(infile, content);
+  // spdlog::debug("load master server conf {}, content -{}-", masterConfigFile,content);
+  if (content.compare("") == 0)
+  {
+    std::getline(infile, content);
+    if (content.compare("") == 0)
+    {
+      throw std::runtime_error("failed to load the master server\n");
+    }
+  }
+  return content;
+}
 
 // assume that the server is alreasy started normally
 void test_put_vtk(int pointNum)
@@ -110,7 +128,7 @@ void test_put_vtk(int pointNum)
   writer->SetInputData(polyData);
   writer->Write();
   */
-  
+
   // generate raw data summary block
   ArraySummary as(blockid, elemSize, elemNum);
   std::vector<ArraySummary> aslist;
@@ -118,8 +136,10 @@ void test_put_vtk(int pointNum)
   BlockSummary bs(aslist, dataType, blockid, dims, indexlb, indexub);
   bs.m_backend = BACKEND::MEMVTKEXPLICIT;
 
+  std::string addrServer = loadMasterAddr("./unimos_server.conf");
+
   // generate raw data
-  UniClient* uniclient = new UniClient(&globalclientEngine, "./unimos_server.conf", 0);
+  ClientForSim* uniclient = new ClientForSim(&globalclientEngine, addrServer, 0);
   // The server may do things in different order
   // We call getAllServerAddr separately
   uniclient->getAllServerAddr();
@@ -130,7 +150,6 @@ void test_put_vtk(int pointNum)
   {
     throw std::runtime_error("failed to put data for step " + std::to_string(0));
   }
-  
 }
 
 int main(int argc, char** argv)

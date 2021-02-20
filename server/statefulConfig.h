@@ -1,10 +1,6 @@
-
 #ifndef __STATEFUL_CONFIG__H__
 #define __STATEFUL_CONFIG__H__
 
-//#include "mpi.h"
-
-#include <adios2.h>
 #include <stdio.h>
 #include <thallium.hpp>
 #include <time.h>
@@ -20,6 +16,9 @@ struct statefulConfig
   statefulConfig(){
     // this->initADIOS();
   };
+
+  /*
+  adios does not work well with the multi thread case
   void initADIOS()
   { // TODO, update this part
     // the adios object is deleted after this function
@@ -43,6 +42,7 @@ struct statefulConfig
     // std::cout << "---debug adios io name in init: " <<  this->m_io.Name() << std::endl;
     // std::cout << "---debug adios engine type in init: " <<  this->m_engine.Type() << std::endl;
   }
+  */
 
   void startTimer(std::string timerName)
   {
@@ -84,17 +84,17 @@ struct statefulConfig
   // adios info
   // refer to the implementation for this
   // https://gitlab.kitware.com/vtk/adis/-/blob/master/adis/DataSource.h
-  std::unique_ptr<adios2::ADIOS> Adios = nullptr;
-  adios2::IO m_io;
-  adios2::Engine m_engine;
+  //std::unique_ptr<adios2::ADIOS> Adios = nullptr;
+  //adios2::IO m_io;
+  //adios2::Engine m_engine;
   // the variable is supposed to defined once per process
-  std::unique_ptr<adios2::Variable<double> > var_u = nullptr;
-  adios2::Variable<int> var_step;
+  //std::unique_ptr<adios2::Variable<double> > var_u = nullptr;
+  //adios2::Variable<int> var_step;
 
   // this lock is used to avoid the race condition for data write between different thread in one
   // process refer to https://github.com/ornladios/ADIOS2/issues/2076#issuecomment-617925292 for
   // detials, adios is not fully supported by the multi thread version
-  tl::mutex m_adiosLock;
+  // tl::mutex m_adiosLock;
 
   // timer info
   tl::mutex m_timerLock;

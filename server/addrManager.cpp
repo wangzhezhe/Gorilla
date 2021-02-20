@@ -51,7 +51,7 @@ std::string AddrManager::getByRRobin()
 
 //send the informaion of the meta data to all the nodes
 //every nodes in the cluster will know the information of the metadata
-void AddrManager::broadcastMetaServer(UniClient *globalClient)
+void AddrManager::broadcastMetaServer(ClientForStaging*clientStaging)
 {
     //send the meta server to all the compute node (except the master server itsself)
     int metaServerNum = this->m_metaServerNum;
@@ -69,7 +69,7 @@ void AddrManager::broadcastMetaServer(UniClient *globalClient)
         std::string serverAddr = *it;
 
         //tell every client what is the address of the metadata nodes
-        int status = globalClient->updateDHT(serverAddr, metaAddrWrapperList);
+        int status = clientStaging->updateDHT(serverAddr, metaAddrWrapperList);
         if (status != 0)
         {
             throw std::runtime_error("failed to update DHT for server: " + serverAddr);

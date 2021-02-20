@@ -16,7 +16,7 @@
 
 //#include <uuid/uuid.h>
 
-#include "../client/unimosclient.h"
+#include "../client/ClientForStaging.hpp"
 #include "../commondata/metadata.h"
 #include "../utils/bbxtool.h"
 #include "../utils/stringtool.h"
@@ -73,7 +73,7 @@ namespace GORILLA
 // this shoule be initilized after the initilization of the argobot
 tl::engine* globalServerEnginePtr = nullptr;
 tl::engine* globalClientEnginePtr = nullptr;
-UniClient* uniClient = nullptr;
+ClientForStaging* clientStaging = nullptr;
 UniServer* uniServer = nullptr;
 
 // name of configure file, the write one line, the line is the rank0 addr
@@ -314,7 +314,7 @@ void forceEraseMetaAndRawManually(size_t step)
       {
         BlockDescriptor rde = it;
         // TODO chcek the status here
-        uniClient->eraseRawData(rde.m_rawDataServerAddr, rde.m_rawDataID);
+        clientStaging->eraseRawData(rde.m_rawDataServerAddr, rde.m_rawDataID);
       }
     }
   }
@@ -402,7 +402,7 @@ void eraseMetaAndRaw(size_t step)
 
                 // erase rawdata, and make it points to the next element
                 iter = kvinner.second.erase(iter);
-                uniClient->eraseRawData(rde.m_rawDataServerAddr, rde.m_rawDataID);
+                clientStaging->eraseRawData(rde.m_rawDataServerAddr, rde.m_rawDataID);
                 break;
               }
               else if (rde.m_metaStatus == MetaStatus::BEFOREPROCESS ||
@@ -1210,8 +1210,8 @@ void registerWatcher(
       uniServer->m_dtmanager->m_watcherSetMutex.lock();
       uniServer->m_dtmanager->m_registeredWatcherSet.insert(watcherAddr);
 
-      auto endpoint = uniClient->m_clientEnginePtr->lookup(watcherAddr);
-      uniClient->m_serverToEndpoints[watcherAddr] = endpoint;
+      auto endpoint = clientStaging->m_clientEnginePtr->lookup(watcherAddr);
+      clientStaging->m_serverToEndpoints[watcherAddr] = endpoint;
 
       uniServer->m_dtmanager->m_watcherSetMutex.unlock();
     }
@@ -1411,7 +1411,7 @@ void executeAsyncExp(const tl::request& req, std::string& blockIDSuffix, std::st
   globalServerEnginePtr->get_handler_pool().make_thread(
     [=]() {
       uniServer->m_frawmanager->aggregateProcess(
-        uniClient, blockIDSuffix, functionName, funcParameters);
+        clientStaging, blockIDSuffix, functionName, funcParameters);
     },
     tl::anonymous());
 
@@ -1724,19 +1724,14 @@ void runRerver(std::string networkingType)
   // the server engine can also be the client engine, only one engine can be
   // declared here
   globalClientEnginePtr = &serverEnginge;
-  uniClient = new UniClient(globalClientEnginePtr, globalRank);
-  uniClient->initMaster(masterAddr);
-
-  // get the total number of the server
-  // init the client Cache
-  uniClient->m_totalServerNum = gloablSettings.metaserverNum;
+  clientStaging = new ClientForStaging(globalClientEnginePtr, masterAddr, globalRank);
 
   // init stateful config (this may use MPI, do not mix it with mochi)
   statefulConfig* sconfig = new statefulConfig();
   // init all the important manager of the server
   uniServer = new UniServer();
   uniServer->initManager(
-    globalProc, globalRank, gloablSettings.metaserverNum, gloablSettings.memLimit, uniClient, true);
+    globalProc, globalRank, gloablSettings.metaserverNum, gloablSettings.memLimit, clientStaging, true);
 
   // init the DHT
   // this is initilized based on the partition layout
@@ -1745,6 +1740,7 @@ void runRerver(std::string networkingType)
   initDHT();
 
   // gather IP to the rank0 and broadcaster the IP to all the services
+  // address manager knows all the server info after this operation
   gatherIP(selfAddr);
 
   // write master server to file, server init ok
@@ -1765,14 +1761,14 @@ void runRerver(std::string networkingType)
 
   // bradcaster the ip to all the worker nodes use the thallium api
   // this should be after the init of the server
-  uniClient->initEndPoints(uniServer->m_addrManager->m_endPointsLists);
+  clientStaging->initEndPoints(uniServer->m_addrManager->m_endPointsLists);
 
   if (uniServer->m_addrManager->ifMaster)
   {
     // there is gathered address information only for the master node
     // master will broad cast the list to all the servers
     // init the endpoint for all the slave node
-    uniServer->m_addrManager->broadcastMetaServer(uniClient);
+    uniServer->m_addrManager->broadcastMetaServer(clientStaging);
   }
 
   spdlog::info("init server ok, call margo wait for rank {}", globalRank);

@@ -1,4 +1,3 @@
-#include <adios2.h>
 #include <commondata/metadata.h>
 #include <server/FunctionManager/functionManagerMeta.h>
 #include <server/TriggerManager/triggerManager.h>

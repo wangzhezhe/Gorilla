@@ -27,7 +27,7 @@ void MetricManager::putMetric(std::string metricName, double metricValue)
   arrayPtr->addElement(metricValue);
 };
 
-std::vector<double> MetricManager::getNmetrics(std::string metricName, uint32_t number)
+std::vector<double> MetricManager::getLastNmetrics(std::string metricName, uint32_t number)
 {
   CircularDoubleArray* arrayPtr;
   this->m_metricsMapMutex.lock();
@@ -45,7 +45,7 @@ std::vector<double> MetricManager::getNmetrics(std::string metricName, uint32_t 
   this->m_metricsMapMutex.unlock();
 
   // extract the data from the array
-  return arrayPtr->getfirstN(number);
+  return arrayPtr->getLastN(number);
 };
 
 }

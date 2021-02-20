@@ -43,7 +43,7 @@ typedef void (*actionPtr)(
     size_t step,
     std::string varName,
     std::string triggerMaster,
-    UniClient *uniclient,
+    ClientForStaging *uniclient,
     BlockDescriptor &rde,
     std::vector<std::string> parameters);
 

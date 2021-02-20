@@ -1,7 +1,6 @@
 
 #include "../../server/FunctionManager/defaultFunctions/defaultfuncraw.h"
 #include "../../server/FunctionManager/functionManagerRaw.h"
-#include <adios2.h>
 #include <thallium.hpp>
 #include <unistd.h>
 using namespace GORILLA;

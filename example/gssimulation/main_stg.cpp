@@ -61,6 +61,24 @@ void print_simulator_settings(const GrayScott& s)
   std::cout << "local grid size:  " << s.size_x << "x" << s.size_y << "x" << s.size_z << std::endl;
 }
 
+std::string loadMasterAddr(std::string masterConfigFile)
+{
+
+  std::ifstream infile(masterConfigFile);
+  std::string content = "";
+  std::getline(infile, content);
+  // spdlog::debug("load master server conf {}, content -{}-", masterConfigFile,content);
+  if (content.compare("") == 0)
+  {
+    std::getline(infile, content);
+    if (content.compare("") == 0)
+    {
+      throw std::runtime_error("failed to load the master server\n");
+    }
+  }
+  return content;
+}
+
 int main(int argc, char** argv)
 {
 
@@ -155,8 +173,8 @@ int main(int argc, char** argv)
       MPI_COMM_WORLD)
   */
 
-  Writer dataWriter(&globalclientEngine, rank);
-
+  std::string addrServer = loadMasterAddr(masterConfigFile);
+  Writer dataWriter(&globalclientEngine, addrServer, rank);
   // writer_main.open(settings.output);
 
   if (rank == 0)

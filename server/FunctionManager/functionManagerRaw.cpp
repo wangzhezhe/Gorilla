@@ -91,7 +91,7 @@ void polyProcess(vtkSmartPointer<vtkPolyData> polyData, std::string blockIDSuffi
   }
 }
 
-std::string FunctionManagerRaw::aggregateProcess(UniClient* uniclient, std::string blockIDSuffix,
+std::string FunctionManagerRaw::aggregateProcess(ClientForStaging* uniclient, std::string blockIDSuffix,
   std::string fiunctionName, const std::vector<std::string>& parameters)
 {
   // aggregate poly from different processes
@@ -134,7 +134,7 @@ std::string FunctionManagerRaw::aggregateProcess(UniClient* uniclient, std::stri
   if (blockIDSuffix.find("20") != std::string::npos)
   {
     // end the timer, for the master node
-    uniclient->endTimer();
+    uniclient->endTimer(uniclient->m_masterAddr);
   }
 
   return "";

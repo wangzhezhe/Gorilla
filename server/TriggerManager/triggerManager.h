@@ -11,7 +11,7 @@
 #include <thallium.hpp>
 #include <vector>
 #include "../../commondata/metadata.h"
-#include "../../client/unimosclient.h"
+#include "../../client/ClientForStaging.hpp"
 #include "../FunctionManager/functionManagerMeta.h"
 #include "../MetadataManager/metadataManager.h"
 
@@ -25,7 +25,7 @@ struct DynamicTriggerManager
     DynamicTriggerManager( 
         size_t poolSize,
         MetaDataManager* metadataManager,
-        UniClient* uniclient): m_metadataManager(metadataManager),m_uniclient(uniclient)
+        ClientForStaging* uniclient): m_metadataManager(metadataManager),m_uniclient(uniclient)
     {};
 
     void updateTrigger(std::string triggerName, DynamicTriggerInfo triggerInfo){
@@ -62,7 +62,7 @@ struct DynamicTriggerManager
 
     //the function manager may need to send request to specific server
     //it needs to hold a pointer to the client
-    UniClient* m_uniclient = nullptr; 
+    ClientForStaging* m_uniclient = nullptr; 
 
     //hold the pointer to the metadataManager
     MetaDataManager * m_metadataManager = nullptr;

@@ -9,7 +9,7 @@
 #include <map>
 #include <vector>
 #include <blockManager/blockManager.h>
-#include <client/unimosclient.h>
+#include <client/ClientForStaging.hpp>
 
 namespace tl = thallium;
 
@@ -42,11 +42,6 @@ std::string valueRange(
     void *inputData,
     const std::vector<std::string> &parameters);
 
-std::string adiosWrite(
-    FunctionManagerRaw *fmr,
-    const BlockSummary &bs,
-    void *inputData,
-    const std::vector<std::string> &parameters);
 
 
 struct FunctionManagerRaw
@@ -57,10 +52,8 @@ struct FunctionManagerRaw
         this->m_functionMap["test"] = &test;
         this->m_functionMap["testvtk"] = &testvtk;
         this->m_functionMap["valueRange"] = &valueRange;
-        this->m_functionMap["adiosWrite"] = &adiosWrite;
 
         //the io need to be started
-        //initADIOS();
     };
 
     bool registerFunction(std::string functionName, rawdatafunctionPointer fp);
@@ -75,7 +68,7 @@ struct FunctionManagerRaw
 
 
     std::string aggregateProcess(
-        UniClient *uniclient,
+        ClientForStaging *uniclient,
         std::string blockIDSuffix,
         std::string fiunctionName,
         const std::vector<std::string> &parameters);

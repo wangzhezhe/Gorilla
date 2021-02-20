@@ -88,7 +88,7 @@ bool defaultComparison(std::string checkResults, std::vector<std::string> parame
     return true;
 }
 
-void defaultAction(FunctionManagerMeta *fmm, size_t step, std::string varName, std::string triggerMaster, UniClient *uniclient, BlockDescriptor &rde, std::vector<std::string> parameters)
+void defaultAction(FunctionManagerMeta *fmm, size_t step, std::string varName, std::string triggerMaster, ClientForStaging *uniclient, BlockDescriptor &rde, std::vector<std::string> parameters)
 {
     //std::cout << "execute defaultAction" << std::endl;
     for (int i = 0; i < parameters.size(); i++)
@@ -99,7 +99,7 @@ void defaultAction(FunctionManagerMeta *fmm, size_t step, std::string varName, s
 }
 
 //TODO, if it is master, then notify to the watcher, if it is not master, then sent the information to the master
-void defaultNotifyAction(FunctionManagerMeta *fmm, size_t step, std::string varName, std::string triggerMaster, UniClient *uniclient, BlockDescriptor &rde, std::vector<std::string> parameters)
+void defaultNotifyAction(FunctionManagerMeta *fmm, size_t step, std::string varName, std::string triggerMaster, ClientForStaging *uniclient, BlockDescriptor &rde, std::vector<std::string> parameters)
 {
 
     //notify the watcher
@@ -127,7 +127,7 @@ void defaultNotifyAction(FunctionManagerMeta *fmm, size_t step, std::string varN
 }
 
 //put information of the current step into the group master
-void defaultPutEvent(FunctionManagerMeta *fmm, size_t step, std::string varName, std::string triggerMaster, UniClient *uniclient, BlockDescriptor &rde, std::vector<std::string> parameters)
+void defaultPutEvent(FunctionManagerMeta *fmm, size_t step, std::string varName, std::string triggerMaster, ClientForStaging *uniclient, BlockDescriptor &rde, std::vector<std::string> parameters)
 {
     if (fmm->m_dtm == NULL)
     {
@@ -148,7 +148,7 @@ void defaultPutEvent(FunctionManagerMeta *fmm, size_t step, std::string varName,
     //std::cout << "put event to triggerMaster " << std::endl;
     // TODO, use more delegate way here, add condition, only one write
     // decrease unnecessary event number
-    if (uniclient->m_position == 0)
+    if (uniclient->m_rank == 0)
     {
         uniclient->putEventIntoQueue(triggerMaster, triggerName, event);
     }
@@ -222,7 +222,7 @@ bool InsituExpCompare(std::string checkResults, std::vector<std::string> paramet
     return false;
 }
 
-void InsituExpAction(FunctionManagerMeta *fmm, size_t step, std::string varName, std::string triggerMaster, UniClient *uniclient, BlockDescriptor &rde, std::vector<std::string> parameters)
+void InsituExpAction(FunctionManagerMeta *fmm, size_t step, std::string varName, std::string triggerMaster, ClientForStaging *uniclient, BlockDescriptor &rde, std::vector<std::string> parameters)
 {
     //write the data into the adios
     //send request to the raw data server and let it execut the adios data writting

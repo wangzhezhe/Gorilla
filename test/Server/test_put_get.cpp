@@ -1,5 +1,5 @@
 
-#include "../../client/unimosclient.h"
+#include "../../client/ClientForSim.hpp"
 #include "../../commondata/metadata.h"
 #include "../../utils/bbxtool.h"
 #include "../../utils/matrixtool.h"
@@ -9,6 +9,23 @@
 namespace tl = thallium;
 using namespace GORILLA;
 
+std::string loadMasterAddr(std::string masterConfigFile)
+{
+
+  std::ifstream infile(masterConfigFile);
+  std::string content = "";
+  std::getline(infile, content);
+  // spdlog::debug("load master server conf {}, content -{}-", masterConfigFile,content);
+  if (content.compare("") == 0)
+  {
+    std::getline(infile, content);
+    if (content.compare("") == 0)
+    {
+      throw std::runtime_error("failed to load the master server\n");
+    }
+  }
+  return content;
+}
 // use the two dimentions in the setting files for testing!!!!
 
 void test_get_meta()
@@ -16,7 +33,8 @@ void test_get_meta()
 
   // client engine
   tl::engine clientEngine("verbs", THALLIUM_CLIENT_MODE);
-  UniClient* uniclient = new UniClient(&clientEngine, "./unimos_server.conf", 0);
+  std::string addrServer = loadMasterAddr("./unimos_server.conf");
+  ClientForSim* uniclient = new ClientForSim(&clientEngine, addrServer, 0);
 
   // although we use same config here, if the max length at the metaserver is different
   // the number of returned metaserver is different
@@ -25,7 +43,7 @@ void test_get_meta()
   std::array<int, 3> indexlb = { { 10, 10, 0 } };
   std::array<int, 3> indexub = { { 99, 99, 0 } };
 
-  std::vector<std::string> metaList = uniclient->getmetaServerList(2, indexlb, indexub);
+  std::vector<std::string> metaList = uniclient->getmetaServerList(addrServer, 2, indexlb, indexub);
 
   std::cout << "---tests1---" << std::endl;
   for (int i = 0; i < metaList.size(); i++)
@@ -36,7 +54,7 @@ void test_get_meta()
   indexlb = { { 10, 10, 0 } };
   indexub = { { 99, 12, 0 } };
 
-  metaList = uniclient->getmetaServerList(2, indexlb, indexub);
+  metaList = uniclient->getmetaServerList(addrServer, 2, indexlb, indexub);
 
   std::cout << "---tests2---" << std::endl;
   for (int i = 0; i < metaList.size(); i++)
@@ -51,7 +69,8 @@ void test_put()
 
   // client engine
   tl::engine clientEngine("verbs", THALLIUM_CLIENT_MODE);
-  UniClient* uniclient = new UniClient(&clientEngine, "./unimos_server.conf", 0);
+  std::string addrServer = loadMasterAddr("./unimos_server.conf");
+  ClientForSim* uniclient = new ClientForSim(&clientEngine, addrServer, 0);
 
   // there is data screw if the length of the data is not the 2^n
   // there is data screw if the input data is not in the shape of the cubic
@@ -94,14 +113,12 @@ void test_put()
 // use the dims=2  maxDimValue=127 as the config for server
 void test_get_2drawDatList()
 {
-
   // put some data
-
   test_put();
-
   // init client engine
   tl::engine clientEngine("verbs", THALLIUM_CLIENT_MODE);
-  UniClient* uniclient = new UniClient(&clientEngine, "./unimos_server.conf", 0);
+  std::string addrServer = loadMasterAddr("./unimos_server.conf");
+  ClientForSim* uniclient = new ClientForSim(&clientEngine, addrServer, 0);
 
   // although we use same config here, if the max length at the metaserver is different
   // the number of returned metaserver is different

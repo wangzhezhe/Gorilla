@@ -1,3 +1,6 @@
+/*
+this is deprecated and we divide the large client into several smaller one
+*/
 #ifndef __UNIMOSCLIENT_H__
 #define __UNIMOSCLIENT_H__
 
@@ -12,7 +15,6 @@
 #include <string>
 #include <thallium.hpp>
 #include <vector>
-
 
 #include <vtkCharArray.h>
 #include <vtkCommunicator.h>
@@ -45,32 +47,22 @@ struct UniClient
 
   void initMaster(std::string masterAddr)
   {
-    this->m_masterEndpoint = this->m_clientEnginePtr->lookup(masterAddr);
+    this->m_mygroupMasterEndpoint = this->m_clientEnginePtr->lookup(masterAddr);
     return;
   }
 
-  // this is called if the addr of all the server is already known
-  // otherwise, it will initilized by getAllServerAddr
-  void initEndPoints(std::vector<std::string>& serverList)
-  {
-    for (auto it = serverList.begin(); it != serverList.end(); it++)
-    {
-      auto endpoint = this->m_clientEnginePtr->lookup(*it);
-      m_serverToEndpoints[*it] = endpoint;
-    }
-    return;
-  }
+
 
   // for server enginge, the client ptr is the pointer to the server engine
   // for the client code, the client engine is the pointer to the engine with the client mode
   UniClient(tl::engine* clientEnginePtr, std::string masterConfigFile, int rrbStartPosition)
   {
     m_clientEnginePtr = clientEnginePtr;
-    m_masterAddr = loadMasterAddr(masterConfigFile);
+    m_mygroupMasterAddr = loadMasterAddr(masterConfigFile);
     m_position = rrbStartPosition;
     DEBUG("debug my position " << m_position << " rrbStartPosition " << rrbStartPosition);
     // std::cout << "load master Addr: " << m_masterAddr << std::endl;
-    this->initMaster(m_masterAddr);
+    this->initMaster(m_mygroupMasterAddr);
   };
 
   // set the m_masterAddr separately when use this
@@ -87,18 +79,27 @@ struct UniClient
   // caculate this at the beginning when init the client to avoid the potential mercury mistakes
   std::map<std::string, tl::endpoint> m_serverToEndpoints;
 
-  tl::endpoint lookup(std::string& address);
+  // the master addr of the current group
+  std::string m_mygroupMasterAddr;
+  tl::endpoint m_mygroupMasterEndpoint;
 
-  std::string m_masterAddr;
-  tl::endpoint m_masterEndpoint;
+  // if there are multiple associated servers
+  // store them into this set
+  std::set<std::string> m_associatedAddrSet;
+
+  // the associated address of other group(when there is one data server)
   std::string m_associatedDataServer = "";
+
+  // the ptr that store the thallium client engine
   tl::engine* m_clientEnginePtr = NULL;
+
+  // the block manager in memory
   BlockManager b_manager;
 
+  // the in manager catch
   size_t m_bulkSize = 0;
-  
-  //this part manages the memory space for data transferring
-  //it is similar to the load and unload platform in the port
+  // this part manages the memory space for data transferring
+  // it is similar to the load and unload platform in the port
   std::vector<std::pair<void*, std::size_t> > m_segments;
   tl::bulk m_dataBulk;
 
@@ -119,6 +120,8 @@ struct UniClient
 
     // std::cout << "destroy UniClient"<<std::endl;
   };
+
+  tl::endpoint lookup(std::string& address);
 
   int getIDByRandom()
   {
@@ -195,7 +198,6 @@ struct UniClient
   void executeAsyncExp(int step, std::string blockid);
 
   std::vector<vtkSmartPointer<vtkPolyData> > aggregatePolyBySuffix(std::string blockIDSuffix);
-
 };
 
 }

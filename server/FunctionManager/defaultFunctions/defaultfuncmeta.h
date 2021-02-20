@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 #include "../../../commondata/metadata.h"
-#include "../../../client/unimosclient.h"
+#include "../../../client/ClientForStaging.hpp"
 
 namespace GORILLA
 {
@@ -42,7 +42,7 @@ FunctionManagerMeta*fmm,
 size_t step, 
 std::string varName,
 std::string triggerMaster,
-UniClient* uniclient,
+ClientForStaging* uniclient,
 BlockDescriptor& rde,
 std::vector<std::string> parameters);
 
@@ -51,7 +51,7 @@ FunctionManagerMeta *fmm,
 size_t step, 
 std::string varName,
 std::string triggerMaster,
-UniClient *uniclient, 
+ClientForStaging *uniclient, 
 BlockDescriptor &rde, 
 std::vector<std::string> parameters);
 
@@ -60,7 +60,7 @@ FunctionManagerMeta *fmm,
 size_t step, 
 std::string varName,
 std::string triggerMaster,
-UniClient *uniclient, 
+ClientForStaging *uniclient, 
 BlockDescriptor &rde, 
 std::vector<std::string> parameters);
 
@@ -75,7 +75,7 @@ FunctionManagerMeta *fmm,
 size_t step, 
 std::string varName,
 std::string triggerMaster,
-UniClient *uniclient, 
+ClientForStaging *uniclient, 
 BlockDescriptor &rde, 
 std::vector<std::string> parameters);
 

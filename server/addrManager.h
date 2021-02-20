@@ -6,7 +6,7 @@
 #include <iostream>
 #include <vector>
 #include <thallium.hpp>
-#include "../client/unimosclient.h"
+#include "../client/ClientForStaging.hpp"
 
 namespace tl = thallium;
 
@@ -42,7 +42,7 @@ struct AddrManager
     std::string getByVarTs(std::string varName, int ts);
     std::string getByVarTsBlockID(std::string varName, int ts, size_t blockID);
     std::string getByRRobin();
-    void broadcastMetaServer(UniClient*globalClient);
+    void broadcastMetaServer(ClientForStaging*clientStaging);
     
     tl::mutex m_rrbinMutex;
 

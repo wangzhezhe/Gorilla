@@ -1,5 +1,5 @@
 
-#include "../../client/unimosclient.h"
+#include "../../client/ClientForSim.hpp"
 #include "../../commondata/metadata.h"
 #include <thallium.hpp>
 #include <vector>
@@ -7,13 +7,32 @@
 namespace tl = thallium;
 using namespace GORILLA;
 
+std::string loadMasterAddr(std::string masterConfigFile)
+{
+
+  std::ifstream infile(masterConfigFile);
+  std::string content = "";
+  std::getline(infile, content);
+  // spdlog::debug("load master server conf {}, content -{}-", masterConfigFile,content);
+  if (content.compare("") == 0)
+  {
+    std::getline(infile, content);
+    if (content.compare("") == 0)
+    {
+      throw std::runtime_error("failed to load the master server\n");
+    }
+  }
+  return content;
+}
+
 // assume that the server is alreasy started normally
 void test_put_1d()
 {
 
   // client engine
   tl::engine clientEngine("tcp", THALLIUM_CLIENT_MODE);
-  UniClient* uniclient = new UniClient(&clientEngine, "./unimos_server.conf", 0);
+  std::string addrServer = loadMasterAddr("./unimos_server.conf");
+  ClientForSim* uniclient = new ClientForSim(&clientEngine, addrServer, 0);
 
   // there is data screw if the length of the data is not the 2^n
   // there is data screw if the input data is not in the shape of the cubic
@@ -57,8 +76,8 @@ void test_put_2d()
 
   // client engine
   tl::engine clientEngine("tcp", THALLIUM_CLIENT_MODE);
-  UniClient* uniclient = new UniClient(&clientEngine, "./unimos_server.conf", 0);
-
+  std::string addrServer = loadMasterAddr("./unimos_server.conf");
+  ClientForSim* uniclient = new ClientForSim(&clientEngine, addrServer, 0);
   // there is data screw if the length of the data is not the 2^n
   // there is data screw if the input data is not in the shape of the cubic
   size_t elemInOneDim = (99 - 10 + 1);
@@ -103,8 +122,9 @@ void test_put_3d()
 
   // client engine
   tl::engine clientEngine("tcp", THALLIUM_CLIENT_MODE);
-  UniClient* uniclient = new UniClient(&clientEngine, "./unimos_server.conf", 0);
-
+  std::string addrServer = loadMasterAddr("./unimos_server.conf");
+  ClientForSim* uniclient = new ClientForSim(&clientEngine, addrServer, 0);
+  
   // there is data screw if the length of the data is not the 2^n
   // there is data screw if the input data is not in the shape of the cubic
   size_t elemInOneDim = (512);

@@ -61,6 +61,24 @@ void print_simulator_settings(const GrayScott& s)
   std::cout << "local grid size:  " << s.size_x << "x" << s.size_y << "x" << s.size_z << std::endl;
 }
 
+std::string loadMasterAddr(std::string masterConfigFile)
+{
+
+  std::ifstream infile(masterConfigFile);
+  std::string content = "";
+  std::getline(infile, content);
+  // spdlog::debug("load master server conf {}, content -{}-", masterConfigFile,content);
+  if (content.compare("") == 0)
+  {
+    std::getline(infile, content);
+    if (content.compare("") == 0)
+    {
+      throw std::runtime_error("failed to load the master server\n");
+    }
+  }
+  return content;
+}
+
 int main(int argc, char** argv)
 {
 
@@ -155,7 +173,8 @@ int main(int argc, char** argv)
       MPI_COMM_WORLD)
   */
 
-  Writer dataWriter(&globalclientEngine, rank);
+  std::string addrServer = loadMasterAddr(masterConfigFile);
+  Writer dataWriter(&globalclientEngine, addrServer, rank);
 
   // writer_main.open(settings.output);
 
@@ -184,9 +203,9 @@ int main(int argc, char** argv)
 
 #endif
 
-   if (rank == 0)
+  if (rank == 0)
   {
-  // start the timer explicitly
+    // start the timer explicitly
     dataWriter.startwftimer();
   }
 
@@ -275,11 +294,11 @@ int main(int argc, char** argv)
     // if (ifStage)
     //{
     // write to the stage server
-    //std::string blockSuffix = dataWriter.extractAndwrite(sim, step, rank);
+    // std::string blockSuffix = dataWriter.extractAndwrite(sim, step, rank);
     // assume all put operation finish
-    //MPI_Barrier(comm);
+    // MPI_Barrier(comm);
 
-    //if (rank == 0)
+    // if (rank == 0)
     //{
     //  dataWriter.triggerRemoteAsync(step, blockSuffix);
     //}

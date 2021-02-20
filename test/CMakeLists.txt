@@ -29,29 +29,29 @@ add_executable(test_blockwitharray ./BlockData/test_blockwitharray.cpp)
 target_link_libraries(test_blockwitharray thallium blockManager)
 
 add_executable(test_funcraw_vtk ./FuncManager/test_funcraw_vtk.cpp)
-target_link_libraries(test_funcraw_vtk PRIVATE thallium adios2::adios2 rawexec ${VTK_LIBRARIES})
+target_link_libraries(test_funcraw_vtk PRIVATE thallium rawexec ${VTK_LIBRARIES})
 
 add_executable(test_funcraw_basic ./FuncManager/test_funcraw_basic.cpp)
-target_link_libraries(test_funcraw_basic PRIVATE thallium adios2::adios2 rawexec )
+target_link_libraries(test_funcraw_basic PRIVATE thallium rawexec )
 
 add_executable(test_funcmeta ./FuncManager/test_funcmeta.cpp)
-target_link_libraries(test_funcmeta PRIVATE thallium adios2::adios2 metatrigger unimos_client ${VTK_LIBRARIES})
+target_link_libraries(test_funcmeta PRIVATE thallium metatrigger gorilla_clientforstage ${VTK_LIBRARIES})
 
 add_executable(test_trigger ./Trigger/test_trigger.cpp)
-target_link_libraries(test_trigger thallium adios2::adios2 metatrigger unimos_client ${VTK_LIBRARIES})
+target_link_libraries(test_trigger thallium metatrigger gorilla_clientforstage ${VTK_LIBRARIES})
 
 add_executable(test_addrManager ./Server/test_addrManager.cpp ${gorilla_SOURCE_DIR}/server/addrManager.cpp)
-target_link_libraries(test_addrManager thallium ${UUID_LIBRARIES} unimos_client)
+target_link_libraries(test_addrManager thallium ${UUID_LIBRARIES} gorilla_clientforstage)
 
 add_executable(test_put ./Server/test_put.cpp)
-target_link_libraries(test_put thallium unimos_client)
+target_link_libraries(test_put thallium gorilla_clientforsim)
 
 add_executable(test_put_get ./Server/test_put_get.cpp)
-target_link_libraries(test_put_get thallium unimos_client)
+target_link_libraries(test_put_get thallium gorilla_clientforsim)
 
 
 add_executable(test_vtkobj_put ./Server/test_vtkobj_put.cpp)
-target_link_libraries(test_vtkobj_put thallium blockManager unimos_client ${VTK_LIBRARIES} ${DRC_LIBRARIES})
+target_link_libraries(test_vtkobj_put thallium blockManager gorilla_clientforsim ${VTK_LIBRARIES} ${DRC_LIBRARIES})
 
 
 add_executable(test_threadpool ./Util/test_threadpool.cpp)
@@ -61,7 +61,7 @@ add_executable(test_circulararraytpool ./Util/test_circulararraytpool.cpp)
 target_link_libraries(test_circulararraytpool thallium)
 
 add_executable(test_addtrigger ./Trigger/test_trigger.cpp)
-target_link_libraries(test_addtrigger thallium metatrigger unimos_client)
+target_link_libraries(test_addtrigger thallium metatrigger gorilla_clientforsim)
 
 
 add_executable(test_metricManager ./Metrics/test_metricManager.cpp)
@@ -86,19 +86,25 @@ target_link_libraries(mpinotifyblock thallium MPI::MPI_C)
 #add_executable(thalliumtest_threadpool ./thalimtest/thalliumtest_threadpool.cpp)
 
 add_executable(test_insitu_exp ./Trigger/test_insitu_exp.cpp)
-target_link_libraries(test_insitu_exp thallium unimos_client)
+target_link_libraries(test_insitu_exp thallium gorilla_clientforsim)
 
 add_executable(test_trigger_loader ./Trigger/test_trigger_loader.cpp)
-target_link_libraries(test_trigger_loader thallium unimos_client ${DRC_LIBRARIES})
+target_link_libraries(test_trigger_loader thallium gorilla_clientforsim ${DRC_LIBRARIES})
 
 add_executable(test_putgetevent ./Trigger/test_putgetevent.cpp)
-target_link_libraries(test_putgetevent thallium metatrigger adios2::adios2)
+target_link_libraries(test_putgetevent thallium metatrigger)
 
 add_executable(test_client_watcher ./Client/test_watcher.cpp)
-target_link_libraries(test_client_watcher thallium unimos_client)
+target_link_libraries(test_client_watcher thallium gorilla_clientforsim)
 
-add_executable(adiosthread ./thalimtest/adiosthread.cpp)
-target_link_libraries(adiosthread adios2::adios2)
+add_executable(test_clientforsim ./Client/test_clientforsim.cpp)
+target_link_libraries(test_clientforsim thallium gorilla_clientforsim blockManager ${DRC_LIBRARIES})
+
+add_executable(test_clientforstage ./Client/test_clientforstage.cpp)
+target_link_libraries(test_clientforstage thallium gorilla_clientforstage)
+
+#add_executable(adiosthread ./thalimtest/adiosthread.cpp)
+#target_link_libraries(adiosthread )
 
 add_executable(test_scheduler ./Scheduler/test_scheduler.cpp)
 target_link_libraries(test_scheduler schedulemanager thallium)
@@ -114,6 +120,9 @@ target_link_libraries(test_vtkexplicit ${VTK_LIBRARIES} thallium blockManager)
 # vtk explicit array with zero copy
 add_executable(test_vtkexplicitzero ./BlockData/test_vtkexplicitzero.cpp)
 target_link_libraries(test_vtkexplicitzero ${VTK_LIBRARIES} thallium blockManager)
+
+add_executable(test_scheduleTime ./Others/scheduleTime.cpp)
+target_link_libraries(test_scheduleTime thallium ${VTK_LIBRARIES})
 
 # deprecated
 # add_subdirectory(mock)

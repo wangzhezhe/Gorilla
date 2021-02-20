@@ -38,8 +38,6 @@ xpkg_import_module (margo REQUIRED margo)
 # for the latest thallium we do not need to link libraries
 find_package (thallium REQUIRED)
 
-# compile the sim-inline-adios
-find_package(ADIOS2 REQUIRED)
 
 option(USE_GNI "use cray gni" OFF)
 
@@ -77,6 +75,7 @@ find_package(VTK COMPONENTS
     FiltersCore
     IOImage
     IOXML
+    IOLegacy
     CommonCore
     CommonDataModel
     FiltersSources
@@ -96,25 +95,37 @@ target_link_libraries(blockManager abt-io ${VTK_LIBRARIES})
 add_library(metaclient ./putgetMeta/metaclient.cpp)
 target_link_libraries(metaclient)
 
-add_library (unimos_client 
-${gorilla_SOURCE_DIR}/client/unimosclient.cpp
-${gorilla_SOURCE_DIR}/client/watcher.cpp
-)
-target_link_libraries(unimos_client blockManager ${VTK_LIBRARIES})
+# deprecated, using clients separately
+#add_library (unimos_client 
+#${gorilla_SOURCE_DIR}/client/unimosclient.cpp
+#${gorilla_SOURCE_DIR}/client/watcher.cpp
+#)
+#target_link_libraries(unimos_client ${VTK_LIBRARIES} blockManager)
 
+add_library (gorilla_clientforsim
+${gorilla_SOURCE_DIR}/client/ClientRPCWrapper.cpp
+${gorilla_SOURCE_DIR}/client/ClientForSim.cpp
+)
+target_link_libraries(gorilla_clientforsim ${VTK_LIBRARIES} blockManager)
+
+add_library (gorilla_clientforstage
+${gorilla_SOURCE_DIR}/client/ClientRPCWrapper.cpp
+${gorilla_SOURCE_DIR}/client/ClientForStaging.cpp
+)
+target_link_libraries(gorilla_clientforstage ${VTK_LIBRARIES})
 
 # there is reference between each other, so it is better to build them together
 add_library(metatrigger 
 ${gorilla_SOURCE_DIR}/server/FunctionManager/defaultFunctions/defaultfuncmeta.cpp
 ${gorilla_SOURCE_DIR}/server/TriggerManager/triggerManager.cpp
 )
-target_link_libraries(metatrigger metadatamanager unimos_client adios2::adios2)
+target_link_libraries(metatrigger metadatamanager gorilla_clientforstage)
 
 add_library(rawexec 
 ${gorilla_SOURCE_DIR}/server/FunctionManager/defaultFunctions/defaultfuncraw.cpp
 ${gorilla_SOURCE_DIR}/server/FunctionManager/functionManagerRaw.cpp
 )
-target_link_libraries(rawexec adios2::adios2 ${VTK_LIBRARIES} unimos_client)
+target_link_libraries(rawexec ${VTK_LIBRARIES} gorilla_clientforstage)
 
 add_library(metricmanager 
 ${gorilla_SOURCE_DIR}/metricManager/metricManager.cpp
@@ -137,9 +148,8 @@ if(USE_GNI)
 target_link_libraries (unimos_server
 thallium
  ${DRC_LIBRARIES}
- adios2::adios2
  MPI::MPI_C 
- unimos_client 
+ gorilla_clientforstage 
  dhtmanager blockManager metadatamanager schedulemanager
  metatrigger 
  rawexec
@@ -149,9 +159,8 @@ thallium
 else()
  target_link_libraries (unimos_server
  thallium
- adios2::adios2
  MPI::MPI_C 
- unimos_client 
+ gorilla_clientforstage 
  dhtmanager 
  blockManager 
  metadatamanage

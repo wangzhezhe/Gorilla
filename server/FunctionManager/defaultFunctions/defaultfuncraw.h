@@ -35,13 +35,6 @@ FunctionManagerRaw*fmr,
 const BlockSummary &bs, 
 void *inputData, 
 const std::vector<std::string>& parameters);
-
-std::string adiosWrite(
-FunctionManagerRaw*fmr,
-const BlockSummary &bs, 
-void *inputData, 
-const std::vector<std::string>& parameters);
-
 }
 
 #endif

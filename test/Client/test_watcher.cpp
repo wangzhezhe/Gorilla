@@ -1,39 +1,58 @@
 
-#include "../../client/watcher.hpp"
-#include "../../client/unimosclient.h"
+#include "../../client/ClientForSim.hpp"
+#include <string>
 #include <thallium.hpp>
 #include <vector>
-#include <string>
 
 namespace tl = thallium;
 using namespace GORILLA;
 
-int main(int argc, char **argv)
+std::string loadMasterAddr(std::string masterConfigFile)
 {
 
-    if (argc < 2)
+  std::ifstream infile(masterConfigFile);
+  std::string content = "";
+  std::getline(infile, content);
+  // spdlog::debug("load master server conf {}, content -{}-", masterConfigFile,content);
+  if (content.compare("") == 0)
+  {
+    std::getline(infile, content);
+    if (content.compare("") == 0)
     {
-        std::cerr << "Too few arguments" << std::endl;
-        std::cerr << "Usage: <binary> protocol" << std::endl;
-        exit(-1);
+      throw std::runtime_error("failed to load the master server\n");
     }
+  }
+  return content;
+}
 
-    std::string protocol = argv[1];
+int main(int argc, char** argv)
+{
 
-    //start a client
-    tl::engine clientEngine(protocol, THALLIUM_SERVER_MODE);
+  if (argc < 2)
+  {
+    std::cerr << "Too few arguments" << std::endl;
+    std::cerr << "Usage: <binary> protocol" << std::endl;
+    exit(-1);
+  }
 
-    //test watcher
-    Watcher *testwatcher = new Watcher();
-    std::vector<std::string> triggerList;
+  std::string protocol = argv[1];
 
-    UniClient *m_uniclient = new UniClient(&clientEngine, "unimos_server.conf", 0);
-    m_uniclient->getAllServerAddr();
+  // start a client
+  tl::engine clientEngine(protocol, THALLIUM_SERVER_MODE);
 
-    //put the coresponding trigger name
-    triggerList.push_back("testTrigger1");
-    //register wather before starting it
-    m_uniclient->registerWatcher(triggerList);
-    testwatcher->startWatch(&clientEngine);
-    return 0;
+  // test watcher
+  Watcher* testwatcher = new Watcher();
+  std::vector<std::string> triggerList;
+
+  std::string addrServer = loadMasterAddr("unimos_server.conf");
+
+  ClientForSim* m_uniclient = new ClientForSim(&clientEngine, addrServer, 0);
+  m_uniclient->getAllServerAddr();
+
+  // put the coresponding trigger name
+  triggerList.push_back("testTrigger1");
+  // register wather before starting it
+  m_uniclient->registerWatcher(triggerList);
+  testwatcher->startWatch(&clientEngine);
+  return 0;
 }

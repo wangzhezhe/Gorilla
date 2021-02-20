@@ -52,30 +52,34 @@ struct CircularDoubleArray
   int addElement(double element)
   {
     this->m_indexMutex.lock();
-    if (((this->m_head + 1) % this->m_slotNum) == this->m_tail)
-    {
-      // use m_head == m_tail to represent the empty or full
-      // use m_head+1 == m_tail to represent the full
-      // this will be convenient to caculate the length
-      // current head position is supposed to be empty
-      // current tail position is supposed to be accupied
-      this->m_indexMutex.unlock();
-      throw std::runtime_error("the buffer is full");
-    }
+    // if (((this->m_head + 1) % this->m_slotNum) == this->m_tail)
+    //{
+    // use m_head == m_tail to represent the empty or full
+    // use m_head+1 == m_tail to represent the full
+    // this will be convenient to caculate the length
+    // current head position is supposed to be empty
+    // current tail position is supposed to be accupied
+    // this->m_indexMutex.unlock();
+    // std::cout << "the buffer is full, remove last one" << std::endl;
+    //}
 
     // if the current position is not empty
     // if we want to do the autonomic cover, we do not need to bother this
-    if (m_circularArraybuffer[this->m_head] != DBL_MAX)
-    {
+    //if (m_circularArraybuffer[this->m_head] != DBL_MAX)
+    //{
       // if entry is not null
-      this->m_indexMutex.unlock();
-      throw std::runtime_error("the element at the new position " + std::to_string(this->m_head) +
-        " should be empty before moving head ptr");
-    }
-    else
-    {
-      this->m_circularArraybuffer[this->m_head] = element;
-    }
+      // this->m_indexMutex.unlock();
+      // throw std::runtime_error("the element at the new position " + std::to_string(this->m_head)
+      // +
+      //  " should be empty before moving head ptr");
+      //std::cout << "the buffer is full, remove last one" << std::endl;
+    //}
+    // else
+    //{
+    // cover existing one automatically
+    // do not care if it is full
+    this->m_circularArraybuffer[this->m_head] = element;
+    // }
 
     // head move to the next position
     // the full case have been considered at the begining
@@ -85,50 +89,42 @@ struct CircularDoubleArray
     return 0;
   };
 
-  std::vector<double> getfirstN(uint32_t number)
+  std::vector<double> getLastN(uint32_t number)
   {
-
+    if (number <= 0)
+    {
+      throw std::runtime_error("the number should be larger than 1");
+    }
     uint32_t bufferLen = this->bufferLen();
     if (number >= bufferLen)
     {
       // return all value
       throw std::runtime_error("the required number is larger than actual buffer length");
-      // return all
     }
+    // go back to number-1 position to get the start position
+    // the current head position is empty
+    int startPosition = (this->m_head - number + bufferLen) % bufferLen;
     std::vector<double> results;
-    // the first one is at the tail
+    // the first one is at the startPosition
+    int tempPosition = startPosition;
     this->m_indexMutex.lock();
-    int tempTail = this->m_tail;
-    while (tempTail != this->m_head)
+    for (int i = 0; i < number; i++)
     {
-      if (this->m_circularArraybuffer[tempTail] == DBL_MAX)
+      if (this->m_circularArraybuffer[tempPosition] == DBL_MAX)
       {
         throw std::runtime_error("try to get an empty element");
       }
-      results.push_back(this->m_circularArraybuffer[tempTail]);
-      tempTail = (tempTail + 1) % (this->m_slotNum);
-      if (results.size() == number)
-      {
-        // exit when we get enough element
-        break;
-      }
+      results.push_back(this->m_circularArraybuffer[tempPosition]);
+      tempPosition = (tempPosition + 1) % bufferLen;
     }
-
     this->m_indexMutex.unlock();
     return results;
   };
 
-  std::vector<double> getlastN(uint32_t number) {
-    // get last N elements
-    // init the results
-    // go through the inner array
-    // insert the data one by one, from the head traverse back
-  }
-
   std::vector<double> getAll()
   {
     int bufferLen = this->bufferLen();
-    return getfirstN(bufferLen);
+    return getLastN(bufferLen);
   };
 
   int removeElement()

@@ -8,7 +8,7 @@
 #include "ScheduleManager/scheduleManager.h"
 #include "TriggerManager/triggerManager.h"
 #include "addrManager.h"
-#include <client/unimosclient.h>
+#include <client/ClientForStaging.hpp>
 #include <map>
 #include <blockManager/blockManager.h>
 
@@ -39,7 +39,7 @@ struct UniServer
   DynamicTriggerManager* m_dtmanager = nullptr;
 
   void initManager(int globalProc, int globalrank, int metaServerNum, std::string memLimit,
-    UniClient* client, bool ifDistributed)
+    ClientForStaging* clientStage, bool ifDistributed)
   {
     // init global managers
     m_addrManager = new AddrManager();
@@ -59,7 +59,7 @@ struct UniServer
     // the dht manager is global which should be inited before server
     m_dhtManager = new DHTManager();
     // dynamic trigger manager
-    if (client == NULL && ifDistributed == true)
+    if (clientStage == NULL && ifDistributed == true)
     {
       throw std::runtime_error("the client should not be NULL for init func");
     }
@@ -67,7 +67,7 @@ struct UniServer
     // TODO, control the thread number based on if the trigger is enabled
     // the number for the in-situ thread pool should be small for scale
     // 32 is some kind of maximum in this case, other wise, the write will too long
-    m_dtmanager = new DynamicTriggerManager(64, m_metaManager, client);
+    m_dtmanager = new DynamicTriggerManager(64, m_metaManager, clientStage);
 
     // the dtmanager should associate with necessary managers
     m_fmetamanager = new FunctionManagerMeta();

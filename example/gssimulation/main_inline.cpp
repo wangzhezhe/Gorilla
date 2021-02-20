@@ -306,7 +306,7 @@ int main(int argc, char** argv)
     double polydiff;
     clock_gettime(CLOCK_REALTIME, &getpolys); /* mark start time */
 
-    auto polydata = dataWriter.getPoly(sim, 0.5);
+    //auto polydata = dataWriter.getPoly(sim, 0.5);
     // std::cout << "cell number before transfer: " << polydata->GetNumberOfPolys() << std::endl;
 
     MPI_Barrier(comm);
@@ -323,11 +323,18 @@ int main(int argc, char** argv)
     }
 
     // aggregate
+    if (i == 10)
+    {
+      // output data for testing
+      std::string fName = "writeImageData/gsimage_" + std::to_string(rank) + ".vti";
+      dataWriter.writeImageData(sim, fName);
+    }
     // int Gather(vtkDataObject* sendBuffer, std::vector<vtkSmartPointer<vtkDataObject>>&
     // recvBuffer, int destProcessId)
     // init the vtkcontroller
 
     // gather time
+    /*
     std::vector<vtkSmartPointer<vtkDataObject> > recvlist;
     int status = vtkcontroller->Gather(polydata, recvlist, 0);
     if (!status)
@@ -335,6 +342,7 @@ int main(int argc, char** argv)
       throw std::runtime_error("failed to gather poly data");
     }
 
+    
     if (rank == 0)
     {
       // std::cout << "size of recvlist: " << recvlist.size() << std::endl;
@@ -371,9 +379,16 @@ int main(int argc, char** argv)
 
       // generate the merged polydata
       vtkSmartPointer<vtkPolyData> mergedPolydata = cleanFilter->GetOutput();
+
       // other processes based on polyonal
       dataWriter.polyProcess(mergedPolydata, step);
+
+      // for testing, try to write out the data
+      // to see the size of processed data after in-situ extraction
+      std::string fName = "reduced_" + std::to_string(step)+".vtp";
+      dataWriter.writePolyDataFile(mergedPolydata, fName);
     }
+    */
 
 #ifdef ENABLE_TIMERS
 
