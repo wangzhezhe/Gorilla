@@ -966,8 +966,7 @@ void putArrayIntoBlock(const tl::request& req, BlockSummary& blockSummary,
   segments[0].first = memspace;
   segments[0].second = transferSize;
 
-  spdlog::debug(
-    "recv array {} size {}", std::string(arraySummary.m_arrayName), transferSize);
+  spdlog::debug("recv array {} size {}", std::string(arraySummary.m_arrayName), transferSize);
 
   // transfer data
   tl::bulk currentBulk = globalServerEnginePtr->expose(segments, tl::bulk_mode::write_only);
@@ -1410,8 +1409,18 @@ void executeAsyncExp(const tl::request& req, std::string& blockIDSuffix, std::st
   spdlog::debug("---server rank {} start executeAsyncExp for block {}", globalRank, blockIDSuffix);
   globalServerEnginePtr->get_handler_pool().make_thread(
     [=]() {
-      uniServer->m_frawmanager->aggregateProcess(
-        clientStaging, blockIDSuffix, functionName, funcParameters);
+      if (functionName == "testaggrefunc")
+      {
+        uniServer->m_frawmanager->aggregateProcess(
+          clientStaging, blockIDSuffix, functionName, funcParameters);
+      }
+      else if (functionName == "testisoExec")
+      {
+      }
+      else
+      {
+        std::cout << "unsupported function name " << functionName << std::endl;
+      }
     },
     tl::anonymous());
 
@@ -1647,13 +1656,12 @@ void runRerver(std::string networkingType)
   margo_instance_id mid;
   // the number here should same with the number of cores used in test scripts
   // the loop process is 0, the main thread will work on it
-  mid = margo_init_opt("gni", MARGO_SERVER_MODE, &hii, 0, 8);
-  tl::engine serverEnginge(mid);
-  globalServerEnginePtr = &serverEnginge;
+  //mid = margo_init_opt("gni", MARGO_SERVER_MODE, &hii, 0, 8);
+  //tl::engine serverEnginge(mid);
 
-  // margo_instance_id client_mid;
-  // client_mid = margo_init_opt("gni", MARGO_CLIENT_MODE, &hii, 0, 8);
-  // tl::engine clientEnginge(client_mid);
+  // the latest engine can be created based on hii
+   tl::engine serverEnginge = tl::engine("ofi+gni", THALLIUM_SERVER_MODE, false, 8, &hii);
+   globalServerEnginePtr = &serverEnginge;
 
 #else
   if (globalRank == 0)
@@ -1730,8 +1738,8 @@ void runRerver(std::string networkingType)
   statefulConfig* sconfig = new statefulConfig();
   // init all the important manager of the server
   uniServer = new UniServer();
-  uniServer->initManager(
-    globalProc, globalRank, gloablSettings.metaserverNum, gloablSettings.memLimit, clientStaging, true);
+  uniServer->initManager(globalProc, globalRank, gloablSettings.metaserverNum,
+    gloablSettings.memLimit, clientStaging, true);
 
   // init the DHT
   // this is initilized based on the partition layout
