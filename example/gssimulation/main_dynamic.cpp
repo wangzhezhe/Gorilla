@@ -6,6 +6,7 @@
 #include <mpi.h>
 #include <thread>
 
+#include "InSitu.hpp"
 #include "gray-scott.h"
 #include "timer.hpp"
 
@@ -13,10 +14,8 @@
 #include <thallium.hpp>
 #include <time.h>
 #include <unistd.h>
-#include "InSitu.hpp"
 
 #define BILLION 1000000000L
-//#include "../putgetMeta/metaclient.h"
 
 #ifdef USE_GNI
 extern "C"
@@ -36,6 +35,8 @@ extern "C"
     }                                                                                              \
   } while (0)
 #endif
+
+namespace tl = thallium;
 
 const std::string masterConfigFile = "unimos_server.conf";
 const std::string serverCred = "Gorila_cred_conf";
@@ -143,35 +144,14 @@ int main(int argc, char** argv)
   hii.na_init_info.auth_key = drc_key_str;
   // printf("use the drc_key_str %s\n", drc_key_str);
 
-  margo_instance_id mid;
-  mid = margo_init_opt("gni", MARGO_CLIENT_MODE, &hii, 0, 1);
-  tl::engine globalclientEngine(mid);
+  // margo_instance_id mid;
+  // mid = margo_init_opt("gni", MARGO_CLIENT_MODE, &hii, 0, 1);
+  // tl::engine globalclientEngine(mid);
+  tl::engine globalclientEngine("ofi+gni", THALLIUM_CLIENT_MODE, false, 1, &hii);
 #else
 
   tl::engine globalclientEngine(protocol, THALLIUM_CLIENT_MODE);
 #endif
-
-  // TODO broadcast
-  /*
-  char tempAddr[200];
-  if (rank == 0)
-  {
-          std::string gorillaAddr;
-      std::ifstream infile(masterConfigFile);
-      std::getline(infile, gorillaAddr);
-      std::cout << "--load the master server of the staging service:"
-                << gorillaAddr << std::endl;
-
-      memcpy(tempAddr, gorillaAddr.c_str(), strlen(gorillaAddr.c_str()));
-  }
-  MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Bcast(
-      tempAddr,
-      200,
-      MPI_CHAR,
-      0,
-      MPI_COMM_WORLD)
-  */
 
   std::string addrServer = loadMasterAddr(masterConfigFile);
   InSitu gsinsitu(&globalclientEngine, addrServer, rank);
@@ -185,7 +165,6 @@ int main(int argc, char** argv)
     std::cout << "========================================" << std::endl;
   }
 
-#ifdef ENABLE_TIMERS
   Timer timer_total;
   Timer timer_compute;
   Timer timer_write;
@@ -201,29 +180,24 @@ int main(int argc, char** argv)
   // std::ofstream log(log_fname.str());
   // log << "step\ttotal_gs\tcompute_gs\twrite_gs" << std::endl;
 
-#endif
-
   if (rank == 0)
   {
     // start the timer explicitly
     gsinsitu.startwftimer();
   }
 
-  for (int i = 0; i < settings.steps;)
+  for (int step = 0; step < settings.steps;)
   {
 
     for (int j = 0; j < settings.plotgap; j++)
     {
-#ifdef ENABLE_TIMERS
+
       MPI_Barrier(comm);
       struct timespec iterstart, iterend;
       double iterdiff;
       clock_gettime(CLOCK_REALTIME, &iterstart); /* mark start time */
-#endif
       sim.iterate();
-      i++;
-
-#ifdef ENABLE_TIMERS
+      step++;
 
       MPI_Barrier(comm);
       clock_gettime(CLOCK_REALTIME, &iterend); /* mark end time */
@@ -234,7 +208,12 @@ int main(int argc, char** argv)
       // sprintf(tempstr,"step %d rank %d put %f\n",i,rank,diff);
 
       // std::cout << tempstr << std::endl;
-      std::cout << "step " << i << " rank " << rank << " detailediter " << iterdiff << std::endl;
+      //std::cout << "step " << step << " rank " << rank << " detailed iter " << iterdiff
+      //          << std::endl;
+      // put data into the monitor
+      // simulation
+      std::string metricName = "S";
+      gsinsitu.m_metricManager.putMetric(metricName, iterdiff);
 
       // caculate the avg
       double sumiterdiff;
@@ -242,99 +221,142 @@ int main(int argc, char** argv)
 
       if (rank == 0)
       {
-        std::cout << "step " << i << " avg iter " << sumiterdiff / procs << std::endl;
+        std::cout << "step " << step << " avg iter " << sumiterdiff / procs << std::endl;
       }
-
-#endif
     }
 
-#ifdef ENABLE_TIMERS
-    MPI_Barrier(comm);
-    struct timespec start, end;
-    double diff;
-    clock_gettime(CLOCK_REALTIME, &start); /* mark start time */
-#endif
+    // TODO use the policy decision process to decide the following behaviours
+    // For the baseline case, both the tightly coupled and loosely coupled is executed
+    // TODO
+    // collect information from the staging service by calling getStageStatus
+    // and put them into the current metric store
+    std::vector<double> stageStatus =
+      gsinsitu.m_uniclient->getStageStatus(gsinsitu.m_uniclient->m_associatedDataServer);
 
+    // wait time (schedule time)
+    std::string metricName = "W";
+    gsinsitu.m_metricManager.putMetric(metricName, stageStatus[0]);
+
+    // loosely coupled execution time
+    metricName = "Al";
+    gsinsitu.m_metricManager.putMetric(metricName, stageStatus[1]);
+
+    // Do the policy decision
+
+    bool ifTCAna = false;
+    bool ifWriteToStage = false;
+
+    if (step <= 2)
+    {
+      ifTCAna = true;
+    }
+    else if (step == 3)
+    {
+      ifWriteToStage = true;
+    }
+    else
+    {
+      // we have all avalible data try to use policy
+      double T = gsinsitu.m_metricManager.getLastNmetrics("T", 1)[0];
+      double At = gsinsitu.m_metricManager.getLastNmetrics("At", 1)[0];
+      double S = gsinsitu.m_metricManager.getLastNmetrics("S", 1)[0];
+      double Al = gsinsitu.m_metricManager.getLastNmetrics("Al", 1)[0];
+      double W = gsinsitu.m_metricManager.getLastNmetrics("W", 1)[0];
+      if (S >= (W + Al))
+      {
+        if (At >= T)
+        {
+          ifWriteToStage = true;
+        }
+        else
+        {
+          ifTCAna = true;
+        }
+      }
+      else
+      {
+        if (At + S >= (T + W + Al))
+        {
+          ifWriteToStage = true;
+        }
+        else
+        {
+          ifTCAna = true;
+        }
+      }
+    }
     if (rank == 0)
     {
-      std::cout << "Simulation at step " << i << " writing output step     " << i / settings.plotgap
+      std::cout << "step " << step << " ifTCAna " << ifTCAna << " ifWriteToStage " << ifWriteToStage
                 << std::endl;
     }
 
-    size_t step = i;
-
-    // send record to the metadata server
-    // if (rank == 0)
-    //{
-    // start meta server when use this
-    // MetaClient *metaclient = new MetaClient(&globalclientEngine);
-    // std::string recordKey = "Trigger_" + std::to_string(step);
-    // metaclient->Recordtime(recordKey);
-    // gsinsitu.write(sim, step, recordKey);
-    //    gsinsitu.write(sim, step);
-    //}
-    // else
-    //{
-
-    // bool ifStage = true;
-    // int detectionTime = 0.5 * 1000;
-
-    // percentage of the in-staging execution
-    // if (step % 5 == 1)
-    //{
-    // bool ifStage = true;
-    //}
-    // else
-    //{
-    // execute the analytics
-    //    std::this_thread::sleep_for(std::chrono::milliseconds(detectionTime));
-    //}
-
-    // if test the in-staging checking, all step is written into the staging service
-    // if (ifStage)
-    //{
-    // write to the stage server
-    // std::string blockSuffix = gsinsitu.extractAndwrite(sim, step, rank);
-    // assume all put operation finish
-    // MPI_Barrier(comm);
-
-    // if (rank == 0)
-    //{
-    //  std::string fucName = "testaggrefunc";
-    //  gsinsitu.triggerRemoteAsync(step, blockSuffix, fucName);
-    //}
-    //}
-
-    //}
-    // char countstr[50];
-    // sprintf(countstr, "%03d_%04d", step, rank);
-    // std::string fname = "./gsdataraw/vtkiso_" + std::string(countstr) + ".vti";
-    // gsinsitu.writeImageData(sim,fname);
-
-#ifdef ENABLE_TIMERS
-
-    MPI_Barrier(comm);
-    clock_gettime(CLOCK_REALTIME, &end); /* mark end time */
-    diff = (end.tv_sec - start.tv_sec) * 1.0 + (end.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
-
-    // char tempstr[200];
-    // sprintf(tempstr,"step %d rank %d put %f\n",i,rank,diff);
-
-    // std::cout << tempstr << std::endl;
-
-    // caculate the avg
-    double time_sum_write;
-    MPI_Reduce(&diff, &time_sum_write, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
-
-    if (rank == 0)
+    /*
+    process the data by tightly coupled in-situ
+    */
+    if (ifTCAna)
     {
-      std::cout << "step " << i << " avg write " << time_sum_write / procs << std::endl;
+      MPI_Barrier(comm);
+      // struct timespec anastart, anaend1, anaend2;
+      // double anadiff1, anadiff2;
+
+      // clock_gettime(CLOCK_REALTIME, &anastart);
+
+      double anaStart = tl::timer::wtime();
+
+      // try to do tightly coupled in-situ processing
+      // iso surface extraction
+      auto polydata = gsinsitu.getPoly(sim, 0.5);
+      // caculate the largest region size
+      gsinsitu.polyProcess(polydata, step);
+
+      // clock_gettime(CLOCK_REALTIME, &anaend2);
+      // anadiff2 = (anaend2.tv_sec - anastart.tv_sec) * 1.0 +
+      //  (anaend2.tv_nsec - anastart.tv_nsec) * 1.0 / BILLION;
+      double anaEnd = tl::timer::wtime();
+
+      // tightly coupled
+      std::string metricName = "At";
+      double anaSpan = anaEnd - anaStart;
+      gsinsitu.m_metricManager.putMetric(metricName, anaSpan);
+      //std::cout << "debug ana diff : " << anaSpan << std::endl;
     }
 
-#endif
+    /*
+    write data to the staging service
+    */
+    if (ifWriteToStage)
+    {
+      if (rank == 0)
+      {
+        std::cout << "Simulation at step " << step << " put data for step "
+                  << step / settings.plotgap << std::endl;
+      }
 
-    // if the inline engine is used, read data and generate the vtkm data here
-    // the adis needed to be installed before using
+      MPI_Barrier(comm);
+      struct timespec writestart, writeend;
+      double writediff;
+      clock_gettime(CLOCK_REALTIME, &writestart);
+
+      std::string VarNameU = "grascott_u";
+      gsinsitu.write(sim, VarNameU, step, rank);
+
+      // when all write ok, trigger the staging process
+      // call this when there is depedency between the in-situ task execution
+      // MPI_Barrier(comm);
+      // call the in-staging execution to trigger functions
+      std::string funcName = "testisoExec";
+      // make sure the parameter match with the functions specified at the server
+      // the blockid equals to the rank in this case
+
+      gsinsitu.m_uniclient->executeAsyncExp(step, VarNameU, rank, funcName);
+
+      clock_gettime(CLOCK_REALTIME, &writeend);
+      writediff = (writeend.tv_sec - writestart.tv_sec) * 1.0 +
+        (writeend.tv_nsec - writestart.tv_nsec) * 1.0 / BILLION;
+      std::string metricName = "T";
+      gsinsitu.m_metricManager.putMetric(metricName, writediff);
+    }
   }
 
   clock_gettime(CLOCK_REALTIME, &wfend); /* mark end time */
@@ -346,6 +368,18 @@ int main(int argc, char** argv)
     std::cout << "sim executiontime " << wfdiff << std::endl;
     // both ana and sim set tick, compare the maximum one
     // gsinsitu.endwftimer();
+    // TODO try to dump out the data in the metric monitor
   }
+
+  gsinsitu.m_metricManager.dumpall(rank);
+
+  // self terminate the client engine
+  // just call the finalize
+  // the shut down server is not desinged for self termination
+  // TODO, tell the server that client is shut down if the client expose API
+  // the server will not propagate info back
+  // delete the current address from the associated server
+  // globalclientEngine.finalize();
+
   MPI_Finalize();
 }

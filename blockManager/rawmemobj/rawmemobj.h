@@ -51,7 +51,7 @@ struct RawMemObj : public DataBlockInterface
   {
     if (m_rawMemPtr != NULL)
     {
-      delete m_rawMemPtr;
+      ::operator delete(m_rawMemPtr);
     }
   };
 };

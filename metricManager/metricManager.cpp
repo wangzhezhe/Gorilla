@@ -1,4 +1,5 @@
 #include "metricManager.hpp"
+#include <fstream>
 #include <iostream>
 
 namespace GORILLA
@@ -47,5 +48,38 @@ std::vector<double> MetricManager::getLastNmetrics(std::string metricName, uint3
   // extract the data from the array
   return arrayPtr->getLastN(number);
 };
+
+bool MetricManager::metricExist(std::string metricName)
+{
+  this->m_metricsMapMutex.lock();
+  int count = this->m_metricsMap.count(metricName);
+  this->m_metricsMapMutex.unlock();
+
+  if (count != 0)
+  {
+    return true;
+  }
+  return false;
+}
+
+void MetricManager::dumpall(int rank)
+{
+  // go through the map and dump value into a file
+  // set the file
+  std::string fname = "metricDump_" + std::to_string(rank) + ".csv";
+  std::ofstream out(fname, std::ofstream::out | std::ofstream::trunc);
+
+  for (auto& iter : this->m_metricsMap)
+  {
+    std::string metricName = iter.first;
+    std::vector<double> values = iter.second->getAll();
+    out << metricName;
+    for (int i = 0; i < values.size(); i++)
+    {
+      out << "," << values[i];
+    }
+    out << '\n';
+  }
+}
 
 }

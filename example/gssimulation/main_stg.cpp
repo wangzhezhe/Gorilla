@@ -8,7 +8,7 @@
 
 #include "gray-scott.h"
 #include "timer.hpp"
-#include "writer.h"
+#include "InSitu.hpp"
 
 #include <stdio.h>
 #include <thallium.hpp>
@@ -174,7 +174,7 @@ int main(int argc, char** argv)
   */
 
   std::string addrServer = loadMasterAddr(masterConfigFile);
-  Writer dataWriter(&globalclientEngine, addrServer, rank);
+  InSitu gsinsitu(&globalclientEngine, addrServer, rank);
   // writer_main.open(settings.output);
 
   if (rank == 0)
@@ -204,7 +204,7 @@ int main(int argc, char** argv)
 
   if (rank == 0)
   {
-    dataWriter.startwftimer();
+    gsinsitu.startwftimer();
   }
 
   for (int i = 0; i < settings.steps;)
@@ -267,8 +267,8 @@ int main(int argc, char** argv)
     // MetaClient *metaclient = new MetaClient(&globalclientEngine);
     // std::string recordKey = "Trigger_" + std::to_string(step);
     // metaclient->Recordtime(recordKey);
-    // dataWriter.write(sim, step, recordKey);
-    //    dataWriter.write(sim, step);
+    // gsinsitu.write(sim, step, recordKey);
+    //    gsinsitu.write(sim, step);
     //}
     // else
     //{
@@ -291,14 +291,15 @@ int main(int argc, char** argv)
     // if (ifStage)
     //{
     // write to the stage server
-    dataWriter.write(sim, step, rank);
+    std::string VarNameU = "grascott_u";
+    gsinsitu.write(sim, VarNameU, step, rank);
     //}
 
     //}
     // char countstr[50];
     // sprintf(countstr, "%03d_%04d", step, rank);
     // std::string fname = "./gsdataraw/vtkiso_" + std::string(countstr) + ".vti";
-    // dataWriter.writeImageData(sim,fname);
+    // gsinsitu.writeImageData(sim,fname);
 
 #ifdef ENABLE_TIMERS
 
@@ -336,7 +337,7 @@ int main(int argc, char** argv)
   {
     std::cout << "wf time " << wfdiff << std::endl;
     // both ana and sim set tick, compare the maximum one
-    dataWriter.endwftimer();
+    gsinsitu.endwftimer();
   }
   MPI_Finalize();
 }

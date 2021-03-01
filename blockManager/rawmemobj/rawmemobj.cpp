@@ -6,10 +6,11 @@ namespace GORILLA
 
 int RawMemObj::eraseData()
 {
-  if (this->m_rawMemPtr != NULL)
-  {
-    free(m_rawMemPtr);
-  }
+  // if (this->m_rawMemPtr != nullptr)
+  // {
+  //  ::operator delete(this->m_rawMemPtr);
+  //}
+  // do nothing here, this will be removed automatically when the obj is destroyed
   return 0;
 }
 

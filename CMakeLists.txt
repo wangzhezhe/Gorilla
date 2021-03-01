@@ -125,7 +125,7 @@ add_library(rawexec
 ${gorilla_SOURCE_DIR}/server/FunctionManager/defaultFunctions/defaultfuncraw.cpp
 ${gorilla_SOURCE_DIR}/server/FunctionManager/functionManagerRaw.cpp
 )
-target_link_libraries(rawexec ${VTK_LIBRARIES} gorilla_clientforstage)
+target_link_libraries(rawexec ${VTK_LIBRARIES} gorilla_clientforstage blockManager)
 
 add_library(metricmanager 
 ${gorilla_SOURCE_DIR}/metricManager/metricManager.cpp
@@ -155,6 +155,7 @@ thallium
  rawexec
  ${VTK_LIBRARIES}
  metaclient
+ metricmanager
  )
 else()
  target_link_libraries (unimos_server
@@ -168,6 +169,8 @@ else()
  rawexec
  metatrigger 
  metaclient
+ metricmanager
+ ${VTK_LIBRARIES}
 )
 endif()
 

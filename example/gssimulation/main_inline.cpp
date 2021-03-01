@@ -16,7 +16,7 @@
 
 #include "gray-scott.h"
 #include "timer.hpp"
-#include "writer.h"
+#include "InSitu.hpp"
 
 #include <stdio.h>
 #include <time.h>
@@ -166,8 +166,8 @@ int main(int argc, char** argv)
       MPI_COMM_WORLD)
   */
 
-  // Writer dataWriter(&globalclientEngine, rank);
-  Writer dataWriter;
+  // InSitu gsinsitu(&globalclientEngine, rank);
+  InSitu gsinsitu;
   // writer_main.open(settings.output);
 
   if (rank == 0)
@@ -255,8 +255,8 @@ int main(int argc, char** argv)
     // MetaClient *metaclient = new MetaClient(&globalclientEngine);
     // std::string recordKey = "Trigger_" + std::to_string(step);
     // metaclient->Recordtime(recordKey);
-    // dataWriter.write(sim, step, recordKey);
-    //    dataWriter.write(sim, step);
+    // gsinsitu.write(sim, step, recordKey);
+    //    gsinsitu.write(sim, step);
     //}
     // else
     //{
@@ -287,7 +287,7 @@ int main(int argc, char** argv)
     // if (ifStage)
     //{
     //    //write to the stage server
-    //    dataWriter.write(sim, step);
+    //    gsinsitu.write(sim, step);
     //}
     // else
     //{
@@ -296,9 +296,9 @@ int main(int argc, char** argv)
     //}
 
     //}
-    // dataWriter.isosurfacePolyNum(sim, rank, 0.3, step);
-    // dataWriter.isosurfacePolyNum(sim, rank, 0.5, step);
-    // dataWriter.isosurfacePolyNum(sim, rank, 0.7, step);
+    // gsinsitu.isosurfacePolyNum(sim, rank, 0.3, step);
+    // gsinsitu.isosurfacePolyNum(sim, rank, 0.5, step);
+    // gsinsitu.isosurfacePolyNum(sim, rank, 0.7, step);
 
     // get poly time
     MPI_Barrier(comm);
@@ -306,7 +306,7 @@ int main(int argc, char** argv)
     double polydiff;
     clock_gettime(CLOCK_REALTIME, &getpolys); /* mark start time */
 
-    //auto polydata = dataWriter.getPoly(sim, 0.5);
+    //auto polydata = gsinsitu.getPoly(sim, 0.5);
     // std::cout << "cell number before transfer: " << polydata->GetNumberOfPolys() << std::endl;
 
     MPI_Barrier(comm);
@@ -327,7 +327,7 @@ int main(int argc, char** argv)
     {
       // output data for testing
       std::string fName = "writeImageData/gsimage_" + std::to_string(rank) + ".vti";
-      dataWriter.writeImageData(sim, fName);
+      gsinsitu.writeImageData(sim, fName);
     }
     // int Gather(vtkDataObject* sendBuffer, std::vector<vtkSmartPointer<vtkDataObject>>&
     // recvBuffer, int destProcessId)
@@ -381,12 +381,12 @@ int main(int argc, char** argv)
       vtkSmartPointer<vtkPolyData> mergedPolydata = cleanFilter->GetOutput();
 
       // other processes based on polyonal
-      dataWriter.polyProcess(mergedPolydata, step);
+      gsinsitu.polyProcess(mergedPolydata, step);
 
       // for testing, try to write out the data
       // to see the size of processed data after in-situ extraction
       std::string fName = "reduced_" + std::to_string(step)+".vtp";
-      dataWriter.writePolyDataFile(mergedPolydata, fName);
+      gsinsitu.writePolyDataFile(mergedPolydata, fName);
     }
     */
 
@@ -413,7 +413,7 @@ int main(int argc, char** argv)
     // char countstr[50];
     // sprintf(countstr, "%03d_%04d", step, rank);
     // std::string fname = "./gsdataraw/vtkiso_" + std::string(countstr) + ".vti";
-    // dataWriter.writeImageData(sim, fname);
+    // gsinsitu.writeImageData(sim, fname);
 
 #endif
 
@@ -427,7 +427,7 @@ int main(int argc, char** argv)
   if (rank < 10)
   {
     std::cout << "wf time " << wfdiff << std::endl;
-    // dataWriter.endwftimer();
+    // gsinsitu.endwftimer();
   }
   MPI_Finalize();
 }

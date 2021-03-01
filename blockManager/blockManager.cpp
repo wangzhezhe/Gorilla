@@ -244,9 +244,10 @@ bool BlockManager::checkDataExistance(std::string blockID, int backend)
 int BlockManager::eraseBlock(std::string blockID, int backend)
 {
   DataBlockInterface* handle = getBlockHandle(blockID, backend);
-  handle->eraseData();
   this->m_DataBlockMapMutex.unlock();
-  // the handle is assigned by new
+  handle->eraseData();
+  // the destructor is called here
+  // the data will be remoevd when destructor is called
   delete handle;
   DataBlockMap.erase(blockID);
   this->m_DataBlockMapMutex.unlock();

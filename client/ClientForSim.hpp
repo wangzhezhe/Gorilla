@@ -69,7 +69,7 @@ public:
       auto endpoint = this->m_clientEnginePtr->lookup(it->m_addr);
       this->m_serverToEndpoints[it->m_addr] = endpoint;
     }
-    getAssociatedServerAddr();
+    this->m_associatedDataServer = this->getAssociatedServerAddr();
   };
 
   virtual ~ClientForSim(){};
@@ -117,7 +117,7 @@ public:
   int putVTKData(
     size_t step, std::string varName, BlockSummary& dataSummary, void* dataContainerSrc);
 
-  void executeAsyncExp(int step, std::string blockid);
+  void executeAsyncExp(int step, std::string varName, int blockIndex, std::string funcName);
 
   int putrawdata(
     size_t step, std::string varName, BlockSummary& dataSummary, void* dataContainerSrc);

@@ -59,7 +59,7 @@ struct statefulConfig
     this->m_timer_map[timerName] = start;
   }
 
-  void endTimer(std::string timerName)
+  double endTimer(std::string timerName)
   {
     std::lock_guard<tl::mutex> lck(this->m_timerLock);
 
@@ -76,7 +76,28 @@ struct statefulConfig
 
     // delete the timer
     this->m_timer_map.erase(timerName);
-    return;
+    // return the caculated time
+    return timespan;
+  }
+  //just show the current time - start time
+  //without delete the timer
+  double tickTimer(std::string timerName)
+  {
+    std::lock_guard<tl::mutex> lck(this->m_timerLock);
+
+    if (this->m_timer_map.count(timerName) == 0)
+    {
+      throw std::runtime_error("the timer is not initilized with name: " + timerName);
+    }
+
+    struct timespec current;
+    clock_gettime(CLOCK_REALTIME, &current);
+    double timespan = (current.tv_sec - this->m_timer_map[timerName].tv_sec) * 1.0 +
+      (current.tv_nsec - this->m_timer_map[timerName].tv_nsec) * 1.0 / BILLION;
+    std::cout << timerName << " time tick: " << timespan << std::endl;
+
+    // return the tick time
+    return timespan;
   }
 
   ~statefulConfig(){};

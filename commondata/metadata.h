@@ -207,7 +207,7 @@ struct BlockSummary
   DATAYPE m_dataType;
 
   // this is the block identifier
-  BlOCKID m_blockid="";
+  BlOCKID m_blockid = "";
 
   int m_backend = BACKEND::MEM;
 
@@ -252,7 +252,7 @@ struct BlockSummary
     int arrayListSize = arrayList.size();
     if (arrayListSize > ARRAYLENINBLOCK)
     {
-      //it is ok to be zero. since we may add array step by step
+      // it is ok to be zero. since we may add array step by step
       throw std::runtime_error(
         "size of array should in the range from 0 to " + std::to_string(ARRAYLENINBLOCK));
     }
@@ -411,10 +411,10 @@ struct BlockSummary
 
   void printSummary()
   {
-    std::cout << " m_dataType " << m_dataType << " m_blockid " << m_blockid << " m_dims " << m_dims
-              << ", m_indexlb " << m_indexlb[0] << " " << m_indexlb[1] << " " << m_indexlb[2]
-              << ", m_indexub " << m_indexub[0] << " " << m_indexub[1] << " " << m_indexub[2]
-              << "extra info: " << m_extraInfo << std::endl;
+    std::cout << " m_dataType " << m_dataType << " m_blockid " << m_blockid << " m_backend "
+              << m_backend << " m_dims " << m_dims << ", m_indexlb " << m_indexlb[0] << " "
+              << m_indexlb[1] << " " << m_indexlb[2] << ", m_indexub " << m_indexub[0] << " "
+              << m_indexub[1] << " " << m_indexub[2] << " extra info: " << m_extraInfo << std::endl;
     for (int i = 0; i < m_arrayListLen; i++)
     {
       m_arrayList[i].printSummary();

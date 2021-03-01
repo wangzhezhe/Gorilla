@@ -1,6 +1,7 @@
-#include "writer.h"
 #include <iostream>
 #include <utils/uuid.h>
+
+#include "InSitu.hpp"
 
 #include <vtkCenterOfMass.h>
 #include <vtkConnectivityFilter.h>
@@ -16,19 +17,19 @@
 #include <vtkXMLImageDataWriter.h>
 #include <vtkXMLPolyDataWriter.h>
 
-void Writer::writePolyDataFile(vtkSmartPointer<vtkPolyData> polyData, std::string fileName){
-    vtkSmartPointer<vtkXMLDataSetWriter> writer =
-        vtkSmartPointer<vtkXMLDataSetWriter>::New();
-    writer->SetFileName(fileName.data());
-    // get the specific polydata and check the results
-    writer->SetInputData(polyData);
-    // Optional - set the mode. The default is binary.
-    writer->SetDataModeToBinary();
-    // writer->SetDataModeToAscii();
-    writer->Write();
+void InSitu::writePolyDataFile(vtkSmartPointer<vtkPolyData> polyData, std::string fileName)
+{
+  vtkSmartPointer<vtkXMLDataSetWriter> writer = vtkSmartPointer<vtkXMLDataSetWriter>::New();
+  writer->SetFileName(fileName.data());
+  // get the specific polydata and check the results
+  writer->SetInputData(polyData);
+  // Optional - set the mode. The default is binary.
+  writer->SetDataModeToBinary();
+  // writer->SetDataModeToAscii();
+  writer->Write();
 }
 
-void Writer::writeImageData(const GrayScott& sim, std::string fileName)
+void InSitu::writeImageData(const GrayScott& sim, std::string fileName)
 {
 
   std::vector<double> u = sim.u_noghost();
@@ -59,10 +60,30 @@ void Writer::writeImageData(const GrayScott& sim, std::string fileName)
   // writer->SetDataModeToAscii();
   writer->Write();
 }
+/*
+  auto importer = vtkSmartPointer<vtkImageImport>::New();
+  importer->SetDataSpacing(1, 1, 1);
+  importer->SetDataOrigin(0, 0, 0);
 
-vtkSmartPointer<vtkPolyData> Writer::getPoly(const GrayScott& sim, double iso)
+  // from 0 to the shape -1 or from lb to the ub??
+  importer->SetWholeExtent(indexlb[0], indexub[0], indexlb[1], indexub[1], indexlb[2], indexub[2]);
+  importer->SetDataExtentToWholeExtent();
+  importer->SetDataScalarTypeToDouble();
+  importer->SetNumberOfScalarComponents(1);
+  importer->SetImportVoidPointer((double*)(blockData));
+
+  // Run the marching cubes algorithm
+  auto mcubes = vtkSmartPointer<vtkMarchingCubes>::New();
+  mcubes->SetInputConnection(importer->GetOutputPort());
+  mcubes->ComputeNormalsOn();
+  mcubes->SetValue(0, 0.5);
+  mcubes->Update();
+
+  // caculate the number of polygonals
+  vtkSmartPointer<vtkPolyData> polyData = mcubes->GetOutput();
+*/
+vtkSmartPointer<vtkPolyData> InSitu::getPoly(const GrayScott& sim, double iso)
 {
-  std::vector<double> u = sim.u_noghost();
   std::array<int, 3> indexlb = { { (int)sim.offset_x, (int)sim.offset_y, (int)sim.offset_z } };
   std::array<int, 3> indexub = { { (int)(sim.offset_x + sim.size_x - 1),
     (int)(sim.offset_y + sim.size_y - 1), (int)(sim.offset_z + sim.size_z - 1) } };
@@ -76,7 +97,11 @@ vtkSmartPointer<vtkPolyData> Writer::getPoly(const GrayScott& sim, double iso)
   importer->SetDataExtentToWholeExtent();
   importer->SetDataScalarTypeToDouble();
   importer->SetNumberOfScalarComponents(1);
-  importer->SetImportVoidPointer((double*)(u.data()));
+  //u_nonghost is a function that takes long time
+  //it basically reoranize the data
+  //get the same value here direactly to avoid the copy
+  importer->SetImportVoidPointer((double*)(sim.u_noghost().data()));
+
 
   // Run the marching cubes algorithm
   auto mcubes = vtkSmartPointer<vtkMarchingCubes>::New();
@@ -89,10 +114,36 @@ vtkSmartPointer<vtkPolyData> Writer::getPoly(const GrayScott& sim, double iso)
   return mcubes->GetOutput();
 }
 
-void Writer::polyProcess(vtkSmartPointer<vtkPolyData> polyData, int step)
+void InSitu::stagePolyData(
+  vtkSmartPointer<vtkPolyData> polydata, std::string varName, int step, int rank)
+{
+
+  // there is one data block for this case
+  std::string blockName = "block_0";
+  ArraySummary as(blockName, 1, 1);
+  std::vector<ArraySummary> aslist;
+  aslist.push_back(as);
+  size_t dims = 3;
+  // the index is unnecessary for this vtk backend
+  std::array<int, 3> indexlb = { { 0, 0, 0 } };
+  std::array<int, 3> indexub = { { 0, 0, 0 } };
+  std::string dataType = DATATYPE_VTKEXPLICIT;
+
+  BlockSummary bs(aslist, dataType, blockName, dims, indexlb, indexub);
+  bs.m_backend = BACKEND::MEMVTKEXPLICIT;
+  // complete name = varName_dataid
+  std::string completevarName = varName + "_" + std::to_string(rank);
+  int status = this->m_uniclient->putrawdata(step, completevarName, bs, polydata.GetPointer());
+  if (status != 0)
+  {
+    throw std::runtime_error("failed to put data for step " + std::to_string(0));
+  }
+}
+
+void InSitu::polyProcess(vtkSmartPointer<vtkPolyData> polyData, int step)
 {
   int numCells = polyData->GetNumberOfPolys();
-  std::cout << "step " << step << " cell number " << numCells << std::endl;
+  // std::cout << "step " << step << " cell number " << numCells << std::endl;
 
   if (numCells > 0)
   {
@@ -105,7 +156,7 @@ void Writer::polyProcess(vtkSmartPointer<vtkPolyData> polyData, int step)
 
     int nBlobs = connectivityFilter->GetNumberOfExtractedRegions();
 
-    std::cout << "step " << step << " found " << nBlobs << " blobs" << std::endl;
+    // std::cout << "step " << step << " found " << nBlobs << " blobs" << std::endl;
 
     // get the largetst surface
     connectivityFilter->SetInputData(polyData);
@@ -115,11 +166,12 @@ void Writer::polyProcess(vtkSmartPointer<vtkPolyData> polyData, int step)
     auto massProperties = vtkSmartPointer<vtkMassProperties>::New();
     massProperties->SetInputConnection(connectivityFilter->GetOutputPort());
 
-    std::cout << "Surface area of largest blob is " << massProperties->GetSurfaceArea()
-              << std::endl;
+    //std::cout << "Surface area of largest blob is " << massProperties->GetSurfaceArea()
+    //          << std::endl;
 
     // get the center of the region
     // Compute the center of mass
+    /*
     vtkSmartPointer<vtkCenterOfMass> centerOfMassFilter = vtkSmartPointer<vtkCenterOfMass>::New();
     centerOfMassFilter->SetInputConnection(connectivityFilter->GetOutputPort());
     centerOfMassFilter->SetUseScalarsAsWeights(false);
@@ -130,13 +182,14 @@ void Writer::polyProcess(vtkSmartPointer<vtkPolyData> polyData, int step)
 
     std::cout << "Center of mass for largest blob is " << center[0] << " " << center[1] << " "
               << center[2] << std::endl;
+    */
   }
 }
 
 // maybe aggregate first then process
 // iso extraction check the polygonal number
 // TODO extract the poly extraction and the analytics
-void Writer::isosurfacePolyNum(const GrayScott& sim, int rank, double iso, int step)
+void InSitu::isosurfacePolyNum(const GrayScott& sim, int rank, double iso, int step)
 {
 
   std::vector<double> u = sim.u_noghost();
@@ -232,11 +285,12 @@ for (int i = 0; i < nBlobs; i++)
   // refer to this to set the mode for adding the specific region
 }
 
-void Writer::write(const GrayScott& sim, size_t step, int rank, std::string recordInfo)
+void InSitu::write(
+  const GrayScott& sim, std::string varName, size_t step, int rank, std::string recordInfo)
 {
   std::vector<double> u = sim.u_noghost();
 
-  std::string VarNameU = "grascott_u";
+  std::string VarNameU = varName;
 
   std::array<int, 3> indexlb = { { (int)sim.offset_x, (int)sim.offset_y, (int)sim.offset_z } };
   std::array<int, 3> indexub = { { (int)(sim.offset_x + sim.size_x - 1),
@@ -244,9 +298,10 @@ void Writer::write(const GrayScott& sim, size_t step, int rank, std::string reco
 
   size_t elemSize = sizeof(double);
   size_t elemNum = sim.size_x * sim.size_y * sim.size_z;
-  int blockindex = 0;
-  std::string blockid = VarNameU + "_" + std::to_string(step) + "_" + std::to_string(rank) + "_" +
-    std::to_string(blockindex);
+
+  // we can use the varname plus step to filter if the data partition need to be processed
+  // and there is only need a thin index to get all the associated blocks
+  std::string blockid = VarNameU + "_" + std::to_string(step) + "_" + std::to_string(rank);
 
   // generate raw data summary block
   ArraySummary as(blockid, elemSize, elemNum);
@@ -265,7 +320,7 @@ void Writer::write(const GrayScott& sim, size_t step, int rank, std::string reco
 
 // extract the data into the polydata and then write data into the staging
 // return the blockid for future use
-std::string Writer::extractAndwrite(
+std::string InSitu::extractAndwrite(
   const GrayScott& sim, size_t step, int rank, std::string recordInfo)
 {
   struct timespec start, end;
@@ -297,7 +352,7 @@ std::string Writer::extractAndwrite(
   {
     std::cout << "poly extraction time: " << diff << std::endl;
   }
-  
+
   // caculate extract time
   if (polyNum != 0)
   {
@@ -323,19 +378,46 @@ std::string Writer::extractAndwrite(
   return blockidSuffix;
 }
 
-// this is only called once for all
-void Writer::triggerRemoteAsync(int step, std::string blockidSuffix)
+void InSitu::registerRtrigger(int num)
 {
-  // since we may not sure which rank has the non zero polygonal data
-  // only few of them execute to the last step
-  // make sure the send step finish for all
+  // add the init trigger
+  std::string triggerNameInit = "InitTrigger";
 
-  std::cout << "debug try executeAsyncExp " << std::endl;
-  // the step is used for rrb
-  // the task might be triggered at different servers for load balancing
-  // TODO split the code base for client used for user and inner service
-  // currently we only use the step since we do not know which step is sent out
-  m_uniclient->executeAsyncExp(step, blockidSuffix);
+  // declare the function and the parameters
+  std::vector<std::string> initCheckParameters;
+  std::vector<std::string> initComparisonParameters;
+  std::vector<std::string> initActionParameters;
 
-  return;
+  initComparisonParameters.push_back("0");
+
+  // how many seconds
+  int anaTimeint = 0 * 1000000;
+  std::string anaTime = std::to_string(anaTimeint);
+  // declare the function and the parameters
+  std::vector<std::string> checkParameters;
+  std::vector<std::string> comparisonParameters;
+  std::vector<std::string> actionParameters;
+
+  checkParameters.push_back(anaTime);
+  comparisonParameters.push_back("0");
+  actionParameters.push_back("adiosWrite");
+
+  // register the trigger
+  std::array<int, 3> indexlb = { { 0, 0, 0 } };
+  std::array<int, 3> indexub = { { 1287, 1287, 1287 } };
+
+  // register multiple in-staging executions
+  for (int i = 0; i < num; i++)
+  {
+    std::string triggerNameExp = "InsituTriggerExp_" + std::to_string(i);
+    initActionParameters.push_back(triggerNameExp);
+    DynamicTriggerInfo tgInfo("InsituExpCheck", checkParameters, "InsituExpCompare",
+      comparisonParameters, "InsituExpAction", actionParameters);
+
+    m_uniclient->registerTrigger(3, indexlb, indexub, triggerNameExp, tgInfo);
+  }
+
+  DynamicTriggerInfo initTgInfo("defaultCheckGetStep", initCheckParameters, "defaultComparisonStep",
+    initComparisonParameters, "defaultActionSartDt", initActionParameters);
+  m_uniclient->registerTrigger(3, indexlb, indexub, triggerNameInit, initTgInfo);
 }

@@ -92,6 +92,9 @@ public:
   int getServerNum(std::string serverAddr);
 
   void registerWatcher(std::vector<std::string> triggerNameList);
+
+  std::vector<double> getStageStatus(std::string server);
+
 };
 
 }

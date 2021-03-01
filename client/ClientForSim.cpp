@@ -111,25 +111,26 @@ int ClientForSim::putCarGrid(
   size_t dataTransferSize = dataSummary.getArraySize(dataSummary.m_blockid);
   // currently, when there is no associated data server
   // the data bulk (memory space) is not assigned
-  // when there is assiciated data server, we assume the size of the data bulk is fixed
-  // this might works for cargid
-  // but for vtk, the data size might change, this need to be solved
+  // we kind of combine the data server and the metadata server 
   if (this->m_associatedDataServer.compare("") == 0)
   {
     this->m_associatedDataServer = this->getAssociatedServerAddr();
     // std::cout << "m_rank " << m_rank << " m_associatedDataServer " <<
     // this->m_associatedDataServer << std::endl; assume the size of the data block is fixed
-    this->initPutRawData(dataTransferSize);
   }
 
+  this->initPutRawData(dataTransferSize);
   if (dataTransferSize > this->m_bulkSize)
   {
-    throw std::runtime_error("the tran of the data size");
+    throw std::runtime_error("the transfer size is larger than bulk size");
   }
 
   // prepare the info for data put
   // ask the placement way, use raw mem or write out the file
   tl::remote_procedure remotegetInfoForPut = this->m_clientEnginePtr->define("getinfoForput");
+  // put data to the associated server
+  // at the previous version, we put data into the server based on random robin selection
+  // for this one, we combine the metadata server and actual data server to simplify the data get strategy
   tl::endpoint serverEndpoint = this->lookup(this->m_associatedDataServer);
   // const tl::request& req, size_t step, size_t objSize, size_t bbxdim,
   // std::array<int, 3> indexlb, std::array<int, 3> indexub)
@@ -207,7 +208,12 @@ int ClientForSim::putCarGrid(
       return -1;
     }
 
-    // update the meta
+    /* update the meta for the spatial index
+    //we do not need to update the metadata for spatial index 
+    //if we do not get data based on bbx from the staging servers
+    //we can add this part back if we need to test the case
+    //that needs to get data based on spatial index
+
     clock_gettime(CLOCK_REALTIME, &end1);
     diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
     // std::cout << "put stage 1: " << diff1 << std::endl;
@@ -235,6 +241,7 @@ int ClientForSim::putCarGrid(
     clock_gettime(CLOCK_REALTIME, &end2);
     diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
     // std::cout << "put stage 2: " << diff2 << std::endl;
+    */
   }
   else
   {
@@ -244,26 +251,25 @@ int ClientForSim::putCarGrid(
   return 0;
 }
 
-void ClientForSim::executeAsyncExp(int step, std::string blockid)
+void ClientForSim::executeAsyncExp(
+  int step, std::string varName, int blockIndex, std::string funcName)
 {
-  // get the server id by rrb
-  if (this->m_serverIDToAddr.size() == 0)
+  // get the server id by rrb if the m_associatedDataServer is null
+  if (this->m_associatedDataServer.compare("") == 0)
   {
-    throw std::runtime_error("the m_serverIDToAddr is supposed to initilized");
+    throw std::runtime_error("m_associatedDataServer is not supposed to be empty string");
   }
-  int serverid = step % m_serverIDToAddr.size();
-
-  std::cout << "---debug executeAsyncExp serverid is " << serverid << std::endl;
-
-  // send the trigger operation
-  std::string serverAddr = this->m_serverIDToAddr[serverid];
 
   tl::remote_procedure remoteexecuteAsyncExp =
     this->m_clientEnginePtr->define("executeAsyncExp").disable_response();
-  tl::endpoint serverEndpoint = this->lookup(serverAddr);
-  std::string funcName = "testaggrefunc";
+
+  //<varName>_<step>_<blockID>
+  std::string blockIDSuffix = varName + "_" + std::to_string(step);
+  tl::endpoint serverEndpoint = this->lookup(this->m_associatedDataServer);
+  // std::string funcName = "testaggrefunc";
   std::vector<std::string> funcparameter;
-  remoteexecuteAsyncExp.on(serverEndpoint)(blockid, funcName, funcparameter);
+  // the block index is an integer
+  remoteexecuteAsyncExp.on(serverEndpoint)(blockIDSuffix, blockIndex, funcName, funcparameter);
   return;
 }
 
@@ -1031,7 +1037,8 @@ MATRIXTOOL::MatrixView ClientForSim::getArbitraryData(size_t step, std::string v
 
   // spdlog::debug("index lb {} {} {}", indexlb[0], indexlb[1], indexlb[2]);
   // spdlog::debug("index ub {} {} {}", indexlb[0], indexlb[1], indexlb[2]);
-  std::vector<std::string> metaList = this->getmetaServerList(this->m_associatedDataServer, dims, indexlb, indexub);
+  std::vector<std::string> metaList =
+    this->getmetaServerList(this->m_associatedDataServer, dims, indexlb, indexub);
 
   std::vector<MATRIXTOOL::MatrixView> matrixViewList;
   for (auto it = metaList.begin(); it != metaList.end(); it++)

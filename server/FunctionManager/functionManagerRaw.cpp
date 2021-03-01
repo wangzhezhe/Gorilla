@@ -1,11 +1,13 @@
 #include "functionManagerRaw.h"
 #include <spdlog/spdlog.h>
 
+#include <vtkAppendPolyData.h>
 #include <vtkCenterOfMass.h>
+#include <vtkCleanPolyData.h>
 #include <vtkConnectivityFilter.h>
 #include <vtkMassProperties.h>
-#include <vtkAppendPolyData.h>
-#include <vtkCleanPolyData.h>
+#include <vtkMarchingCubes.h>
+#include <vtkImageImport.h>
 
 namespace GORILLA
 {
@@ -91,8 +93,82 @@ void polyProcess(vtkSmartPointer<vtkPolyData> polyData, std::string blockIDSuffi
   }
 }
 
-std::string FunctionManagerRaw::aggregateProcess(ClientForStaging* uniclient, std::string blockIDSuffix,
-  std::string fiunctionName, const std::vector<std::string>& parameters)
+void polyProcess(vtkSmartPointer<vtkPolyData> polyData)
+{
+  int numCells = polyData->GetNumberOfPolys();
+  if (numCells > 0)
+  {
+    // surface area
+    auto connectivityFilter = vtkSmartPointer<vtkConnectivityFilter>::New();
+    connectivityFilter->SetInputData(polyData);
+    connectivityFilter->SetExtractionModeToAllRegions();
+    connectivityFilter->ColorRegionsOn();
+    connectivityFilter->Update();
+
+    int nBlobs = connectivityFilter->GetNumberOfExtractedRegions();
+
+    // std::cout <<" found " << nBlobs << " blobs" << std::endl;
+    // get the largetst surface
+    connectivityFilter->SetInputData(polyData);
+    connectivityFilter->SetExtractionModeToLargestRegion();
+    connectivityFilter->ColorRegionsOn();
+
+    auto massProperties = vtkSmartPointer<vtkMassProperties>::New();
+    massProperties->SetInputConnection(connectivityFilter->GetOutputPort());
+
+    //std::cout << "Surface area of largest blob is " << massProperties->GetSurfaceArea()
+    //          << std::endl;
+  }
+}
+
+void FunctionManagerRaw::testisoExec(
+  std::string blockCompleteName, const std::vector<std::string>& parameters)
+{
+  //std::cout << "testisoExec for block: " << blockCompleteName << std::endl;
+  // get block summary
+  BlockSummary bs = this->m_blockManager->getBlockSummary(blockCompleteName);
+  // process get the block summary
+  // print the message here
+  // bs.printSummary();
+  void* blockData = nullptr;
+  this->m_blockManager->getBlock(blockCompleteName, bs.m_backend, blockData);
+
+  std::array<int, 3> indexlb = bs.m_indexlb;
+  std::array<int, 3> indexub = bs.m_indexub;
+
+  auto importer = vtkSmartPointer<vtkImageImport>::New();
+  importer->SetDataSpacing(1, 1, 1);
+  importer->SetDataOrigin(0, 0, 0);
+
+  // from 0 to the shape -1 or from lb to the ub??
+  importer->SetWholeExtent(indexlb[0], indexub[0], indexlb[1], indexub[1], indexlb[2], indexub[2]);
+  importer->SetDataExtentToWholeExtent();
+  importer->SetDataScalarTypeToDouble();
+  importer->SetNumberOfScalarComponents(1);
+  importer->SetImportVoidPointer((double*)(blockData));
+
+  // Run the marching cubes algorithm
+  auto mcubes = vtkSmartPointer<vtkMarchingCubes>::New();
+  mcubes->SetInputConnection(importer->GetOutputPort());
+  mcubes->ComputeNormalsOn();
+  mcubes->SetValue(0, 0.5);
+  mcubes->Update();
+
+  // caculate the number of polygonals
+  vtkSmartPointer<vtkPolyData> polyData = mcubes->GetOutput();
+
+  //int numCells = polyData->GetNumberOfPolys();
+  //std::cout << "blockCompleteName " << blockCompleteName << " cell number " << numCells
+  //          << std::endl;
+  
+  //get the largest region
+  polyProcess(polyData);
+
+  return;
+}
+
+std::string FunctionManagerRaw::aggregateProcess(ClientForStaging* uniclient,
+  std::string blockIDSuffix, std::string fiunctionName, const std::vector<std::string>& parameters)
 {
   // aggregate poly from different processes
   // blocksuppary contains the var and step info
@@ -107,7 +183,8 @@ std::string FunctionManagerRaw::aggregateProcess(ClientForStaging* uniclient, st
 
   for (int i = 0; i < polyList.size(); i++)
   {
-    //std::cout << "block " << i << " cell number: " << polyList[i]->GetNumberOfPolys() << std::endl;
+    // std::cout << "block " << i << " cell number: " << polyList[i]->GetNumberOfPolys() <<
+    // std::endl;
     // try to aggregate into one
     appendFilter->AddInputData(polyList[i]);
   }

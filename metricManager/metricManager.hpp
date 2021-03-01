@@ -2,13 +2,13 @@
 #ifndef METRICMANAGER_H
 #define METRICMANAGER_H
 
-#include <vector>
-#include <unordered_map>
-#include <string>
-#include <stdint.h>
-#include <cstdlib>
 #include "circularDoubleArray.hpp"
+#include <cstdlib>
+#include <stdint.h>
+#include <string>
 #include <thallium.hpp>
+#include <unordered_map>
+#include <vector>
 
 namespace tl = thallium;
 
@@ -51,11 +51,15 @@ public:
   // move assignment operator
   MetricManager& operator=(MetricManager&& other) = delete;
 
+  bool metricExist(std::string metricName);
+
   // capabilities
   void putMetric(std::string metricName, double metricValue);
   // get the latest N matrix
   // return all values if there are less then N values
   std::vector<double> getLastNmetrics(std::string metricName, uint32_t number);
+
+  void dumpall(int rank);
 
 private:
   size_t m_slot;

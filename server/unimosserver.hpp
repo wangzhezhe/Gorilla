@@ -11,7 +11,7 @@
 #include <client/ClientForStaging.hpp>
 #include <map>
 #include <blockManager/blockManager.h>
-
+#include <metricManager/metricManager.hpp>
 namespace GORILLA
 {
 
@@ -37,6 +37,10 @@ struct UniServer
   FunctionManagerRaw* m_frawmanager = nullptr;
   FunctionManagerMeta* m_fmetamanager = nullptr;
   DynamicTriggerManager* m_dtmanager = nullptr;
+
+  // the metric manager
+  MetricManager *m_metricManager = nullptr;
+
 
   void initManager(int globalProc, int globalrank, int metaServerNum, std::string memLimit,
     ClientForStaging* clientStage, bool ifDistributed)
@@ -76,6 +80,8 @@ struct UniServer
 
     m_frawmanager = new FunctionManagerRaw();
     m_frawmanager->m_blockManager = m_blockManager;
+
+    m_metricManager = new MetricManager(50);
   };
 
   // init the bulk at the server end
@@ -85,6 +91,7 @@ struct UniServer
   //it is convenient to keep a map of datacontainer
   //this map stores all memspace used for data transfering
   //this space is supposed to reused multiple times
+  tl::mutex m_dataContainerMapmutex;
   std::map<int, void*> m_dataContainerMap;
   
 

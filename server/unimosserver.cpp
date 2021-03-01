@@ -75,6 +75,7 @@ tl::engine* globalServerEnginePtr = nullptr;
 tl::engine* globalClientEnginePtr = nullptr;
 ClientForStaging* clientStaging = nullptr;
 UniServer* uniServer = nullptr;
+statefulConfig* globalSconfig = nullptr;
 
 // name of configure file, the write one line, the line is the rank0 addr
 // std::string masterConfigFile = "./unimos_server.conf";
@@ -1020,11 +1021,14 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
 
     // update the accouting info for mem space
     uniServer->m_schedulerManager->assignMem(transferSize);
+    uniServer->m_dataContainerMapmutex.lock();
+
     uniServer->m_dataContainerMap[clientID] = (void*)malloc(transferSize);
 
     std::vector<std::pair<void*, std::size_t> > segments(1);
     segments[0].first = uniServer->m_dataContainerMap[clientID];
     segments[0].second = transferSize;
+    uniServer->m_dataContainerMapmutex.unlock();
 
     uniServer->m_bulkMap[clientID] =
       globalServerEnginePtr->expose(segments, tl::bulk_mode::write_only);
@@ -1038,8 +1042,11 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
     // the data size can also change？how to process this?
     size_t oldSize = uniServer->m_bulkMap[clientID].size();
     // if old size not equal with the previous one
+    // reallocate the space
     if (oldSize != transferSize)
     {
+      spdlog::debug("old size {} new size {}", oldSize, transferSize);
+      uniServer->m_dataContainerMapmutex.lock();
       // create the new mem when the client exists but the memsize is not enough
       if (uniServer->m_dataContainerMap[clientID] != nullptr)
       {
@@ -1050,13 +1057,16 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
       uniServer->m_schedulerManager->assignMem(transferSize);
       uniServer->m_dataContainerMap[clientID] = (void*)malloc(transferSize);
       spdlog::info("resize the new memsize of client {} to {}", clientID, transferSize);
+      uniServer->m_dataContainerMapmutex.unlock();
     }
 
     // if the size is not equal with the previous one
     // just resize it(we need to create a new bulk), no matter it is larger or smaller
+    uniServer->m_dataContainerMapmutex.lock();
     std::vector<std::pair<void*, std::size_t> > segments(1);
     segments[0].first = uniServer->m_dataContainerMap[clientID];
     segments[0].second = transferSize;
+    uniServer->m_dataContainerMapmutex.unlock();
 
     uniServer->m_bulkMap[clientID] =
       globalServerEnginePtr->expose(segments, tl::bulk_mode::write_only);
@@ -1069,127 +1079,125 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
   diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
   spdlog::debug("server put registermem : {}", diff1);
 
-  try
+  tl::endpoint ep = req.get_endpoint();
+  // pull the data onto the server
+  dataBulk.on(ep) >> currentBulk;
+
+  clock_gettime(CLOCK_REALTIME, &end2);
+  diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
+  spdlog::debug("server put transfer : {}", diff2);
+  // spdlog::debug("Server received bulk, check the contents: ");
+  // check the bulk
+  // double *rawdata = (double *)localContainer;
+  /*check the data contents at server end
+  for (int i = 0; i < 10; i++)
   {
-    tl::endpoint ep = req.get_endpoint();
-    // pull the data onto the server
-    dataBulk.on(ep) >> currentBulk;
+     std::cout << "index " << i << " value " << *rawdata << std::endl;
+      rawdata++;
+  }
+  */
 
-    clock_gettime(CLOCK_REALTIME, &end2);
-    diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
-    spdlog::debug("server put transfer : {}", diff2);
-    // spdlog::debug("Server received bulk, check the contents: ");
-    // check the bulk
-    // double *rawdata = (double *)localContainer;
-    /*check the data contents at server end
-    for (int i = 0; i < 10; i++)
+  // For the raw mem object, copy from the original place
+  // For the vtkptr, we need to create a separate object before the put operation
+  // since for put, we only store a pointer
+
+  // generate the empty container firstly, then get the data pointer
+  // the data will be stored into the memory by put block operation
+  // what if another request comes during the copy operation from the transferblock to real
+  // block?? one transfer block only associated with one client currently
+  // for the vtk objects, we need to marshal the data before put operation
+  size_t elemSize = blockSummary.getArrayElemSize(blockSummary.m_blockid);
+  size_t elemNum = blockSummary.getArrayElemNum(blockSummary.m_blockid);
+  if (std::string(blockSummary.m_dataType) == DATATYPE_VTKPTR)
+  {
+
+    // try to recv the data
+    vtkSmartPointer<vtkCharArray> recvbuffer = vtkSmartPointer<vtkCharArray>::New();
+
+    // set key properties, type, numTuples, numComponents, name,
+    spdlog::debug("component {} tuples {} in recvbuffer", elemSize, elemNum);
+    recvbuffer->SetNumberOfComponents(elemSize);
+    recvbuffer->SetNumberOfTuples(elemNum);
+
+    // try to simulate the data recv process
+    // when the memory of the vtkchar array is allocated???
+    // TODO add the condition varible here
+    // start to memcopy when the datacontainer is not used
+    uniServer->m_dataContainerMapmutex.lock();
+    memcpy(recvbuffer->GetPointer(0), uniServer->m_dataContainerMap[clientID], transferSize);
+    uniServer->m_dataContainerMapmutex.unlock();
+
+    // check the data content
+    // recvbuffer->PrintSelf(std::cout, vtkIndent(5));
+    // std::cout << "------check recvbuffer content: ------" << std::endl;
+    // for (int i = 0; i < recvSize; i++)
+    //{
+    //  std::cout << recvbuffer->GetValue(i);
+    // }
+    // std::cout << "------" << std::endl;
+
+    // check the recvarray
+
+    // unmarshal
+    vtkSmartPointer<vtkDataObject> recvbj = vtkCommunicator::UnMarshalDataObject(recvbuffer);
+    spdlog::debug("---finish to unmarshal vtk obj");
+    // if the origianl data is poly data
+    vtkDataObject* recvptr = recvbj;
+    // how to decide what data it is here???maybe contains the data type???
+    // TODO, maybe implements the array or block expression, and let the data type to be more
+    // specific
+    // ((vtkPolyData*)recvptr)->PrintSelf(std::cout, vtkIndent(5));
+    // (recvptr)->PrintSelf(std::cout, vtkIndent(5));
+    clock_gettime(CLOCK_REALTIME, &end3);
+    diff3 = (end3.tv_sec - end2.tv_sec) * 1.0 + (end3.tv_nsec - end2.tv_nsec) * 1.0 / BILLION;
+    spdlog::debug("server put unmarshal : {}", diff3);
+
+    // this vtkDataObject should be managemet by the datablock manager
+    // we use void* as a bridge to transfer it to the vtksmartPointer managed by the blockmanager
+    int status = uniServer->m_blockManager->putBlock(blockSummary, BACKEND::MEMVTKPTR, &recvbj);
+    uniServer->m_schedulerManager->assignMem(blockSummary.getArraySize(blockSummary.m_blockid));
+
+    spdlog::debug("---put vtk block {} on server {} map size {}", blockSummary.m_blockid,
+      uniServer->m_addrManager->nodeAddr, uniServer->m_blockManager->DataBlockMap.size());
+    if (status != 0)
     {
-       std::cout << "index " << i << " value " << *rawdata << std::endl;
-        rawdata++;
-    }
-    */
-
-    // For the raw mem object, copy from the original place
-    // For the vtkptr, we need to create a separate object before the put operation
-    // since for put, we only store a pointer
-
-    // generate the empty container firstly, then get the data pointer
-    // the data will be stored into the memory by put block operation
-    // what if another request comes during the copy operation from the transferblock to real
-    // block?? one transfer block only associated with one client currently
-    // for the vtk objects, we need to marshal the data before put operation
-    size_t elemSize = blockSummary.getArrayElemSize(blockSummary.m_blockid);
-    size_t elemNum = blockSummary.getArrayElemNum(blockSummary.m_blockid);
-    if (std::string(blockSummary.m_dataType) == DATATYPE_VTKPTR)
-    {
-
-      // try to recv the data
-      vtkSmartPointer<vtkCharArray> recvbuffer = vtkSmartPointer<vtkCharArray>::New();
-
-      // set key properties, type, numTuples, numComponents, name,
-      spdlog::debug("component {} tuples {} in recvbuffer", elemSize, elemNum);
-      recvbuffer->SetNumberOfComponents(elemSize);
-      recvbuffer->SetNumberOfTuples(elemNum);
-
-      // try to simulate the data recv process
-      // when the memory of the vtkchar array is allocated???
-      // TODO add the condition varible here
-      // start to memcopy when the datacontainer is not used
-      memcpy(recvbuffer->GetPointer(0), uniServer->m_dataContainerMap[clientID], transferSize);
-
-      // check the data content
-      // recvbuffer->PrintSelf(std::cout, vtkIndent(5));
-      // std::cout << "------check recvbuffer content: ------" << std::endl;
-      // for (int i = 0; i < recvSize; i++)
-      //{
-      //  std::cout << recvbuffer->GetValue(i);
-      // }
-      // std::cout << "------" << std::endl;
-
-      // check the recvarray
-
-      // unmarshal
-      vtkSmartPointer<vtkDataObject> recvbj = vtkCommunicator::UnMarshalDataObject(recvbuffer);
-      spdlog::debug("---finish to unmarshal vtk obj");
-      // if the origianl data is poly data
-      vtkDataObject* recvptr = recvbj;
-      // how to decide what data it is here???maybe contains the data type???
-      // TODO, maybe implements the array or block expression, and let the data type to be more
-      // specific
-      // ((vtkPolyData*)recvptr)->PrintSelf(std::cout, vtkIndent(5));
-      // (recvptr)->PrintSelf(std::cout, vtkIndent(5));
-      clock_gettime(CLOCK_REALTIME, &end3);
-      diff3 = (end3.tv_sec - end2.tv_sec) * 1.0 + (end3.tv_nsec - end2.tv_nsec) * 1.0 / BILLION;
-      spdlog::debug("server put unmarshal : {}", diff3);
-
-      // this vtkDataObject should be managemet by the datablock manager
-      // we use void* as a bridge to transfer it to the vtksmartPointer managed by the blockmanager
-      int status = uniServer->m_blockManager->putBlock(blockSummary, BACKEND::MEMVTKPTR, &recvbj);
-      uniServer->m_schedulerManager->assignMem(blockSummary.getArraySize(blockSummary.m_blockid));
-
-      spdlog::debug("---put vtk block {} on server {} map size {}", blockSummary.m_blockid,
-        uniServer->m_addrManager->nodeAddr, uniServer->m_blockManager->DataBlockMap.size());
-      if (status != 0)
-      {
-        blockSummary.printSummary();
-        req.respond(status);
-        throw std::runtime_error("failed to put the vtk data");
-        return;
-      }
-
-      // put into the Block Manager
+      blockSummary.printSummary();
       req.respond(status);
-
+      throw std::runtime_error("failed to put the vtk data");
       return;
     }
-    else
+
+    // put into the Block Manager
+    req.respond(status);
+  }
+  else
+  {
+    // supposed to be the cargird
+    spdlog::debug("---put block {} on server {} map size {}", blockSummary.m_blockid,
+      uniServer->m_addrManager->nodeAddr, uniServer->m_blockManager->DataBlockMap.size());
+
+    // persist the data, and put it into the blockManager
+    uniServer->m_dataContainerMapmutex.lock();
+    int status = uniServer->m_blockManager->putBlock(
+      blockSummary, BACKEND::MEM, uniServer->m_dataContainerMap[clientID]);
+    uniServer->m_dataContainerMapmutex.unlock();
+
+    spdlog::debug("--- ok put block {} on server {}", blockSummary.m_blockid,
+      uniServer->m_addrManager->nodeAddr);
+
+    if (status != 0)
     {
-      int status = uniServer->m_blockManager->putBlock(
-        blockSummary, BACKEND::MEM, uniServer->m_dataContainerMap[clientID]);
-      uniServer->m_schedulerManager->assignMem(blockSummary.getArraySize(blockSummary.m_blockid));
-
-      spdlog::debug("---put block {} on server {} map size {}", blockSummary.m_blockid,
-        uniServer->m_addrManager->nodeAddr, uniServer->m_blockManager->DataBlockMap.size());
-      if (status != 0)
-      {
-        blockSummary.printSummary();
-        req.respond(status);
-        throw std::runtime_error("failed to put the raw data");
-        return;
-      }
-
-      // put into the Block Manager
+      blockSummary.printSummary();
+      throw std::runtime_error("failed to put the raw data");
       req.respond(status);
       return;
     }
-  }
-  catch (const std::exception& e)
-  {
-    spdlog::info("exception for data put: " + std::string(e.what()));
 
-    req.respond(-1);
-    return;
+    uniServer->m_schedulerManager->assignMem(blockSummary.getArraySize(blockSummary.m_blockid));
+    req.respond(status);
   }
+
+  return;
 }
 
 void registerWatcher(
@@ -1399,16 +1407,65 @@ void endTimer(const tl::request& req)
   return;
 }
 
+void tickTimer(const tl::request& req)
+{
+  std::string timerName = "main";
+  uniServer->m_frawmanager->m_statefulConfig->tickTimer(timerName);
+  return;
+}
+
+void getStageStatus(const tl::request& req)
+{
+  // get the current schedule time and execution time
+  // return value is a vector, first is schedule time second is execution time
+  std::vector<double> stageStatus(2);
+  // TODO adjust if the key exist, if not exist, return 0
+  if (uniServer->m_metricManager->metricExist("default_schedule") == false)
+  {
+    stageStatus[0] = 0;
+  }
+  else
+  {
+    stageStatus[0] = uniServer->m_metricManager->getLastNmetrics("default_schedule", 1)[0];
+  }
+  if (uniServer->m_metricManager->metricExist("default_ana") == false)
+  {
+    stageStatus[1] = 0;
+  }
+  else
+  {
+    stageStatus[1] = uniServer->m_metricManager->getLastNmetrics("default_ana", 1)[0];
+  }
+
+  req.respond(stageStatus);
+  return;
+}
+
 // execute raw func in async way
 // this function will trigger one function
 // this function will gather all polydata firstly and then execute the filter action
-// no not need the return value
-void executeAsyncExp(const tl::request& req, std::string& blockIDSuffix, std::string& functionName,
-  std::vector<std::string>& funcParameters)
+void executeAsyncExp(const tl::request& req, std::string& blockIDSuffix, int& blockIndex,
+  std::string& functionName, std::vector<std::string>& funcParameters, bool ifLastStep)
 {
   spdlog::debug("---server rank {} start executeAsyncExp for block {}", globalRank, blockIDSuffix);
+
+  std::string blockCompleteName = blockIDSuffix + "_" + std::to_string(blockIndex);
+  std::string timerNameSchedule = "schedule_" + blockCompleteName;
+  std::string executeNameSchedule = "execute_" + blockCompleteName;
+
+  globalSconfig->startTimer(timerNameSchedule);
+
   globalServerEnginePtr->get_handler_pool().make_thread(
     [=]() {
+      double timeSpan = globalSconfig->endTimer(timerNameSchedule);
+      // put data into the metric manager
+      uniServer->m_metricManager->putMetric("default_schedule", timeSpan);
+
+      // it is posible that this server contians data with same idsuffix (varname+step)
+
+      globalSconfig->startTimer(executeNameSchedule);
+
+      // record the task scheduling time
       if (functionName == "testaggrefunc")
       {
         uniServer->m_frawmanager->aggregateProcess(
@@ -1416,16 +1473,33 @@ void executeAsyncExp(const tl::request& req, std::string& blockIDSuffix, std::st
       }
       else if (functionName == "testisoExec")
       {
+
+        uniServer->m_frawmanager->testisoExec(blockCompleteName, funcParameters);
       }
       else
       {
         std::cout << "unsupported function name " << functionName << std::endl;
       }
+
+      timeSpan = globalSconfig->endTimer(executeNameSchedule);
+      // put data into the metric manager
+      uniServer->m_metricManager->putMetric("default_ana", timeSpan);
+
+      // remove the current data if it is processed
+      uniServer->m_blockManager->eraseBlock(blockCompleteName, BACKEND::MEM);
+      // tick timer
+      std::string timerName = "main";
+      //TODO the clientStaging send request to the master server
+      //if contians the last step when ifLastStep is true
+      
     },
     tl::anonymous());
 
   return;
 }
+
+// get the schedule time of the current staging service
+void getScheduleTime() {}
 
 // this basic function that is called on the node
 // with the block data mamager
@@ -1656,12 +1730,12 @@ void runRerver(std::string networkingType)
   margo_instance_id mid;
   // the number here should same with the number of cores used in test scripts
   // the loop process is 0, the main thread will work on it
-  //mid = margo_init_opt("gni", MARGO_SERVER_MODE, &hii, 0, 8);
-  //tl::engine serverEnginge(mid);
+  // mid = margo_init_opt("gni", MARGO_SERVER_MODE, &hii, 0, 8);
+  // tl::engine serverEnginge(mid);
 
   // the latest engine can be created based on hii
-   tl::engine serverEnginge = tl::engine("ofi+gni", THALLIUM_SERVER_MODE, false, 8, &hii);
-   globalServerEnginePtr = &serverEnginge;
+  tl::engine serverEnginge("ofi+gni", THALLIUM_SERVER_MODE, false, 8, &hii);
+  globalServerEnginePtr = &serverEnginge;
 
 #else
   if (globalRank == 0)
@@ -1699,6 +1773,7 @@ void runRerver(std::string networkingType)
   globalServerEnginePtr->define("executeAsyncExp", executeAsyncExp).disable_response();
   globalServerEnginePtr->define("getBlockSummayBySuffix", getBlockSummayBySuffix);
   globalServerEnginePtr->define("getArraysExplicit", getArraysExplicit);
+  globalServerEnginePtr->define("getStageStatus", getStageStatus);
 
   globalServerEnginePtr->define("startTimer", startTimer).disable_response();
   globalServerEnginePtr->define("endTimer", endTimer).disable_response();
@@ -1735,7 +1810,7 @@ void runRerver(std::string networkingType)
   clientStaging = new ClientForStaging(globalClientEnginePtr, masterAddr, globalRank);
 
   // init stateful config (this may use MPI, do not mix it with mochi)
-  statefulConfig* sconfig = new statefulConfig();
+  globalSconfig = new statefulConfig();
   // init all the important manager of the server
   uniServer = new UniServer();
   uniServer->initManager(globalProc, globalRank, gloablSettings.metaserverNum,
@@ -1782,18 +1857,19 @@ void runRerver(std::string networkingType)
   spdlog::info("init server ok, call margo wait for rank {}", globalRank);
 
   // call the ADIOS init explicitly
-  uniServer->m_frawmanager->m_statefulConfig = sconfig;
+  uniServer->m_frawmanager->m_statefulConfig = globalSconfig;
   // test if the engine is normal
 
   // std::cout << "---debug adios io name in in server: " <<
   // uniServer->m_frawmanager->m_statefulConfig->m_io.Name() << std::endl;
   // std::cout << "--- debug engine type in server " <<
   // uniServer->m_frawmanager->m_statefulConfig->m_engine.Type() << std::endl;
-  spdlog::info("init sconfig ok, call margo wait for rank {}", globalRank);
+  spdlog::info("init globalSconfig ok, call margo wait for rank {}", globalRank);
 
 #ifdef USE_GNI
   // destructor will not be called if send mid to engine
-  margo_wait_for_finalize(mid);
+  // do not use this if we start server by tahllium
+  // margo_wait_for_finalize(mid);
 #endif
 
   // the destructor of the engine will be called when the variable is out of the

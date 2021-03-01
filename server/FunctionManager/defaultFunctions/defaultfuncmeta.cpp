@@ -244,7 +244,7 @@ void InsituExpAction(FunctionManagerMeta *fmm, size_t step, std::string varName,
     funcParameters.push_back(std::to_string(step));
     funcParameters.push_back(varName);
 
-    if (rde.m_rawDataServerAddr.compare(uniclient->m_masterAddr) == 0)
+    if (rde.m_rawDataServerAddr.compare(uniclient->m_) == 0)
     {
         //TODO if the destaddr is not equal to the current one
         return;

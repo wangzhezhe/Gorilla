@@ -119,7 +119,7 @@ std::vector<MetaAddrWrapper> ClientRPCWrapper::getAllServerAddr()
   }
 
   return adrList;
-  
+
   /*
   for (auto it = adrList.begin(); it != adrList.end(); it++)
   {
@@ -233,6 +233,14 @@ void ClientRPCWrapper::deleteMetaStep(size_t step)
     remotedeleteMeta.on(kv.second)(step);
   }
   return;
+}
+
+std::vector<double> ClientRPCWrapper::getStageStatus(std::string server)
+{
+  tl::remote_procedure remotegetEvent = this->m_clientEnginePtr->define("getStageStatus");
+  tl::endpoint serverEndpoint = this->lookup(server);
+  std::vector<double> status = remotegetEvent.on(serverEndpoint)();
+  return status;
 }
 
 }

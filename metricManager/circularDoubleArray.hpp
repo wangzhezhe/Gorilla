@@ -14,6 +14,7 @@ namespace GORILLA
 
 // the thread pool based on a circular Array
 // init tail = head = 0 (empty)
+// head store the actual position
 // tail is empty position that do not store real element
 // head + 1 = tail full
 // tail + 1 = head the valid element is 1
@@ -96,7 +97,7 @@ struct CircularDoubleArray
       throw std::runtime_error("the number should be larger than 1");
     }
     uint32_t bufferLen = this->bufferLen();
-    if (number >= bufferLen)
+    if (number > bufferLen)
     {
       // return all value
       throw std::runtime_error("the required number is larger than actual buffer length");
