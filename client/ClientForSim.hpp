@@ -70,6 +70,7 @@ public:
       this->m_serverToEndpoints[it->m_addr] = endpoint;
     }
     this->m_associatedDataServer = this->getAssociatedServerAddr();
+    std::cout << "dbeug m_associatedDataServer " << this->m_associatedDataServer << std::endl;
   };
 
   virtual ~ClientForSim(){};
@@ -117,7 +118,8 @@ public:
   int putVTKData(
     size_t step, std::string varName, BlockSummary& dataSummary, void* dataContainerSrc);
 
-  void executeAsyncExp(int step, std::string varName, int blockIndex, std::string funcName);
+  void executeAsyncExp(int step, std::string varName, int blockIndex,
+    std::string funcName, std::vector<std::string> funcParameters, bool iflast);
 
   int putrawdata(
     size_t step, std::string varName, BlockSummary& dataSummary, void* dataContainerSrc);

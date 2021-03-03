@@ -66,14 +66,14 @@ struct CircularDoubleArray
 
     // if the current position is not empty
     // if we want to do the autonomic cover, we do not need to bother this
-    //if (m_circularArraybuffer[this->m_head] != DBL_MAX)
+    // if (m_circularArraybuffer[this->m_head] != DBL_MAX)
     //{
-      // if entry is not null
-      // this->m_indexMutex.unlock();
-      // throw std::runtime_error("the element at the new position " + std::to_string(this->m_head)
-      // +
-      //  " should be empty before moving head ptr");
-      //std::cout << "the buffer is full, remove last one" << std::endl;
+    // if entry is not null
+    // this->m_indexMutex.unlock();
+    // throw std::runtime_error("the element at the new position " + std::to_string(this->m_head)
+    // +
+    //  " should be empty before moving head ptr");
+    // std::cout << "the buffer is full, remove last one" << std::endl;
     //}
     // else
     //{
@@ -85,6 +85,12 @@ struct CircularDoubleArray
     // head move to the next position
     // the full case have been considered at the begining
     this->m_head = (this->m_head + 1) % (this->m_slotNum);
+    if (this->m_head == this->m_tail)
+    {
+      // when the head overlaps with tail
+      // we move another position to aovid the getLength returns the 0 value
+      this->m_head = (this->m_head + 1) % (this->m_slotNum);
+    }
 
     this->m_indexMutex.unlock();
     return 0;
@@ -100,6 +106,7 @@ struct CircularDoubleArray
     if (number > bufferLen)
     {
       // return all value
+      std::cout << "number " << number << " bufferLen " << bufferLen << std::endl;
       throw std::runtime_error("the required number is larger than actual buffer length");
     }
     // go back to number-1 position to get the start position
@@ -165,6 +172,8 @@ struct CircularDoubleArray
     this->m_indexMutex.lock();
     if (this->m_head == this->m_tail)
     {
+      // how to adjust empty or full?
+      // when we put the data, we avoid the overlap between the head and tail
       len = 0;
     }
     else if (this->m_head > this->m_tail)

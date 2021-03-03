@@ -111,7 +111,7 @@ int ClientForSim::putCarGrid(
   size_t dataTransferSize = dataSummary.getArraySize(dataSummary.m_blockid);
   // currently, when there is no associated data server
   // the data bulk (memory space) is not assigned
-  // we kind of combine the data server and the metadata server 
+  // we kind of combine the data server and the metadata server
   if (this->m_associatedDataServer.compare("") == 0)
   {
     this->m_associatedDataServer = this->getAssociatedServerAddr();
@@ -130,7 +130,8 @@ int ClientForSim::putCarGrid(
   tl::remote_procedure remotegetInfoForPut = this->m_clientEnginePtr->define("getinfoForput");
   // put data to the associated server
   // at the previous version, we put data into the server based on random robin selection
-  // for this one, we combine the metadata server and actual data server to simplify the data get strategy
+  // for this one, we combine the metadata server and actual data server to simplify the data get
+  // strategy
   tl::endpoint serverEndpoint = this->lookup(this->m_associatedDataServer);
   // const tl::request& req, size_t step, size_t objSize, size_t bbxdim,
   // std::array<int, 3> indexlb, std::array<int, 3> indexub)
@@ -209,7 +210,7 @@ int ClientForSim::putCarGrid(
     }
 
     /* update the meta for the spatial index
-    //we do not need to update the metadata for spatial index 
+    //we do not need to update the metadata for spatial index
     //if we do not get data based on bbx from the staging servers
     //we can add this part back if we need to test the case
     //that needs to get data based on spatial index
@@ -251,8 +252,8 @@ int ClientForSim::putCarGrid(
   return 0;
 }
 
-void ClientForSim::executeAsyncExp(
-  int step, std::string varName, int blockIndex, std::string funcName)
+void ClientForSim::executeAsyncExp(int step, std::string varName, int blockIndex,
+  std::string funcName, std::vector<std::string> funcParameters, bool iflast)
 {
   // get the server id by rrb if the m_associatedDataServer is null
   if (this->m_associatedDataServer.compare("") == 0)
@@ -267,9 +268,9 @@ void ClientForSim::executeAsyncExp(
   std::string blockIDSuffix = varName + "_" + std::to_string(step);
   tl::endpoint serverEndpoint = this->lookup(this->m_associatedDataServer);
   // std::string funcName = "testaggrefunc";
-  std::vector<std::string> funcparameter;
   // the block index is an integer
-  remoteexecuteAsyncExp.on(serverEndpoint)(blockIDSuffix, blockIndex, funcName, funcparameter);
+  remoteexecuteAsyncExp.on(serverEndpoint)(
+    blockIDSuffix, blockIndex, funcName, funcParameters, iflast);
   return;
 }
 

@@ -76,6 +76,8 @@ public:
 
   void startTimer(std::string serverAddr);
 
+  void tickTimer(std::string serverAddr);
+
   std::vector<std::string> getmetaServerList(
     std::string serverAddr, size_t dims, std::array<int, 3> indexlb, std::array<int, 3> indexub);
 

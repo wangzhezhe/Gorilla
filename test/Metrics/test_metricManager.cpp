@@ -110,6 +110,32 @@ void test_get3()
   }
 }
 
+void test_get4()
+{
+  // test the case that the store finish one cycle
+  std::cout << "---test " << __FUNCTION__ << std::endl;
+  MetricManager metricmanager(10);
+  std::string testMetric = "testmetric";
+  // put 9
+  for (int i = 0; i < 9; i++)
+  {
+    metricmanager.putMetric(testMetric, i * 0.1);
+  }
+  int len = metricmanager.getBufferLen(testMetric);
+  if (len != 9)
+  {
+    throw std::runtime_error("failed to get len");
+  }
+  metricmanager.putMetric(testMetric, 0.1);
+  len = metricmanager.getBufferLen(testMetric);
+  // it becomes 1, we need to aovid the overlap between two pointers
+  if (len != 1)
+  {
+    throw std::runtime_error("failed to get len");
+  }
+  return;
+}
+
 int main()
 {
   tl::abt scope;
@@ -119,4 +145,5 @@ int main()
   test_get1();
   test_get2();
   test_get3();
+  test_get4();
 }

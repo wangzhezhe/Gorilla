@@ -52,13 +52,11 @@ struct FunctionManagerRaw
     std::string fiunctionName, const std::vector<std::string>& parameters);
 
   // TODO maybe try to use macro to register things here
-  void testisoExec(
-    std::string blockCompleteName, const std::vector<std::string>& parameters);
+  void testisoExec(std::string blockCompleteName, const std::vector<std::string>& parameters);
 
-    ~FunctionManagerRaw()
-  {
-    std::cout << "destroy FunctionManagerRaw\n";
-  };
+  void dummyAna(int step, int totalStep);
+
+  ~FunctionManagerRaw() { std::cout << "destroy FunctionManagerRaw\n"; };
 
   statefulConfig* m_statefulConfig = NULL;
 

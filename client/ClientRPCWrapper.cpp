@@ -151,6 +151,16 @@ void ClientRPCWrapper::endTimer(std::string serverAddr)
   return;
 }
 
+void ClientRPCWrapper::tickTimer(std::string serverAddr)
+{
+  tl::remote_procedure remotestartTimer =
+    this->m_clientEnginePtr->define("tickTimer").disable_response();
+  // the parameters here should be consistent with the defination at the server end
+  tl::endpoint serverEndpoint = this->lookup(serverAddr);
+  remotestartTimer.on(serverEndpoint)();
+  return;
+}
+
 // get MetaAddrWrapper List this contains the coresponding server that overlap with current querybox
 // this can be called once for multiple get in different time step, since partition is fixed
 std::vector<std::string> ClientRPCWrapper::getmetaServerList(

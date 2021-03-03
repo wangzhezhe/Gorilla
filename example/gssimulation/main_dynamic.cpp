@@ -95,18 +95,46 @@ int main(int argc, char** argv)
   MPI_Comm_rank(comm, &rank);
   MPI_Comm_size(comm, &procs);
 
-  if (argc < 3)
+  if (argc < 4)
   {
     if (rank == 0)
     {
       std::cerr << "Too few arguments" << std::endl;
-      std::cerr << "Usage: gray-scott settings.json protocol" << std::endl;
+      std::cerr << "Usage: gray-scott settings.json protocol pattern" << std::endl;
     }
     MPI_Abort(MPI_COMM_WORLD, -1);
   }
 
   Settings settings = Settings::from_json(argv[1]);
   std::string protocol = argv[2];
+
+  // variable related with dynamic thing
+  std::string pattern = argv[3];
+  double totalsavedTime = 0;
+  bool ifTCAna = false;
+  bool ifWriteToStage = false;
+  bool ifdynamic = false;
+  if (pattern == "baseline")
+  {
+    ifTCAna = true;
+    ifWriteToStage = true;
+  }
+  else if (pattern == "alltightly")
+  {
+    ifTCAna = true;
+  }
+  else if (pattern == "allloosely")
+  {
+    ifWriteToStage = true;
+  }
+  else if (pattern == "dynamic")
+  {
+    ifdynamic = true;
+  }
+  else
+  {
+    throw std::runtime_error("wrong pattern value");
+  }
 
   GrayScott sim(settings, comm);
   sim.init();
@@ -208,7 +236,7 @@ int main(int argc, char** argv)
       // sprintf(tempstr,"step %d rank %d put %f\n",i,rank,diff);
 
       // std::cout << tempstr << std::endl;
-      //std::cout << "step " << step << " rank " << rank << " detailed iter " << iterdiff
+      // std::cout << "step " << step << " rank " << rank << " detailed iter " << iterdiff
       //          << std::endl;
       // put data into the monitor
       // simulation
@@ -243,52 +271,67 @@ int main(int argc, char** argv)
 
     // Do the policy decision
 
-    bool ifTCAna = false;
-    bool ifWriteToStage = false;
+    double dynamicStart = tl::timer::wtime();
 
-    if (step <= 2)
+    if (ifdynamic)
     {
-      ifTCAna = true;
-    }
-    else if (step == 3)
-    {
-      ifWriteToStage = true;
-    }
-    else
-    {
-      // we have all avalible data try to use policy
-      double T = gsinsitu.m_metricManager.getLastNmetrics("T", 1)[0];
-      double At = gsinsitu.m_metricManager.getLastNmetrics("At", 1)[0];
-      double S = gsinsitu.m_metricManager.getLastNmetrics("S", 1)[0];
-      double Al = gsinsitu.m_metricManager.getLastNmetrics("Al", 1)[0];
-      double W = gsinsitu.m_metricManager.getLastNmetrics("W", 1)[0];
-      if (S >= (W + Al))
+      //these two variables need to be restet every time
+      ifTCAna=false;
+      ifWriteToStage=false;
+      double currentsavedTime = 0;
+      if (step <= 2)
       {
-        if (At >= T)
-        {
-          ifWriteToStage = true;
-        }
-        else
-        {
-          ifTCAna = true;
-        }
+        ifTCAna = true;
+      }
+      else if (step == 3)
+      {
+        ifWriteToStage = true;
       }
       else
       {
-        if (At + S >= (T + W + Al))
+        // we have all avalible data try to use policy
+        double T = gsinsitu.m_metricManager.getLastNmetrics("T", 1)[0];
+        double At = gsinsitu.m_metricManager.getLastNmetrics("At", 1)[0];
+        double S = gsinsitu.m_metricManager.getLastNmetrics("S", 1)[0];
+        double Al = gsinsitu.m_metricManager.getLastNmetrics("Al", 1)[0];
+        double W = gsinsitu.m_metricManager.getLastNmetrics("W", 1)[0];
+        if (S >= (W + Al))
         {
-          ifWriteToStage = true;
+          if (At >= T)
+          {
+            ifWriteToStage = true;
+          }
+          else
+          {
+            ifTCAna = true;
+          }
+          currentsavedTime = abs(At - T);
         }
         else
         {
-          ifTCAna = true;
+          if (At + S >= (T + W + Al))
+          {
+            ifWriteToStage = true;
+          }
+          else
+          {
+            ifTCAna = true;
+          }
+          currentsavedTime = abs((At + S) - (T + W + Al));
         }
       }
+
+      totalsavedTime = totalsavedTime + currentsavedTime;
+      std::string metricName = "Saved";
+      gsinsitu.m_metricManager.putMetric(metricName, currentsavedTime);
     }
+
+    double dynamicEnd = tl::timer::wtime();
+
     if (rank == 0)
     {
       std::cout << "step " << step << " ifTCAna " << ifTCAna << " ifWriteToStage " << ifWriteToStage
-                << std::endl;
+                << " decision time " << dynamicEnd - dynamicStart << std::endl;
     }
 
     /*
@@ -306,10 +349,10 @@ int main(int argc, char** argv)
 
       // try to do tightly coupled in-situ processing
       // iso surface extraction
-      auto polydata = gsinsitu.getPoly(sim, 0.5);
+      // auto polydata = gsinsitu.getPoly(sim, 0.1);
       // caculate the largest region size
-      gsinsitu.polyProcess(polydata, step);
-
+      // gsinsitu.polyProcess(polydata, step);
+      gsinsitu.dummyAna(step, settings.steps);
       // clock_gettime(CLOCK_REALTIME, &anaend2);
       // anadiff2 = (anaend2.tv_sec - anastart.tv_sec) * 1.0 +
       //  (anaend2.tv_nsec - anastart.tv_nsec) * 1.0 / BILLION;
@@ -319,7 +362,7 @@ int main(int argc, char** argv)
       std::string metricName = "At";
       double anaSpan = anaEnd - anaStart;
       gsinsitu.m_metricManager.putMetric(metricName, anaSpan);
-      //std::cout << "debug ana diff : " << anaSpan << std::endl;
+      std::cout << "debug ana diff : " << anaSpan << std::endl;
     }
 
     /*
@@ -338,18 +381,26 @@ int main(int argc, char** argv)
       double writediff;
       clock_gettime(CLOCK_REALTIME, &writestart);
 
-      std::string VarNameU = "grascott_u";
+      std::string VarNameU = "grascottu";
       gsinsitu.write(sim, VarNameU, step, rank);
 
       // when all write ok, trigger the staging process
       // call this when there is depedency between the in-situ task execution
       // MPI_Barrier(comm);
       // call the in-staging execution to trigger functions
-      std::string funcName = "testisoExec";
+      // std::string funcName = "testisoExec";
+      std::string funcName = "dummyAna";
+      std::vector<std::string> funcPara;
+      funcPara.push_back(std::to_string(settings.steps));
       // make sure the parameter match with the functions specified at the server
       // the blockid equals to the rank in this case
+      bool iflast = false;
+      if (step >= (settings.steps - 3))
+      {
+        iflast = true;
+      }
 
-      gsinsitu.m_uniclient->executeAsyncExp(step, VarNameU, rank, funcName);
+      gsinsitu.m_uniclient->executeAsyncExp(step, VarNameU, rank, funcName, funcPara, iflast);
 
       clock_gettime(CLOCK_REALTIME, &writeend);
       writediff = (writeend.tv_sec - writestart.tv_sec) * 1.0 +
@@ -370,6 +421,8 @@ int main(int argc, char** argv)
     // gsinsitu.endwftimer();
     // TODO try to dump out the data in the metric monitor
   }
+
+  std::cout << "taotal saved time " << totalsavedTime << std::endl;
 
   gsinsitu.m_metricManager.dumpall(rank);
 

@@ -53,6 +53,8 @@ public:
 
   bool metricExist(std::string metricName);
 
+  int getBufferLen(std::string metricName);
+
   // capabilities
   void putMetric(std::string metricName, double metricValue);
   // get the latest N matrix

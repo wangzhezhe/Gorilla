@@ -52,9 +52,9 @@ struct TimerMap
     sprintf(str, "%s time span: %lf existing task %d", timerName.data(), timespan,
       this->m_timer_map.size());
     // if (timerName.back() == '0')
-    //if (timerName.substr(timerName.length() - 3) == "000")
+    // if (timerName.substr(timerName.length() - 3) == "000")
     //{
-      std::cout << std::string(str) << std::endl;
+    std::cout << std::string(str) << std::endl;
     //}
 
     // delete the timer
@@ -68,16 +68,48 @@ struct TimerMap
   std::unordered_map<std::string, struct timespec> m_timer_map;
 };
 
+// on cori, when the workload is 200 it takes around 0.5s
 void taskDummy(int workLoad)
 {
   // extra work
   for (int j = 0; j < workLoad; j++)
   {
-    double temp = j * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-    temp = j * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-    temp = j * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-    temp = j * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-    temp = j * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+    for (int j = 0; j < workLoad; j++)
+    {
+      for (int j = 0; j < workLoad; j++)
+      {
+        double temp = (j + 1) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+        temp = (j + 2) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+        temp = (j + 3) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+        temp = (j + 4) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+        temp = (j + 5) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+        temp = (j + 6) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+        temp = (j + 7) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+        temp = (j + 8) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+        temp = (j + 9) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+        temp = (j + 10) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+      }
+    }
+  }
+}
+
+void taskDummy2(double runtime)
+{
+  // record time
+  struct timespec start, end;
+  clock_gettime(CLOCK_REALTIME, &start);
+
+  while (true)
+  {
+    double temp = 0.01 * 0.02 * 0.03 * 0.04 * 0.05 / 0.06;
+    clock_gettime(CLOCK_REALTIME, &end);
+
+    double timespan =
+      (end.tv_sec - start.tv_sec) * 1.0 + (end.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+    if (timespan > runtime)
+    {
+      break;
+    }
   }
 }
 
@@ -102,7 +134,7 @@ int main(int argc, char** argv)
 {
 
   tl::abt scope;
-  tl::engine myEngine("tcp", THALLIUM_CLIENT_MODE, true, 8);
+  tl::engine myEngine("tcp", THALLIUM_SERVER_MODE, true, 8);
 
   tl::engine* myEnginePtr = &myEngine;
   // start the timer and check the schedule time
@@ -133,15 +165,22 @@ int main(int argc, char** argv)
   // start multiple lambda functions to execute things
   for (int i = 0; i < taskNum; i++)
   {
-    std::string timerNameExecute = "task_" + std::to_string(i);
-    tmptr->startTimer(timerNameExecute);
+    std::string timerNameSchedule = "schedule_" + std::to_string(i);
+    std::string timerNameExec = "exec_" + std::to_string(i);
+
+    tmptr->startTimer(timerNameSchedule);
 
     myEngine.get_handler_pool().make_thread(
-      [myEnginePtr, tmptr, workLoad, timerNameExecute, imageData]() {
+      [myEnginePtr, tmptr, workLoad, timerNameSchedule, timerNameExec, imageData]() {
         // time it
         // taskDummy(workLoad);
-        processImageData(imageData, workLoad);
-        tmptr->endTimer(timerNameExecute);
+        tmptr->endTimer(timerNameSchedule);
+        tmptr->startTimer(timerNameExec);
+
+        // processImageData(imageData, workLoad);
+        taskDummy(workLoad);
+        // taskDummy2(workLoad*1.0);
+        tmptr->endTimer(timerNameExec);
       },
       tl::anonymous());
 

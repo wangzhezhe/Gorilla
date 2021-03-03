@@ -106,9 +106,8 @@ void AmrCoreAdv::Evolve()
   for (int step = istep[0]; step < max_step && cur_time < stop_time; ++step)
   {
     // the amrex print only output the information from one rank
-    // amrex::Print() << "\nCoarse STEP " << step+1 << " starts ..." << std::endl;
+     amrex::Print() << "\nCoarse STEP " << step+1 << " starts ..." << std::endl;
     // there is not much difference if we output data between different ranks
-    std::cout << "\nCoarse STEP " << step + 1 << " starts ..." << std::endl;
     ComputeDt();
 
     int lev = 0;
@@ -123,11 +122,8 @@ void AmrCoreAdv::Evolve()
     // sum phi to check conservation
     Real sum_phi = phi_new[0].sum();
 
-    // amrex::Print() << "Coarse STEP " << step+1 << " ends." << " TIME = " << cur_time
-    //               << " DT = " << dt[0] << " Sum(Phi) = " << sum_phi << std::endl;
-    std::cout << "Coarse STEP " << step + 1 << " ends."
-                                     << " TIME = " << cur_time << " DT = " << dt[0]
-                                     << " Sum(Phi) = " << sum_phi << std::endl;
+     amrex::Print() << "Coarse STEP " << step+1 << " ends." << " TIME = " << cur_time
+                   << " DT = " << dt[0] << " Sum(Phi) = " << sum_phi << std::endl;
     // sync up time
     for (lev = 0; lev <= finest_level; ++lev)
     {
@@ -555,10 +551,8 @@ void AmrCoreAdv::timeStepWithSubcycling(int lev, Real time, int iteration)
 
   if (Verbose())
   {
-    // amrex::Print() << "[Level " << lev << " step " << istep[lev] + 1 << "] ";
-    // amrex::Print() << "ADVANCE with time = " << t_new[lev] << " dt = " << dt[lev] << std::endl;
-    std::cout << "[Level " << lev << " step " << istep[lev] + 1 << "] ";
-    std::cout << "ADVANCE with time = " << t_new[lev] << " dt = " << dt[lev] << std::endl;
+     amrex::Print() << "[Level " << lev << " step " << istep[lev] + 1 << "] ";
+     amrex::Print() << "ADVANCE with time = " << t_new[lev] << " dt = " << dt[lev] << std::endl;
   }
 
   // Advance a single level for a single time step, and update flux registers
@@ -575,10 +569,8 @@ void AmrCoreAdv::timeStepWithSubcycling(int lev, Real time, int iteration)
 
   if (Verbose())
   {
-    // amrex::Print() << "[Level " << lev << " step " << istep[lev] << "] ";
-    // amrex::Print() << "Advanced " << CountCells(lev) << " cells" << std::endl;
-    std::cout << "[Level " << lev << " step " << istep[lev] << "] ";
-    std::cout << "Advanced " << CountCells(lev) << " cells" << std::endl;
+     amrex::Print() << "[Level " << lev << " step " << istep[lev] << "] ";
+     amrex::Print() << "Advanced " << CountCells(lev) << " cells" << std::endl;
   }
 
   if (lev < finest_level)
@@ -614,10 +606,8 @@ void AmrCoreAdv::timeStepNoSubcycling(Real time, int iteration)
   {
     for (int lev = 0; lev <= finest_level; lev++)
     {
-      //amrex::Print() << "[Level " << lev << " step " << istep[lev] + 1 << "] ";
-      //amrex::Print() << "ADVANCE with time = " << t_new[lev] << " dt = " << dt[0] << std::endl;
-      std::cout << "[Level " << lev << " step " << istep[lev] + 1 << "] ";
-      std::cout << "ADVANCE with time = " << t_new[lev] << " dt = " << dt[0] << std::endl;
+      amrex::Print() << "[Level " << lev << " step " << istep[lev] + 1 << "] ";
+      amrex::Print() << "ADVANCE with time = " << t_new[lev] << " dt = " << dt[0] << std::endl;
     }
   }
 
@@ -634,10 +624,8 @@ void AmrCoreAdv::timeStepNoSubcycling(Real time, int iteration)
   {
     for (int lev = 0; lev <= finest_level; lev++)
     {
-      //amrex::Print() << "[Level " << lev << " step " << istep[lev] << "] ";
-      //amrex::Print() << "Advanced " << CountCells(lev) << " cells" << std::endl;
-      std::cout << "[Level " << lev << " step " << istep[lev] << "] ";
-      std::cout << "Advanced " << CountCells(lev) << " cells" << std::endl;
+      amrex::Print() << "[Level " << lev << " step " << istep[lev] << "] ";
+      amrex::Print() << "Advanced " << CountCells(lev) << " cells" << std::endl;
     }
   }
 }

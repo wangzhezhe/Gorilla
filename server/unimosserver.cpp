@@ -1476,6 +1476,16 @@ void executeAsyncExp(const tl::request& req, std::string& blockIDSuffix, int& bl
 
         uniServer->m_frawmanager->testisoExec(blockCompleteName, funcParameters);
       }
+      else if (functionName == "dummyAna")
+      {
+        // extract step
+        std::size_t pos = blockIDSuffix.find("_");          // position of "live" in str
+        std::string substr = blockIDSuffix.substr(pos + 1); // get from "live" to the end
+        int step = stoi(substr);
+        int totalStep = stoi(funcParameters[0]);
+        // funcParameters is the toatl step
+        uniServer->m_frawmanager->dummyAna(step, totalStep);
+      }
       else
       {
         std::cout << "unsupported function name " << functionName << std::endl;
@@ -1488,10 +1498,9 @@ void executeAsyncExp(const tl::request& req, std::string& blockIDSuffix, int& bl
       // remove the current data if it is processed
       uniServer->m_blockManager->eraseBlock(blockCompleteName, BACKEND::MEM);
       // tick timer
-      std::string timerName = "main";
-      //TODO the clientStaging send request to the master server
-      //if contians the last step when ifLastStep is true
-      
+      // the clientStaging send request to the master server
+      if (ifLastStep)
+        clientStaging->tickTimer(clientStaging->m_masterAddr);
     },
     tl::anonymous());
 
@@ -1734,7 +1743,7 @@ void runRerver(std::string networkingType)
   // tl::engine serverEnginge(mid);
 
   // the latest engine can be created based on hii
-  tl::engine serverEnginge("ofi+gni", THALLIUM_SERVER_MODE, false, 8, &hii);
+  tl::engine serverEnginge("ofi+gni", THALLIUM_SERVER_MODE, true, 12, &hii);
   globalServerEnginePtr = &serverEnginge;
 
 #else
@@ -1777,6 +1786,7 @@ void runRerver(std::string networkingType)
 
   globalServerEnginePtr->define("startTimer", startTimer).disable_response();
   globalServerEnginePtr->define("endTimer", endTimer).disable_response();
+  globalServerEnginePtr->define("tickTimer", tickTimer).disable_response();
 
   // for testing
   globalServerEnginePtr->define("hello", hello).disable_response();

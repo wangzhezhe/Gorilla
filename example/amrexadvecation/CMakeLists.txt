@@ -1,6 +1,6 @@
 find_package(AMReX)
 
-set(AMReX_SPACEDIM 2)
+set(AMReX_SPACEDIM 3)
 
 # build with mpi
 SET(CMAKE_CXX_FLAGS  "-DAMREX_USE_MPI")

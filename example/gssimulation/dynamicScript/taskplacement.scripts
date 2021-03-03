@@ -1,0 +1,29 @@
+#!/bin/bash
+#SBATCH --qos=debug
+#SBATCH --nodes=3
+#SBATCH --tasks-per-node=32
+#SBATCH --time=10:00
+#SBATCH --licenses=cscratch1
+#SBATCH --constraint=haswell
+
+# copy metadata server to current dir
+rm unimos_server.log grayscott_dynamic.log
+
+source ~/.gorilla
+
+#start the server
+srun -C haswell -n 8 -c 8 ./unimos_server ~/cworkspace/src/Gorilla/server/settings_gs_gni.json &> unimos_server.log &
+
+
+#make sure the server load the pipeline
+result=8
+while [ $result -ne 8 ]
+do
+    result=$(cat unimos_server.log | grep "init server ok" | wc -l)
+    echo "$result server ok"
+    sleep 1  
+done
+
+sleep 1
+
+srun -C haswell -n 32 -c 4 ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_10.json gni &> grayscott_dynamic.log 

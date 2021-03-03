@@ -82,4 +82,13 @@ void MetricManager::dumpall(int rank)
   }
 }
 
+int MetricManager::getBufferLen(std::string metricName)
+{
+  this->m_metricsMapMutex.lock();
+  int count = this->m_metricsMap[metricName]->bufferLen();
+  this->m_metricsMapMutex.unlock();
+
+  return count;
+}
+
 }

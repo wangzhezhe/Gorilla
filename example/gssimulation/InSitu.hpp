@@ -67,7 +67,8 @@ public:
 
   void isosurfacePolyNum(const GrayScott& sim, int rank, double iso, int step);
 
-  void write(const GrayScott& sim, std::string varName, size_t step, int rank, std::string recordInfo = "");
+  void write(
+    const GrayScott& sim, std::string varName, size_t step, int rank, std::string recordInfo = "");
 
   std::string extractAndwrite(
     const GrayScott& sim, size_t step, int rank, std::string recordInfo = "");
@@ -80,6 +81,8 @@ public:
   void polyProcess(vtkSmartPointer<vtkPolyData> polyData, int step);
 
   void registerRtrigger(int num);
+
+  void dummyAna(int step, int totalStep);
 
   ClientForSim* m_uniclient = NULL;
 

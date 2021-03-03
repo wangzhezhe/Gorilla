@@ -5,9 +5,9 @@
 #include <vtkCenterOfMass.h>
 #include <vtkCleanPolyData.h>
 #include <vtkConnectivityFilter.h>
-#include <vtkMassProperties.h>
-#include <vtkMarchingCubes.h>
 #include <vtkImageImport.h>
+#include <vtkMarchingCubes.h>
+#include <vtkMassProperties.h>
 
 namespace GORILLA
 {
@@ -116,15 +116,83 @@ void polyProcess(vtkSmartPointer<vtkPolyData> polyData)
     auto massProperties = vtkSmartPointer<vtkMassProperties>::New();
     massProperties->SetInputConnection(connectivityFilter->GetOutputPort());
 
-    //std::cout << "Surface area of largest blob is " << massProperties->GetSurfaceArea()
+    // std::cout << "Surface area of largest blob is " << massProperties->GetSurfaceArea()
     //          << std::endl;
+  }
+}
+
+void FunctionManagerRaw::dummyAna(int step, int totalStep)
+{
+  int executeIteration = 1;
+  // it takes around 0.2s when the workload is 150
+  //int workLoad = 120;
+  // test all instaging case (10 might be a suitable value that match with the server's processing ability)
+  //executeIteration = 1 + 10;
+  // for the all tightly coupled case, the one iteration is enough
+  int workLoad = 80;
+  
+  /*
+  if (step < (totalStep / 3))
+  {
+    // first part
+    executeIteration = 1 + 30 * (1.0 / (1.0 + ((totalStep / 3) - step)));
+  }
+  else if (step >= (totalStep / 3) && step <= (2 * totalStep / 3))
+  {
+    //meddium part
+    executeIteration = 1 + 30;
+  }
+  else
+  {
+    // last part
+    executeIteration = 1 + 30 * (1.0 / (1.0 + (step - (2 * totalStep / 3))));
+  }
+  */
+  // workload
+  /*
+  struct timespec start, end;
+  clock_gettime(CLOCK_REALTIME, &start);
+  while (true)
+  {
+    double temp = 0.01 * 0.02 * 0.03 * 0.04 * 0.05 / 0.06;
+    clock_gettime(CLOCK_REALTIME, &end);
+
+    double timespan =
+      (end.tv_sec - start.tv_sec) * 1.0 + (end.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+    if (timespan > executeTime)
+    {
+      break;
+    }
+  }
+  */
+  for (int i = 0; i < executeIteration; i++)
+  {
+    for (int j = 0; j < workLoad; j++)
+    {
+      for (int j = 0; j < workLoad; j++)
+      {
+        for (int j = 0; j < workLoad; j++)
+        {
+          double temp = (j + 1) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+          temp = (j + 2) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+          temp = (j + 3) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+          temp = (j + 4) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+          temp = (j + 5) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+          temp = (j + 6) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+          temp = (j + 7) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+          temp = (j + 8) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+          temp = (j + 9) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+          temp = (j + 10) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+        }
+      }
+    }
   }
 }
 
 void FunctionManagerRaw::testisoExec(
   std::string blockCompleteName, const std::vector<std::string>& parameters)
 {
-  //std::cout << "testisoExec for block: " << blockCompleteName << std::endl;
+  // std::cout << "testisoExec for block: " << blockCompleteName << std::endl;
   // get block summary
   BlockSummary bs = this->m_blockManager->getBlockSummary(blockCompleteName);
   // process get the block summary
@@ -157,11 +225,11 @@ void FunctionManagerRaw::testisoExec(
   // caculate the number of polygonals
   vtkSmartPointer<vtkPolyData> polyData = mcubes->GetOutput();
 
-  //int numCells = polyData->GetNumberOfPolys();
-  //std::cout << "blockCompleteName " << blockCompleteName << " cell number " << numCells
+  // int numCells = polyData->GetNumberOfPolys();
+  // std::cout << "blockCompleteName " << blockCompleteName << " cell number " << numCells
   //          << std::endl;
-  
-  //get the largest region
+
+  // get the largest region
   polyProcess(polyData);
 
   return;

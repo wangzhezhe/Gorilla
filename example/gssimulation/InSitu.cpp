@@ -97,11 +97,10 @@ vtkSmartPointer<vtkPolyData> InSitu::getPoly(const GrayScott& sim, double iso)
   importer->SetDataExtentToWholeExtent();
   importer->SetDataScalarTypeToDouble();
   importer->SetNumberOfScalarComponents(1);
-  //u_nonghost is a function that takes long time
-  //it basically reoranize the data
-  //get the same value here direactly to avoid the copy
+  // u_nonghost is a function that takes long time
+  // it basically reoranize the data
+  // get the same value here direactly to avoid the copy
   importer->SetImportVoidPointer((double*)(sim.u_noghost().data()));
-
 
   // Run the marching cubes algorithm
   auto mcubes = vtkSmartPointer<vtkMarchingCubes>::New();
@@ -166,7 +165,7 @@ void InSitu::polyProcess(vtkSmartPointer<vtkPolyData> polyData, int step)
     auto massProperties = vtkSmartPointer<vtkMassProperties>::New();
     massProperties->SetInputConnection(connectivityFilter->GetOutputPort());
 
-    //std::cout << "Surface area of largest blob is " << massProperties->GetSurfaceArea()
+    // std::cout << "Surface area of largest blob is " << massProperties->GetSurfaceArea()
     //          << std::endl;
 
     // get the center of the region
@@ -420,4 +419,71 @@ void InSitu::registerRtrigger(int num)
   DynamicTriggerInfo initTgInfo("defaultCheckGetStep", initCheckParameters, "defaultComparisonStep",
     initComparisonParameters, "defaultActionSartDt", initActionParameters);
   m_uniclient->registerTrigger(3, indexlb, indexub, triggerNameInit, initTgInfo);
+}
+
+void InSitu::dummyAna(int step, int totalStep)
+{
+  int executeIteration = 1;
+  // it takes around 0.2s when the workload is 150
+  //int workLoad = 120;
+  // test all instaging case (10 might be a suitable value that match with the server's processing ability)
+  //executeIteration = 1 + 10;
+  // for the all tightly coupled case, the one iteration is enough
+  int workLoad = 80;
+  /*
+  if (step < (totalStep / 3))
+  {
+    // first part
+    executeIteration = 1 + 30 * (1.0 / (1.0 + ((totalStep / 3) - step)));
+  }
+  else if (step >= (totalStep / 3) && step <= (2 * totalStep / 3))
+  {
+    //meddium part
+    executeIteration = 1 + 30;
+  }
+  else
+  {
+    // last part
+    executeIteration = 1 + 30 * (1.0 / (1.0 + (step - (2 * totalStep / 3))));
+  }
+  */
+  // workload
+  /*
+  struct timespec start, end;
+  clock_gettime(CLOCK_REALTIME, &start);
+  while (true)
+  {
+    double temp = 0.01 * 0.02 * 0.03 * 0.04 * 0.05 / 0.06;
+    clock_gettime(CLOCK_REALTIME, &end);
+
+    double timespan =
+      (end.tv_sec - start.tv_sec) * 1.0 + (end.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
+    if (timespan > executeTime)
+    {
+      break;
+    }
+  }
+  */
+  for (int i = 0; i < executeIteration; i++)
+  {
+    for (int j = 0; j < workLoad; j++)
+    {
+      for (int j = 0; j < workLoad; j++)
+      {
+        for (int j = 0; j < workLoad; j++)
+        {
+          double temp = (j + 1) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+          temp = (j + 2) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+          temp = (j + 3) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+          temp = (j + 4) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+          temp = (j + 5) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+          temp = (j + 6) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+          temp = (j + 7) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+          temp = (j + 8) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+          temp = (j + 9) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+          temp = (j + 10) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+        }
+      }
+    }
+  }
 }
