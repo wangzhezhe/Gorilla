@@ -88,8 +88,10 @@ struct CircularDoubleArray
     if (this->m_head == this->m_tail)
     {
       // when the head overlaps with tail
-      // we move another position to aovid the getLength returns the 0 value
-      this->m_head = (this->m_head + 1) % (this->m_slotNum);
+      // we move push forward the tail position to aovid the getLength returns the 0 value
+      // if the data container in pointer, we need to make sure the pointer at new position that tail moves to
+      // will be freed in advance, tail position hold an empty value
+      this->m_tail = (this->m_tail + 1) % (this->m_slotNum);
     }
 
     this->m_indexMutex.unlock();
@@ -111,7 +113,7 @@ struct CircularDoubleArray
     }
     // go back to number-1 position to get the start position
     // the current head position is empty
-    int startPosition = (this->m_head - number + bufferLen) % bufferLen;
+    int startPosition = (this->m_head - number + m_slotNum) % m_slotNum;
     std::vector<double> results;
     // the first one is at the startPosition
     int tempPosition = startPosition;
@@ -123,7 +125,7 @@ struct CircularDoubleArray
         throw std::runtime_error("try to get an empty element");
       }
       results.push_back(this->m_circularArraybuffer[tempPosition]);
-      tempPosition = (tempPosition + 1) % bufferLen;
+      tempPosition = (tempPosition + 1) % m_slotNum;
     }
     this->m_indexMutex.unlock();
     return results;

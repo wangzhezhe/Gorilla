@@ -1,6 +1,7 @@
 #ifndef __STATEFUL_CONFIG__H__
 #define __STATEFUL_CONFIG__H__
 
+#include <spdlog/spdlog.h>
 #include <stdio.h>
 #include <thallium.hpp>
 #include <time.h>
@@ -72,15 +73,16 @@ struct statefulConfig
     clock_gettime(CLOCK_REALTIME, &end);
     double timespan = (end.tv_sec - this->m_timer_map[timerName].tv_sec) * 1.0 +
       (end.tv_nsec - this->m_timer_map[timerName].tv_nsec) * 1.0 / BILLION;
-    std::cout << timerName << " time span: " << timespan << std::endl;
-
+    
+    spdlog::debug("timerName {} time span: {}", timerName, timespan);
+    
     // delete the timer
     this->m_timer_map.erase(timerName);
     // return the caculated time
     return timespan;
   }
-  //just show the current time - start time
-  //without delete the timer
+  // just show the current time - start time
+  // without delete the timer
   double tickTimer(std::string timerName)
   {
     std::lock_guard<tl::mutex> lck(this->m_timerLock);
@@ -105,12 +107,12 @@ struct statefulConfig
   // adios info
   // refer to the implementation for this
   // https://gitlab.kitware.com/vtk/adis/-/blob/master/adis/DataSource.h
-  //std::unique_ptr<adios2::ADIOS> Adios = nullptr;
-  //adios2::IO m_io;
-  //adios2::Engine m_engine;
+  // std::unique_ptr<adios2::ADIOS> Adios = nullptr;
+  // adios2::IO m_io;
+  // adios2::Engine m_engine;
   // the variable is supposed to defined once per process
-  //std::unique_ptr<adios2::Variable<double> > var_u = nullptr;
-  //adios2::Variable<int> var_step;
+  // std::unique_ptr<adios2::Variable<double> > var_u = nullptr;
+  // adios2::Variable<int> var_step;
 
   // this lock is used to avoid the race condition for data write between different thread in one
   // process refer to https://github.com/ornladios/ADIOS2/issues/2076#issuecomment-617925292 for

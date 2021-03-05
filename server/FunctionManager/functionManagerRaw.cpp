@@ -123,32 +123,38 @@ void polyProcess(vtkSmartPointer<vtkPolyData> polyData)
 
 void FunctionManagerRaw::dummyAna(int step, int totalStep)
 {
-  int executeIteration = 1;
   // it takes around 0.2s when the workload is 150
-  //int workLoad = 120;
-  // test all instaging case (10 might be a suitable value that match with the server's processing ability)
-  //executeIteration = 1 + 10;
-  // for the all tightly coupled case, the one iteration is enough
-  int workLoad = 80;
-  
+  // dummy high
+  // int workLoad = 120;
+  // executeIteration = 1 + 10;
+
+  // dummy low
+  // workLoad = 80
+  // executeIteration = 1
+
   /*
-  if (step < (totalStep / 3))
-  {
-    // first part
-    executeIteration = 1 + 30 * (1.0 / (1.0 + ((totalStep / 3) - step)));
-  }
-  else if (step >= (totalStep / 3) && step <= (2 * totalStep / 3))
-  {
-    //meddium part
-    executeIteration = 1 + 30;
-  }
-  else
-  {
-    // last part
-    executeIteration = 1 + 30 * (1.0 / (1.0 + (step - (2 * totalStep / 3))));
-  }
+  dummy peak, low high low
   */
-  // workload
+
+  int executeIteration = 1;
+  int workLoad = 80;
+  if (step < (totalStep / 3)) {
+    // first part
+    executeIteration = 1;
+  } else if (step >= (2*totalStep / 6) && step <= (3 * totalStep / 6)) {
+    workLoad = 120 - 40 * (1.0 / (1.0 + 1.0 * (step - (2*totalStep / 6))));
+    executeIteration = 1 + 10 - 10 * (1.0 / (1.0 + (step - (2*totalStep / 6))));
+  } else if (step > (3 * totalStep / 6) && step <= (4 * totalStep / 6)) {
+    workLoad = 120 - 40 * (1.0 / (1.0 + ((4 * totalStep / 6) - step)));
+    executeIteration =
+        1 + 10 - 10 * (1.0 / (1.0 + 1.0 * ((4 * totalStep / 6) - step)));
+  } else {
+    // last part is low
+    workLoad = 80;
+    executeIteration = 1;
+  }
+
+  // workload with fixed time
   /*
   struct timespec start, end;
   clock_gettime(CLOCK_REALTIME, &start);

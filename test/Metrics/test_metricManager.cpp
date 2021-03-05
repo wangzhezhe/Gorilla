@@ -124,15 +124,52 @@ void test_get4()
   int len = metricmanager.getBufferLen(testMetric);
   if (len != 9)
   {
+    std::cout << "len is " << len << std::endl;
     throw std::runtime_error("failed to get len");
   }
-  metricmanager.putMetric(testMetric, 0.1);
+  metricmanager.putMetric(testMetric, 0.001);
   len = metricmanager.getBufferLen(testMetric);
   // it becomes 1, we need to aovid the overlap between two pointers
-  if (len != 1)
+  if (len != 9)
   {
-    throw std::runtime_error("failed to get len");
+    throw std::runtime_error("failed to get len when it is full");
   }
+  double value = metricmanager.getLastNmetrics(testMetric, 1)[0];
+  if (value != 0.001)
+  {
+    std::cout << "value " << value << std::endl;
+    throw std::runtime_error("failed to fetch the value when the circular arry is full case 1");
+  }
+  metricmanager.putMetric(testMetric, 0.002);
+  len = metricmanager.getBufferLen(testMetric);
+  // it becomes 1, we need to aovid the overlap between two pointers
+  if (len != 9)
+  {
+    throw std::runtime_error("failed to get len when it is full");
+  }
+  value = metricmanager.getLastNmetrics(testMetric, 1)[0];
+  if (value != 0.002)
+  {
+    throw std::runtime_error("failed to fetch the value when the circular arry is full case 2");
+  }
+
+  for (int i = 0; i < 100; i++)
+  {
+    metricmanager.putMetric(testMetric, 0.001 * i);
+    len = metricmanager.getBufferLen(testMetric);
+    // it becomes 1, we need to aovid the overlap between two pointers
+    if (len != 9)
+    {
+      throw std::runtime_error("failed to get len when it is full for multiple inserts");
+    }
+    value = metricmanager.getLastNmetrics(testMetric, 1)[0];
+    if (value != 0.001 * i)
+    {
+      throw std::runtime_error(
+        "failed to fetch the value when the circular arry for multiple inserts");
+    }
+  }
+
   return;
 }
 

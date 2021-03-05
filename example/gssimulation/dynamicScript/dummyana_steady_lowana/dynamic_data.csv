@@ -9,3 +9,8 @@ Saved,0,0,0,0.155407,0.156284,0.155917,0.156104,0.156218,0.156272,0.156273,0.156
 
 only write the staging service for one step for the aim of collecting data
 sim executiontime 30.6331
+sim executiontime 30.8315
+
+for total execuion time it is also 30.6331
+
+since there is not external part

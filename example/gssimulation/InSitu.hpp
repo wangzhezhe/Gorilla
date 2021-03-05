@@ -41,9 +41,9 @@ class InSitu
 
 public:
   // init the metric in the constructor
-  InSitu(int metribuffer = 50)
+  InSitu(int metribuffer = 80)
     : m_metricManager(metribuffer){};
-  InSitu(tl::engine* clientEnginePtr, std::string addrServer, int rank, int metribuffer = 50)
+  InSitu(tl::engine* clientEnginePtr, std::string addrServer, int rank, int metribuffer = 80)
     : m_metricManager(metribuffer)
   {
     m_uniclient = new ClientForSim(clientEnginePtr, addrServer, rank);
