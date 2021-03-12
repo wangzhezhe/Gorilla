@@ -36,6 +36,17 @@ inline std::string loadMasterAddr(std::string masterConfigFile)
 }
 */
 
+struct MetricsSet
+{
+  MetricsSet() = default;
+  double At = 0;
+  double S = 0;
+  double T = 0;
+  double Al = 0;
+  double W = 0;
+  ~MetricsSet() = default;
+};
+
 class InSitu
 {
 
@@ -43,8 +54,10 @@ public:
   // init the metric in the constructor
   InSitu(int metribuffer = 80)
     : m_metricManager(metribuffer){};
-  InSitu(tl::engine* clientEnginePtr, std::string addrServer, int rank, int metribuffer = 80)
+  InSitu(tl::engine* clientEnginePtr, std::string addrServer, int rank, int totalStep,
+    int metribuffer = 80)
     : m_metricManager(metribuffer)
+    , m_totalStep(totalStep)
   {
     m_uniclient = new ClientForSim(clientEnginePtr, addrServer, rank);
   };
@@ -86,8 +99,21 @@ public:
 
   ClientForSim* m_uniclient = NULL;
 
+  void decideTaskPlacement(int step, std::string strategy, bool& ifTCAna, bool& ifWriteToStage);
+
+  MetricsSet estimationGet(std::string lastDecision, int currStep);
+
+  MetricsSet naiveGet();
+
   // metric monitor
   MetricManager m_metricManager;
+
+  int m_totalStep = 0;
+
+  double m_Tmin = std::numeric_limits<double>::max();
+  double m_pavg = 0;
+  double m_savg = 0;
+  double m_sim = 0;
 
   ~InSitu()
   {

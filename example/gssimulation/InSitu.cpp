@@ -421,6 +421,142 @@ void InSitu::registerRtrigger(int num)
   m_uniclient->registerTrigger(3, indexlb, indexub, triggerNameInit, initTgInfo);
 }
 
+MetricsSet InSitu::naiveGet()
+{
+  MetricsSet mset;
+  mset.T = this->m_metricManager.getLastNmetrics("T", 1)[0];
+  mset.At = this->m_metricManager.getLastNmetrics("At", 1)[0];
+  mset.S = this->m_metricManager.getLastNmetrics("S", 1)[0];
+  mset.Al = this->m_metricManager.getLastNmetrics("Al", 1)[0];
+  mset.W = this->m_metricManager.getLastNmetrics("W", 1)[0];
+  return mset;
+}
+
+MetricsSet InSitu::estimationGet(std::string lastDecision, int currStep)
+{
+  // total step can be acquired from the in-situ code
+  MetricsSet mset = this->naiveGet();
+  // let the initial value equals with each other and then update particular one
+  MetricsSet emset = mset;
+  double p = 0;
+  double Tmin;
+
+  if (lastDecision == "tightly")
+  {
+    // loosely coupled case is outdated
+    if (mset.Al < mset.At)
+    {
+      emset.Al = mset.At;
+    }
+    p = mset.At;
+    this->m_Tmin = std::min(this->m_Tmin, mset.T);
+    emset.T = m_Tmin;
+  }
+  else if (lastDecision == "loosely")
+  {
+    // tightly coupled values are outdated
+    if (mset.Al < mset.At)
+    {
+      emset.At = mset.Al;
+    }
+    p = mset.T;
+  }
+  else
+  {
+    throw std::runtime_error("lastDecision is invalid");
+  }
+  this->m_savg = this->m_savg + 1.0 * (mset.S - this->m_savg) / (1.0 * currStep);
+  this->m_pavg = this->m_pavg + 1.0 * (p - this->m_pavg) / (1.0 * currStep);
+  double esim = (this->m_totalStep - currStep) * (this->m_savg + this->m_pavg);
+  emset.S = esim;
+
+  return emset;
+}
+
+void InSitu::decideTaskPlacement(
+  int step, std::string strategy, bool& ifTCAna, bool& ifWriteToStage)
+{
+
+  if (step <= 2)
+  {
+    ifTCAna = true;
+    ifWriteToStage = false;
+
+    return;
+  }
+  if (step == 3)
+  {
+    ifTCAna = false;
+    ifWriteToStage = true;
+
+    return;
+  }
+
+  // get the last situation
+  std::string lastDecision;
+  if (ifTCAna == true && ifWriteToStage == false)
+  {
+    lastDecision = "tightly";
+  }
+  else if (ifTCAna == false && ifWriteToStage == true)
+  {
+    lastDecision = "loosely";
+  }
+  else
+  {
+    throw std::runtime_error("last decisions are in valid");
+  }
+
+  // these two variables need to be restet every time
+  ifTCAna = false;
+  ifWriteToStage = false;
+  double currentsavedTime = 0;
+
+  MetricsSet mset;
+  if (strategy == "dynamicNaive")
+  {
+    mset = this->naiveGet();
+  }
+  else if (strategy == "dynamicEstimation")
+  {
+    // we assume the freq is 1 and currSimStep equals to the currInSituStep
+    mset = this->estimationGet(lastDecision, step);
+  }
+  else
+  {
+    throw std::runtime_error("unsupprted strategy");
+  }
+
+  if (mset.S >= (mset.W + mset.Al))
+  {
+    if (mset.At >= mset.T)
+    {
+      ifWriteToStage = true;
+    }
+    else
+    {
+      ifTCAna = true;
+    }
+    // currentsavedTime = abs(At - T);
+  }
+  else
+  {
+    if (mset.At + mset.S >= (mset.T + mset.W + mset.Al))
+    {
+      ifWriteToStage = true;
+    }
+    else
+    {
+      ifTCAna = true;
+    }
+    // currentsavedTime = abs((At + S) - (T + W + Al));
+  }
+
+  // totalsavedTime = totalsavedTime + currentsavedTime;
+  // std::string metricName = "Saved";
+  // gsinsitu.m_metricManager.putMetric(metricName, currentsavedTime);
+}
+
 void InSitu::dummyAna(int step, int totalStep)
 {
   // it takes around 0.2s when the workload is 150
@@ -438,17 +574,41 @@ void InSitu::dummyAna(int step, int totalStep)
 
   int executeIteration = 1;
   int workLoad = 80;
-  if (step < (totalStep / 3)) {
+  // steady
+  int bound1 = (totalStep / 3);
+  // increase
+  int bound2 = (3 * totalStep / 6);
+  // steady
+  int bound3 = (3 * totalStep / 6);
+  // decrease
+  int bound4 = (4 * totalStep / 6);
+
+  // 0.2 is a good value to make sure it increase gradually
+  // try this later
+  double rate = 1.0;
+
+  if (step < (bound1))
+  {
     // first part
     executeIteration = 1;
-  } else if (step >= (2*totalStep / 6) && step <= (3 * totalStep / 6)) {
-    workLoad = 120 - 40 * (1.0 / (1.0 + 1.0 * (step - (2*totalStep / 6))));
-    executeIteration = 1 + 10 - 10 * (1.0 / (1.0 + (step - (2*totalStep / 6))));
-  } else if (step > (3 * totalStep / 6) && step <= (4 * totalStep / 6)) {
-    workLoad = 120 - 40 * (1.0 / (1.0 + ((4 * totalStep / 6) - step)));
-    executeIteration =
-        1 + 10 - 10 * (1.0 / (1.0 + 1.0 * ((4 * totalStep / 6) - step)));
-  } else {
+  }
+  else if (step >= bound1 && step < bound2)
+  {
+    workLoad = 120 - 40 * (1.0 / (1.0 + rate * (step - bound1)));
+    executeIteration = 1 + 10 - 10 * (1.0 / (1.0 + rate * (step - bound1)));
+  }
+  else if (step >= bound2 && step <= bound3)
+  {
+    workLoad = 120;
+    executeIteration = 11;
+  }
+  else if (step > bound3 && step <= bound4)
+  {
+    workLoad = 120 - 40 * (1.0 / (1.0 + rate * (bound4 - step)));
+    executeIteration = 1 + 10 - 10 * (1.0 / (1.0 + rate * (bound4 - step)));
+  }
+  else
+  {
     // last part is low
     workLoad = 80;
     executeIteration = 1;

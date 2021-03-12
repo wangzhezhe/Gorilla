@@ -127,8 +127,9 @@ int main(int argc, char** argv)
   {
     ifWriteToStage = true;
   }
-  else if (pattern == "dynamic")
+  else if (pattern.find("dynamic") != std::string::npos)
   {
+    // we have the dynamicNaive and dynamicEstimation
     ifdynamic = true;
   }
   else
@@ -182,7 +183,7 @@ int main(int argc, char** argv)
 #endif
 
   std::string addrServer = loadMasterAddr(masterConfigFile);
-  InSitu gsinsitu(&globalclientEngine, addrServer, rank);
+  InSitu gsinsitu(&globalclientEngine, addrServer, rank, settings.steps);
 
   // writer_main.open(settings.output);
 
@@ -275,55 +276,7 @@ int main(int argc, char** argv)
 
     if (ifdynamic)
     {
-      //these two variables need to be restet every time
-      ifTCAna=false;
-      ifWriteToStage=false;
-      double currentsavedTime = 0;
-      if (step <= 2)
-      {
-        ifTCAna = true;
-      }
-      else if (step == 3)
-      {
-        ifWriteToStage = true;
-      }
-      else
-      {
-        // we have all avalible data try to use policy
-        double T = gsinsitu.m_metricManager.getLastNmetrics("T", 1)[0];
-        double At = gsinsitu.m_metricManager.getLastNmetrics("At", 1)[0];
-        double S = gsinsitu.m_metricManager.getLastNmetrics("S", 1)[0];
-        double Al = gsinsitu.m_metricManager.getLastNmetrics("Al", 1)[0];
-        double W = gsinsitu.m_metricManager.getLastNmetrics("W", 1)[0];
-        if (S >= (W + Al))
-        {
-          if (At >= T)
-          {
-            ifWriteToStage = true;
-          }
-          else
-          {
-            ifTCAna = true;
-          }
-          currentsavedTime = abs(At - T);
-        }
-        else
-        {
-          if (At + S >= (T + W + Al))
-          {
-            ifWriteToStage = true;
-          }
-          else
-          {
-            ifTCAna = true;
-          }
-          currentsavedTime = abs((At + S) - (T + W + Al));
-        }
-      }
-
-      totalsavedTime = totalsavedTime + currentsavedTime;
-      std::string metricName = "Saved";
-      gsinsitu.m_metricManager.putMetric(metricName, currentsavedTime);
+      gsinsitu.decideTaskPlacement(step, pattern, ifTCAna, ifWriteToStage);
     }
 
     double dynamicEnd = tl::timer::wtime();

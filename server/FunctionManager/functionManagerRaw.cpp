@@ -138,17 +138,36 @@ void FunctionManagerRaw::dummyAna(int step, int totalStep)
 
   int executeIteration = 1;
   int workLoad = 80;
-  if (step < (totalStep / 3)) {
+  // steady
+  int bound1 = (totalStep / 3);
+  // increase
+  int bound2 = (3 * totalStep / 6);
+  // steady
+  int bound3 = (3 * totalStep / 6);
+  // decrease
+  int bound4 = (4 * totalStep / 6);
+  
+  //0.2 is a good value to make sure it increase gradually
+  //try this later
+  double rate = 1.0;
+
+  if (step < (bound1)) {
     // first part
     executeIteration = 1;
-  } else if (step >= (2*totalStep / 6) && step <= (3 * totalStep / 6)) {
-    workLoad = 120 - 40 * (1.0 / (1.0 + 1.0 * (step - (2*totalStep / 6))));
-    executeIteration = 1 + 10 - 10 * (1.0 / (1.0 + (step - (2*totalStep / 6))));
-  } else if (step > (3 * totalStep / 6) && step <= (4 * totalStep / 6)) {
-    workLoad = 120 - 40 * (1.0 / (1.0 + ((4 * totalStep / 6) - step)));
-    executeIteration =
-        1 + 10 - 10 * (1.0 / (1.0 + 1.0 * ((4 * totalStep / 6) - step)));
-  } else {
+  }
+  else if (step >= bound1 && step < bound2) {
+    workLoad = 120 - 40 * (1.0 / (1.0 + rate * (step - bound1)));
+    executeIteration = 1 + 10 - 10 * (1.0 / (1.0 + rate * (step - bound1)));
+  }
+  else if (step >= bound2 && step <= bound3) {
+    workLoad = 120;
+    executeIteration = 11;
+  }
+  else if (step > bound3 && step <= bound4) {
+    workLoad = 120 - 40 * (1.0 / (1.0 + rate*(bound4 - step)));
+    executeIteration = 1 + 10 - 10 * (1.0 / (1.0 + rate * (bound4 - step)));
+  }
+  else {
     // last part is low
     workLoad = 80;
     executeIteration = 1;

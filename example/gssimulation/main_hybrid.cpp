@@ -174,7 +174,7 @@ int main(int argc, char** argv)
   */
 
   std::string addrServer = loadMasterAddr(masterConfigFile);
-  InSitu gsinsitu(&globalclientEngine, addrServer, rank);
+  InSitu gsinsitu(&globalclientEngine, addrServer, rank, settings.steps);
 
   // writer_main.open(settings.output);
 

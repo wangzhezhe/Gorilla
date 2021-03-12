@@ -6,9 +6,9 @@
 #include <mpi.h>
 #include <thread>
 
+#include "InSitu.hpp"
 #include "gray-scott.h"
 #include "timer.hpp"
-#include "InSitu.hpp"
 
 #include <stdio.h>
 #include <thallium.hpp>
@@ -174,7 +174,7 @@ int main(int argc, char** argv)
   */
 
   std::string addrServer = loadMasterAddr(masterConfigFile);
-  InSitu gsinsitu(&globalclientEngine, addrServer, rank);
+  InSitu gsinsitu(&globalclientEngine, addrServer, rank, settings.steps);
   // writer_main.open(settings.output);
 
   if (rank == 0)
@@ -232,11 +232,11 @@ int main(int argc, char** argv)
       // sprintf(tempstr,"step %d rank %d put %f\n",i,rank,diff);
 
       // std::cout << tempstr << std::endl;
-      
+
       // caculate the avg
       double sumiterdiff;
       MPI_Reduce(&iterdiff, &sumiterdiff, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
-      
+
       if (rank == 0)
       {
         std::cout << "step " << i << " avg iter " << sumiterdiff / procs << std::endl;

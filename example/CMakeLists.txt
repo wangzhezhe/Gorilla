@@ -41,41 +41,41 @@ add_executable(isosurface_event
 
 if(USE_GNI)
   target_link_libraries(gray-scott-inline ${DRC_LIBRARIES} MPI::MPI_C ${VTK_LIBRARIES}
-thallium gorilla_clientforsim metaclient)
+thallium gorilla_clientforsim metaclient metricmanager)
 
 target_link_libraries(gray-scott-stg ${DRC_LIBRARIES} MPI::MPI_C ${VTK_LIBRARIES}
-thallium gorilla_clientforsim metaclient)
+thallium gorilla_clientforsim metaclient metricmanager)
 
 target_link_libraries(gray-scott-hybrid ${DRC_LIBRARIES} MPI::MPI_C ${VTK_LIBRARIES}
-thallium gorilla_clientforsim metaclient)
+thallium gorilla_clientforsim metaclient metricmanager)
 
 target_link_libraries(gray-scott-dynamic ${DRC_LIBRARIES} MPI::MPI_C ${VTK_LIBRARIES}
 thallium gorilla_clientforsim metaclient metricmanager)
 
 target_link_libraries(isosurface ${DRC_LIBRARIES} MPI::MPI_C ${VTK_LIBRARIES}
-thallium gorilla_clientforsim metaclient)
+thallium gorilla_clientforsim metaclient metricmanager)
 
 target_link_libraries(isosurface_event ${DRC_LIBRARIES} MPI::MPI_C ${VTK_LIBRARIES}
-thallium gorilla_clientforsim metaclient)
+thallium gorilla_clientforsim metaclient metricmanager)
 
 else()
   target_link_libraries(gray-scott-inline MPI::MPI_C ${VTK_LIBRARIES}
-thallium gorilla_clientforsim metaclient)
+thallium gorilla_clientforsim metaclient metricmanager)
 
   target_link_libraries(gray-scott-stg MPI::MPI_C ${VTK_LIBRARIES}
-thallium gorilla_clientforsim metaclient)
+thallium gorilla_clientforsim metaclient metricmanager)
 
   target_link_libraries(gray-scott-hybrid MPI::MPI_C ${VTK_LIBRARIES}
 thallium gorilla_clientforsim metaclient metricmanager)
 
 target_link_libraries(gray-scott-dynamic MPI::MPI_C ${VTK_LIBRARIES}
-thallium gorilla_clientforsim metaclient)
+thallium gorilla_clientforsim metaclient metricmanager)
 
   target_link_libraries(isosurface MPI::MPI_C ${VTK_LIBRARIES}
-thallium gorilla_clientforsim metaclient)
+thallium gorilla_clientforsim metaclient metricmanager)
 
   target_link_libraries(isosurface_event MPI::MPI_C ${VTK_LIBRARIES}
-thallium gorilla_clientforsim metaclient)
+thallium gorilla_clientforsim metaclient metricmanager)
 endif()
 
 
