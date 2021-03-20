@@ -1,0 +1,77 @@
+
+T,0.268194,0.231224,0.188724,0.12013,0.271837,0.13114,0.139401,0.128284,0.103585,0.233724,0.200507,0.126633,0.162843,0.303594,0.157337,0.150178,0.139844,0.212964,0.182047,0.179765,0.146396,0.174008,0.163354,0.112468,0.115051,0.240389,0.227349,0.28375
+W,0,0,0,3.9747e-05,3.5496e-05,2.3571e-05,3.4012e-05,3.7867e-05,3.0312e-05,3.2519e-05,3.7075e-05,3.242e-05,3.3367e-05,1.9532e-05,9.519e-06,1.3527e-05,3.1432e-05,2.0351e-05,1.742e-05,3.9606e-05,1.505e-05,2.0454e-05,1.6605e-05,1.6479e-05,3.7453e-05,3.798e-05,3.4177e-05,3.5882e-05,3.2986e-05,1.9105e-05
+S,0.964025,0.961355,0.961921,0.965112,0.963396,0.964039,0.971381,0.964151,0.963697,0.964151,0.963169,0.965147,0.964176,0.982844,0.981341,0.965192,0.963997,0.971239,0.964618,0.966458,0.963288,0.964152,0.965366,0.964912,0.962323,0.965198,0.964375,0.964152,0.96449,0.964205
+At,1.55201,1.5524
+Al,0,0,0,0,1.63279,1.65433,1.68872,1.69623,1.63014,1.64187,1.63003,1.78942,1.64272,1.7256,1.72119,1.69919,1.65592,1.63571,1.78278,1.80571,1.87222,1.75524,1.61691,1.63584,1.62507,1.62231,1.72969,1.60465,1.63199,1.64697
+Saved,0,0,0,1.28421,0.651746,0.673368,0.714901,0.548446,0.754794,0.735252,0.75722,0.624513,0.6401,0.609125,0.68591,0.655549,0.556852,0.730572,0.584045,0.573268,0.430491,0.57925,0.721075,0.735061,0.715611,0.7319,0.674585,0.796816,0.644479,0.642271
+
+sim executiontime 40.2432
+main time tick: 41.9007
+
+sim executiontime 40.4844
+main time tick: 42.218
+
+main time tick: 42.0376
+
+
+time to do the dynamic decision is trival (less than -05) 5.72205e-06
+
+only first two steps are executed by the tightly coupled way
+
+
+the workload configurations
+int workLoad = 120;
+executeIteration = 1 + 10;
+
+{
+    "L": 512,
+    "Du": 1.2,
+    "Dv": 0.8,
+    "F": 0.02,
+    "k": 0.048,
+    "dt": 1.0,
+    "plotgap": 1,
+    "steps": 30,
+    "noise": 0.01,
+    "output": "gs.bp",
+    "checkpoint": false,
+    "checkpoint_freq": 10,
+    "checkpoint_output": "gs_ckpt.bp",
+    "adios_config": "adios2.xml",
+    "adios_span": false,
+    "adios_memory_selection": false,
+    "mesh_type": "image"
+}
+
+
+step 0 ifTCAna 1 ifWriteToStage 0 decision time 1.38283e-05
+step 1 ifTCAna 1 ifWriteToStage 0 decision time 2.38419e-07
+step 2 ifTCAna 0 ifWriteToStage 1 decision time 2.38419e-07
+step 3 ifTCAna 0 ifWriteToStage 1 decision time 0.0159965
+step 4 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
+step 5 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
+step 6 ifTCAna 0 ifWriteToStage 1 decision time 5.48363e-06
+step 7 ifTCAna 0 ifWriteToStage 1 decision time 5.48363e-06
+step 8 ifTCAna 0 ifWriteToStage 1 decision time 5.96046e-06
+step 9 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
+step 10 ifTCAna 0 ifWriteToStage 1 decision time 5.48363e-06
+step 11 ifTCAna 0 ifWriteToStage 1 decision time 5.96046e-06
+step 12 ifTCAna 0 ifWriteToStage 1 decision time 5.48363e-06
+step 13 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
+step 14 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
+step 15 ifTCAna 0 ifWriteToStage 1 decision time 7.86781e-06
+step 16 ifTCAna 0 ifWriteToStage 1 decision time 6.19888e-06
+step 17 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
+step 18 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
+step 19 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
+step 20 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
+step 21 ifTCAna 0 ifWriteToStage 1 decision time 5.96046e-06
+step 22 ifTCAna 0 ifWriteToStage 1 decision time 5.96046e-06
+step 23 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
+step 24 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
+step 25 ifTCAna 0 ifWriteToStage 1 decision time 5.96046e-06
+step 26 ifTCAna 0 ifWriteToStage 1 decision time 1.16825e-05
+step 27 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
+step 28 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
+step 29 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06

@@ -125,16 +125,16 @@ void FunctionManagerRaw::dummyAna(int step, int totalStep)
 {
   // it takes around 0.2s when the workload is 150
   // dummy high
-  // int workLoad = 120;
-  // executeIteration = 1 + 10;
+  int workLoad = 120;
+  int executeIteration = 1 + 10;
 
   // dummy low
-  // workLoad = 80
-  // executeIteration = 1
+  // int workLoad = 80;
+  // int executeIteration = 1;
 
   /*
   dummy peak, low high low
-  */
+
 
   int executeIteration = 1;
   int workLoad = 80;
@@ -146,7 +146,7 @@ void FunctionManagerRaw::dummyAna(int step, int totalStep)
   int bound3 = (3 * totalStep / 6);
   // decrease
   int bound4 = (4 * totalStep / 6);
-  
+
   //0.2 is a good value to make sure it increase gradually
   //try this later
   double rate = 1.0;
@@ -172,7 +172,7 @@ void FunctionManagerRaw::dummyAna(int step, int totalStep)
     workLoad = 80;
     executeIteration = 1;
   }
-
+  */
   // workload with fixed time
   /*
   struct timespec start, end;
@@ -190,24 +190,23 @@ void FunctionManagerRaw::dummyAna(int step, int totalStep)
     }
   }
   */
+  int num = 600;
+  std::vector<double> v(num, 0);
+  double results = 0;
   for (int i = 0; i < executeIteration; i++)
   {
     for (int j = 0; j < workLoad; j++)
     {
-      for (int j = 0; j < workLoad; j++)
+      for (int k = 0; k < workLoad; k++)
       {
-        for (int j = 0; j < workLoad; j++)
+        for (int m = 0; m < num; m++)
         {
-          double temp = (j + 1) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-          temp = (j + 2) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-          temp = (j + 3) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-          temp = (j + 4) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-          temp = (j + 5) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-          temp = (j + 6) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-          temp = (j + 7) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-          temp = (j + 8) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-          temp = (j + 9) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-          temp = (j + 10) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+          double rf = (double)rand() / RAND_MAX;
+          v[i] = 0 + rf * (0.1 * i * k - 0);
+        }
+        for (int m = 0; m < num; m++)
+        {
+          results = v[i] + results;
         }
       }
     }

@@ -226,7 +226,6 @@ int main(int argc, char** argv)
       double iterdiff;
       clock_gettime(CLOCK_REALTIME, &iterstart); /* mark start time */
       sim.iterate();
-      step++;
 
       MPI_Barrier(comm);
       clock_gettime(CLOCK_REALTIME, &iterend); /* mark end time */
@@ -293,8 +292,7 @@ int main(int argc, char** argv)
     if (ifTCAna)
     {
       MPI_Barrier(comm);
-      // struct timespec anastart, anaend1, anaend2;
-      // double anadiff1, anadiff2;
+      // struct timespec anastart, anaend1;
 
       // clock_gettime(CLOCK_REALTIME, &anastart);
 
@@ -306,16 +304,20 @@ int main(int argc, char** argv)
       // caculate the largest region size
       // gsinsitu.polyProcess(polydata, step);
       gsinsitu.dummyAna(step, settings.steps);
-      // clock_gettime(CLOCK_REALTIME, &anaend2);
-      // anadiff2 = (anaend2.tv_sec - anastart.tv_sec) * 1.0 +
-      //  (anaend2.tv_nsec - anastart.tv_nsec) * 1.0 / BILLION;
+
+      // clock_gettime(CLOCK_REALTIME, &anaend1);
+      // double anadiff = (anaend1.tv_sec - anastart.tv_sec) * 1.0 +
+      //  (anaend1.tv_nsec - anastart.tv_nsec) * 1.0 / BILLION;
       double anaEnd = tl::timer::wtime();
 
       // tightly coupled
       std::string metricName = "At";
       double anaSpan = anaEnd - anaStart;
       gsinsitu.m_metricManager.putMetric(metricName, anaSpan);
-      std::cout << "debug ana diff : " << anaSpan << std::endl;
+      if (rank == 0)
+      {
+        std::cout << "step " << step << " anaTime: " << anaSpan << std::endl;
+      }
     }
 
     /*
@@ -361,6 +363,8 @@ int main(int argc, char** argv)
       std::string metricName = "T";
       gsinsitu.m_metricManager.putMetric(metricName, writediff);
     }
+    // let he step records start from 0
+    step++;
   }
 
   clock_gettime(CLOCK_REALTIME, &wfend); /* mark end time */

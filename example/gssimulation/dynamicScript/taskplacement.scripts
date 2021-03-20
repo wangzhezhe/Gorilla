@@ -9,14 +9,13 @@
 # copy metadata server to current dir
 rm unimos_server.log grayscott_dynamic.log
 
-source ~/.gorilla
-
+#assume we are at the build dir
 #start the server
-srun -C haswell -n 8 -c 8 ./unimos_server ~/cworkspace/src/Gorilla/server/settings_gs_gni.json &> unimos_server.log &
+srun -C haswell -N 1 -n 8 -c 8 ./unimos_server ~/cworkspace/src/Gorilla/server/settings_gs_gni.json &> unimos_server.log &
 
 
 #make sure the server load the pipeline
-result=8
+result=0
 while [ $result -ne 8 ]
 do
     result=$(cat unimos_server.log | grep "init server ok" | wc -l)
@@ -26,4 +25,6 @@ done
 
 sleep 1
 
-srun -C haswell -n 32 -c 4 ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_10.json gni &> grayscott_dynamic.log 
+#srun -C haswell -N 2 -n 32 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_10.json gni dynamicEstimation > dynamicestimation.log
+
+srun -C haswell -N 2 -n 32 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_10.json gni alltightly > alltightly.log

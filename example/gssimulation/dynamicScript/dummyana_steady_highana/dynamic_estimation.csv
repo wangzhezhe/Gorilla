@@ -1,0 +1,41 @@
+Al,0,0,0,0,1.60135,1.60135,1.73922,1.75798,1.70676,1.60897,1.69883,1.69424,1.62972,1.76053,1.65557,1.63937,1.63042,1.643,1.63102,1.62373,1.63671,1.65195,1.63401,1.71739,1.68989,1.63775,1.6887,1.68593,1.63079,1.63388
+At,1.551,1.55018,1.54946
+S,0.963096,0.96543,0.968127,0.96495,0.963169,0.96356,0.965811,0.964129,0.964173,0.963503,0.971466,0.97051,0.963546,0.970017,0.970533,0.965932,0.965527,0.96658,0.96734,0.965736,0.965434,0.967238,0.967026,0.965657,0.964832,0.966885,0.966205,0.966148,0.963638,0.96723
+T,0.226819,0.178971,0.145401,0.197102,0.281842,0.153774,0.244993,0.231633,0.226717,0.204503,0.185542,0.208829,0.189258,0.235795,0.196426,0.171016,0.199757,0.237239,0.218522,0.160796,0.148782,0.142037,0.231983,0.240393,0.140195,0.207472,0.192753
+W,0,0,0,2.0513e-05,2.0513e-05,1.9487e-05,1.4449e-05,1.8434e-05,1.4627e-05,1.7224e-05,1.542e-05,1.9828e-05,1.7441e-05,2.8165e-05,1.363e-05,1.5197e-05,2.1841e-05,1.722e-05,1.7566e-05,1.6619e-05,1.8197e-05,2.2715e-05,1.909e-05,1.0811e-05,1.3665e-05,1.7602e-05,1.8741e-05,1.7241e-05,1.7004e-05,1.5784e-05
+
+
+sim executiontime 41.3586
+main time tick: 43.0914
+
+
+step 0 ifTCAna 1 ifWriteToStage 0 decision time 2.47955e-05
+step 1 ifTCAna 1 ifWriteToStage 0 decision time 2.38419e-07
+step 2 ifTCAna 0 ifWriteToStage 1 decision time 4.76837e-07
+step 3 ifTCAna 1 ifWriteToStage 0 decision time 3.33786e-05
+step 4 ifTCAna 0 ifWriteToStage 1 decision time 6.19888e-06
+step 5 ifTCAna 0 ifWriteToStage 1 decision time 6.19888e-06
+step 6 ifTCAna 0 ifWriteToStage 1 decision time 6.4373e-06
+step 7 ifTCAna 0 ifWriteToStage 1 decision time 6.19888e-06
+step 8 ifTCAna 0 ifWriteToStage 1 decision time 6.4373e-06
+step 9 ifTCAna 0 ifWriteToStage 1 decision time 6.4373e-06
+step 10 ifTCAna 0 ifWriteToStage 1 decision time 6.19888e-06
+step 11 ifTCAna 0 ifWriteToStage 1 decision time 6.4373e-06
+step 12 ifTCAna 0 ifWriteToStage 1 decision time 6.19888e-06
+step 13 ifTCAna 0 ifWriteToStage 1 decision time 5.96046e-06
+step 14 ifTCAna 0 ifWriteToStage 1 decision time 6.19888e-06
+step 15 ifTCAna 0 ifWriteToStage 1 decision time 5.96046e-06
+step 16 ifTCAna 0 ifWriteToStage 1 decision time 6.4373e-06
+step 17 ifTCAna 0 ifWriteToStage 1 decision time 6.19888e-06
+step 18 ifTCAna 0 ifWriteToStage 1 decision time 6.19888e-06
+step 19 ifTCAna 0 ifWriteToStage 1 decision time 6.4373e-06
+step 20 ifTCAna 0 ifWriteToStage 1 decision time 6.19888e-06
+step 21 ifTCAna 0 ifWriteToStage 1 decision time 6.4373e-06
+step 22 ifTCAna 0 ifWriteToStage 1 decision time 5.96046e-06
+step 23 ifTCAna 0 ifWriteToStage 1 decision time 6.4373e-06
+step 24 ifTCAna 0 ifWriteToStage 1 decision time 6.67572e-06
+step 25 ifTCAna 0 ifWriteToStage 1 decision time 5.96046e-06
+step 26 ifTCAna 0 ifWriteToStage 1 decision time 6.19888e-06
+step 27 ifTCAna 0 ifWriteToStage 1 decision time 6.19888e-06
+step 28 ifTCAna 0 ifWriteToStage 1 decision time 6.19888e-06
+step 29 ifTCAna 0 ifWriteToStage 1 decision time 6.19888e-06

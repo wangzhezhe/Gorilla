@@ -10,7 +10,47 @@ Saved,0,0,0,0.155407,0.156284,0.155917,0.156104,0.156218,0.156272,0.156273,0.156
 only write the staging service for one step for the aim of collecting data
 sim executiontime 30.6331
 sim executiontime 30.8315
+sim executiontime 30.8937
 
 for total execuion time it is also 30.6331
 
 since there is not external part
+
+int executeIteration = 1;
+int workLoad = 80;
+
+{
+    "L": 512,
+    "Du": 1.2,
+    "Dv": 0.8,
+    "F": 0.02,
+    "k": 0.048,
+    "dt": 1.0,
+    "plotgap": 1,
+    "steps": 30,
+    "noise": 0.01,
+    "output": "gs.bp",
+    "checkpoint": false,
+    "checkpoint_freq": 10,
+    "checkpoint_output": "gs_ckpt.bp",
+    "adios_config": "adios2.xml",
+    "adios_span": false,
+    "adios_memory_selection": false,
+    "mesh_type": "image"
+}
+
+step 0 ifTCAna 1 ifWriteToStage 0 decision time 4.05312e-06
+step 1 ifTCAna 1 ifWriteToStage 0 decision time 2.38419e-07
+step 2 ifTCAna 0 ifWriteToStage 1 decision time 2.38419e-07
+step 3 ifTCAna 1 ifWriteToStage 0 decision time 3.3617e-05
+step 4 ifTCAna 1 ifWriteToStage 0 decision time 5.72205e-06
+step 5 ifTCAna 1 ifWriteToStage 0 decision time 5.48363e-06
+step 6 ifTCAna 1 ifWriteToStage 0 decision time 5.24521e-06
+step 7 ifTCAna 1 ifWriteToStage 0 decision time 5.96046e-06
+step 8 ifTCAna 1 ifWriteToStage 0 decision time 5.24521e-06
+step 9 ifTCAna 1 ifWriteToStage 0 decision time 5.48363e-06
+step 10 ifTCAna 1 ifWriteToStage 0 decision time 5.48363e-06
+step 11 ifTCAna 1 ifWriteToStage 0 decision time 5.72205e-06
+step 12 ifTCAna 1 ifWriteToStage 0 decision time 5.24521e-06
+...
+step 29 ifTCAna 1 ifWriteToStage 0 decision time 5.72205e-06

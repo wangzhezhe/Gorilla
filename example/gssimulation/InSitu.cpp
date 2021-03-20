@@ -455,7 +455,8 @@ MetricsSet InSitu::estimationGet(std::string lastDecision, int currStep)
   else if (lastDecision == "loosely")
   {
     // tightly coupled values are outdated
-    if (mset.Al < mset.At)
+    // if the al is 0, the staging task did not finish and we should still use the old values
+    if (mset.Al < mset.At && mset.Al != 0)
     {
       emset.At = mset.Al;
     }
@@ -477,14 +478,14 @@ void InSitu::decideTaskPlacement(
   int step, std::string strategy, bool& ifTCAna, bool& ifWriteToStage)
 {
 
-  if (step <= 2)
+  if (step <= 1)
   {
     ifTCAna = true;
     ifWriteToStage = false;
 
     return;
   }
-  if (step == 3)
+  if (step == 2)
   {
     ifTCAna = false;
     ifWriteToStage = true;
@@ -561,94 +562,26 @@ void InSitu::dummyAna(int step, int totalStep)
 {
   // it takes around 0.2s when the workload is 150
   // dummy high
-  // int workLoad = 120;
-  // executeIteration = 1 + 10;
+  int workLoad = 120;
+  int executeIteration = 10;
 
-  // dummy low
-  // workLoad = 80
-  // executeIteration = 1
-
-  /*
-  dummy peak, low high low
-  */
-
-  int executeIteration = 1;
-  int workLoad = 80;
-  // steady
-  int bound1 = (totalStep / 3);
-  // increase
-  int bound2 = (3 * totalStep / 6);
-  // steady
-  int bound3 = (3 * totalStep / 6);
-  // decrease
-  int bound4 = (4 * totalStep / 6);
-
-  // 0.2 is a good value to make sure it increase gradually
-  // try this later
-  double rate = 1.0;
-
-  if (step < (bound1))
-  {
-    // first part
-    executeIteration = 1;
-  }
-  else if (step >= bound1 && step < bound2)
-  {
-    workLoad = 120 - 40 * (1.0 / (1.0 + rate * (step - bound1)));
-    executeIteration = 1 + 10 - 10 * (1.0 / (1.0 + rate * (step - bound1)));
-  }
-  else if (step >= bound2 && step <= bound3)
-  {
-    workLoad = 120;
-    executeIteration = 11;
-  }
-  else if (step > bound3 && step <= bound4)
-  {
-    workLoad = 120 - 40 * (1.0 / (1.0 + rate * (bound4 - step)));
-    executeIteration = 1 + 10 - 10 * (1.0 / (1.0 + rate * (bound4 - step)));
-  }
-  else
-  {
-    // last part is low
-    workLoad = 80;
-    executeIteration = 1;
-  }
-
-  // workload with fixed time
-  /*
-  struct timespec start, end;
-  clock_gettime(CLOCK_REALTIME, &start);
-  while (true)
-  {
-    double temp = 0.01 * 0.02 * 0.03 * 0.04 * 0.05 / 0.06;
-    clock_gettime(CLOCK_REALTIME, &end);
-
-    double timespan =
-      (end.tv_sec - start.tv_sec) * 1.0 + (end.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
-    if (timespan > executeTime)
-    {
-      break;
-    }
-  }
-  */
+  int num = 600;
+  std::vector<double> v(num, 0);
+  double results = 0;
   for (int i = 0; i < executeIteration; i++)
   {
     for (int j = 0; j < workLoad; j++)
     {
-      for (int j = 0; j < workLoad; j++)
+      for (int k = 0; k < workLoad; k++)
       {
-        for (int j = 0; j < workLoad; j++)
+        for (int m = 0; m < num; m++)
         {
-          double temp = (j + 1) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-          temp = (j + 2) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-          temp = (j + 3) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-          temp = (j + 4) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-          temp = (j + 5) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-          temp = (j + 6) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-          temp = (j + 7) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-          temp = (j + 8) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-          temp = (j + 9) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
-          temp = (j + 10) * 0.01 * 0.02 * 0.03 * 0.04 * 0.05;
+          double rf = (double)rand() / RAND_MAX;
+          v[i] = 0 + rf * (0.1 * i * k - 0);
+        }
+        for (int m = 0; m < num; m++)
+        {
+          results = v[i] + results;
         }
       }
     }
