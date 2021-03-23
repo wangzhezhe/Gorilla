@@ -1,11 +1,11 @@
 {
     "lenArray":[512,512,512],
     "partitionMethod":"manual",    
-    "metaserverNum": 1,
-    "partitionLayout":[1,1,1],
+    "metaserverNum": 16,
+    "partitionLayout":[4,2,2],
     "protocol": "gni",
     "masterInfo":"./unimos_server.conf",
     "addTrigger": false,
-    "memLimit": "120G",
+    "memLimit": "280G",
     "logLevel":0
 }

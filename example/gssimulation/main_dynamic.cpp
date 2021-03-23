@@ -10,6 +10,7 @@
 #include "gray-scott.h"
 #include "timer.hpp"
 
+#include <chrono>
 #include <stdio.h>
 #include <thallium.hpp>
 #include <time.h>
@@ -37,6 +38,7 @@ extern "C"
 #endif
 
 namespace tl = thallium;
+using namespace std::chrono_literals;
 
 const std::string masterConfigFile = "unimos_server.conf";
 const std::string serverCred = "Gorila_cred_conf";
@@ -199,9 +201,7 @@ int main(int argc, char** argv)
   Timer timer_write;
 
   MPI_Barrier(comm);
-  struct timespec wfstart, wfend;
-  double wfdiff;
-  clock_gettime(CLOCK_REALTIME, &wfstart); /* mark start time */
+  double wfStart = tl::timer::wtime();
 
   // std::ostringstream log_fname;
   // log_fname << "gray_scott_pe_" << rank << ".log";
@@ -217,45 +217,39 @@ int main(int argc, char** argv)
 
   for (int step = 0; step < settings.steps;)
   {
+    MPI_Barrier(comm);
+    double iterStart = tl::timer::wtime();
 
     for (int j = 0; j < settings.plotgap; j++)
     {
 
       MPI_Barrier(comm);
-      struct timespec iterstart, iterend;
-      double iterdiff;
-      clock_gettime(CLOCK_REALTIME, &iterstart); /* mark start time */
+      double simStart = tl::timer::wtime();
+
       sim.iterate();
 
+      // add synthetic execute time
+      std::this_thread::sleep_for(800ms);
+
       MPI_Barrier(comm);
-      clock_gettime(CLOCK_REALTIME, &iterend); /* mark end time */
-      iterdiff = (iterend.tv_sec - iterstart.tv_sec) * 1.0 +
-        (iterend.tv_nsec - iterstart.tv_nsec) * 1.0 / BILLION;
+      double simEnd = tl::timer::wtime();
 
-      // char tempstr[200];
-      // sprintf(tempstr,"step %d rank %d put %f\n",i,rank,diff);
-
-      // std::cout << tempstr << std::endl;
-      // std::cout << "step " << step << " rank " << rank << " detailed iter " << iterdiff
-      //          << std::endl;
-      // put data into the monitor
-      // simulation
+      double simDiff = simEnd - simStart;
       std::string metricName = "S";
-      gsinsitu.m_metricManager.putMetric(metricName, iterdiff);
-
-      // caculate the avg
-      double sumiterdiff;
-      MPI_Reduce(&iterdiff, &sumiterdiff, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
+      gsinsitu.m_metricManager.putMetric(metricName, simDiff);
 
       if (rank == 0)
       {
-        std::cout << "step " << step << " avg iter " << sumiterdiff / procs << std::endl;
+        std::cout << "step " << step << " avg sim " << simDiff << std::endl;
       }
     }
 
-    // TODO use the policy decision process to decide the following behaviours
-    // For the baseline case, both the tightly coupled and loosely coupled is executed
-    // TODO
+    // Do the policy decision
+    MPI_Barrier(comm);
+    double dynamicStart = tl::timer::wtime();
+
+    // TODO, do not get this data for all the client, which will slow down the server
+    // on client get one and send to the sub comm
     // collect information from the staging service by calling getStageStatus
     // and put them into the current metric store
     std::vector<double> stageStatus =
@@ -269,15 +263,12 @@ int main(int argc, char** argv)
     metricName = "Al";
     gsinsitu.m_metricManager.putMetric(metricName, stageStatus[1]);
 
-    // Do the policy decision
-
-    double dynamicStart = tl::timer::wtime();
-
     if (ifdynamic)
     {
       gsinsitu.decideTaskPlacement(step, pattern, ifTCAna, ifWriteToStage);
     }
 
+    MPI_Barrier(comm);
     double dynamicEnd = tl::timer::wtime();
 
     if (rank == 0)
@@ -289,13 +280,14 @@ int main(int argc, char** argv)
     /*
     process the data by tightly coupled in-situ
     */
+    std::string anatype = getenv("ANATYPE");
+    if (anatype == "")
+    {
+      throw std::runtime_error("ANATYPE should not be empty");
+    }
     if (ifTCAna)
     {
       MPI_Barrier(comm);
-      // struct timespec anastart, anaend1;
-
-      // clock_gettime(CLOCK_REALTIME, &anastart);
-
       double anaStart = tl::timer::wtime();
 
       // try to do tightly coupled in-situ processing
@@ -303,17 +295,18 @@ int main(int argc, char** argv)
       // auto polydata = gsinsitu.getPoly(sim, 0.1);
       // caculate the largest region size
       // gsinsitu.polyProcess(polydata, step);
-      gsinsitu.dummyAna(step, settings.steps);
+      gsinsitu.dummyAna(step, settings.steps, anatype);
 
       // clock_gettime(CLOCK_REALTIME, &anaend1);
       // double anadiff = (anaend1.tv_sec - anastart.tv_sec) * 1.0 +
       //  (anaend1.tv_nsec - anastart.tv_nsec) * 1.0 / BILLION;
+      MPI_Barrier(comm);
       double anaEnd = tl::timer::wtime();
-
-      // tightly coupled
+      // tightly coupleds
       std::string metricName = "At";
       double anaSpan = anaEnd - anaStart;
       gsinsitu.m_metricManager.putMetric(metricName, anaSpan);
+
       if (rank == 0)
       {
         std::cout << "step " << step << " anaTime: " << anaSpan << std::endl;
@@ -325,16 +318,12 @@ int main(int argc, char** argv)
     */
     if (ifWriteToStage)
     {
-      if (rank == 0)
-      {
-        std::cout << "Simulation at step " << step << " put data for step "
-                  << step / settings.plotgap << std::endl;
-      }
 
       MPI_Barrier(comm);
-      struct timespec writestart, writeend;
-      double writediff;
-      clock_gettime(CLOCK_REALTIME, &writestart);
+      // struct timespec writestart, writeend;
+      // double writediff;
+      // clock_gettime(CLOCK_REALTIME, &writestart);
+      double putStart = tl::timer::wtime();
 
       std::string VarNameU = "grascottu";
       gsinsitu.write(sim, VarNameU, step, rank);
@@ -347,6 +336,9 @@ int main(int argc, char** argv)
       std::string funcName = "dummyAna";
       std::vector<std::string> funcPara;
       funcPara.push_back(std::to_string(settings.steps));
+
+      funcPara.push_back(anatype);
+
       // make sure the parameter match with the functions specified at the server
       // the blockid equals to the rank in this case
       bool iflast = false;
@@ -357,29 +349,42 @@ int main(int argc, char** argv)
 
       gsinsitu.m_uniclient->executeAsyncExp(step, VarNameU, rank, funcName, funcPara, iflast);
 
-      clock_gettime(CLOCK_REALTIME, &writeend);
-      writediff = (writeend.tv_sec - writestart.tv_sec) * 1.0 +
-        (writeend.tv_nsec - writestart.tv_nsec) * 1.0 / BILLION;
+      // clock_gettime(CLOCK_REALTIME, &writeend);
+      // writediff = (writeend.tv_sec - writestart.tv_sec) * 1.0 +
+      //  (writeend.tv_nsec - writestart.tv_nsec) * 1.0 / BILLION;
+      MPI_Barrier(comm);
+      double putEnd = tl::timer::wtime();
+      double putDiff = putEnd - putStart;
+      if (rank == 0)
+      {
+        std::cout << "step " << step << " put data: " << putDiff << std::endl;
+      }
       std::string metricName = "T";
-      gsinsitu.m_metricManager.putMetric(metricName, writediff);
+      gsinsitu.m_metricManager.putMetric(metricName, putDiff);
+    }
+
+    MPI_Barrier(comm);
+    double iterEnd = tl::timer::wtime();
+
+    if (rank == 0)
+    {
+      std::cout << "step " << step << " iter " << iterEnd - iterStart << std::endl;
     }
     // let he step records start from 0
     step++;
   }
 
-  clock_gettime(CLOCK_REALTIME, &wfend); /* mark end time */
-  wfdiff =
-    (wfend.tv_sec - wfstart.tv_sec) * 1.0 + (wfend.tv_nsec - wfstart.tv_nsec) * 1.0 / BILLION;
-
+  MPI_Barrier(comm);
+  double wfEnd = tl::timer::wtime();
   if (rank == 0)
   {
-    std::cout << "sim executiontime " << wfdiff << std::endl;
+    std::cout << "sim executiontime " << wfEnd - wfStart << std::endl;
     // both ana and sim set tick, compare the maximum one
     // gsinsitu.endwftimer();
     // TODO try to dump out the data in the metric monitor
   }
 
-  std::cout << "taotal saved time " << totalsavedTime << std::endl;
+  // std::cout << "taotal saved time " << totalsavedTime << std::endl;
 
   gsinsitu.m_metricManager.dumpall(rank);
 

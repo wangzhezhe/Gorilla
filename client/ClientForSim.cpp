@@ -45,6 +45,9 @@ std::string ClientForSim::getAssociatedServerAddr()
   }
   // check the cache, return if exist
   int serverId = this->m_rank % this->m_totalServerNum;
+  // this can be used to distinguish different clients
+  // such as using the subcomm group
+  serverId=this->m_serverID;
 
   if (this->m_serverIDToAddr.find(serverId) == this->m_serverIDToAddr.end())
   {
@@ -396,7 +399,7 @@ int ClientForSim::putVTKData(
 
   return 0;
 }
-
+// optim copy and async
 int ClientForSim::putArrayIntoBlockZero(BlockSummary& dataSummary, void* dataContainerSrc)
 {
   struct timespec start, end1;
@@ -531,6 +534,7 @@ int ClientForSim::putArrayIntoBlockZero(BlockSummary& dataSummary, void* dataCon
 }
 
 // non block version
+// optim no block (async) and there is deep copy
 int ClientForSim::putArrayIntoBlock(BlockSummary& dataSummary, void* dataContainerSrc)
 {
   struct timespec start, end1, end2, end3;
@@ -679,7 +683,8 @@ int ClientForSim::putArrayIntoBlock(BlockSummary& dataSummary, void* dataContain
   return 0;
 }
 
-// experimental function with zero copy
+// experimental function with zero copy, block call
+// optim zero copy (async) and there is block call for multi segments
 int ClientForSim::putVTKDataExpZeroOneRpc(
   size_t step, std::string varName, BlockSummary& dataSummary, void* dataContainerSrc)
 {

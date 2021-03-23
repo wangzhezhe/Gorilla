@@ -8,6 +8,8 @@
 #include <vtkImageImport.h>
 #include <vtkMarchingCubes.h>
 #include <vtkMassProperties.h>
+#include <thread>
+using namespace std::chrono_literals;
 
 namespace GORILLA
 {
@@ -121,95 +123,32 @@ void polyProcess(vtkSmartPointer<vtkPolyData> polyData)
   }
 }
 
-void FunctionManagerRaw::dummyAna(int step, int totalStep)
+void FunctionManagerRaw::dummyAna(int step, int totalStep, std::string anatype)
 {
-  // it takes around 0.2s when the workload is 150
-  // dummy high
-  int workLoad = 120;
-  int executeIteration = 1 + 10;
-
-  // dummy low
-  // int workLoad = 80;
-  // int executeIteration = 1;
-
-  /*
-  dummy peak, low high low
-
-
-  int executeIteration = 1;
-  int workLoad = 80;
-  // steady
-  int bound1 = (totalStep / 3);
-  // increase
-  int bound2 = (3 * totalStep / 6);
-  // steady
-  int bound3 = (3 * totalStep / 6);
-  // decrease
-  int bound4 = (4 * totalStep / 6);
-
-  //0.2 is a good value to make sure it increase gradually
-  //try this later
-  double rate = 1.0;
-
-  if (step < (bound1)) {
-    // first part
-    executeIteration = 1;
-  }
-  else if (step >= bound1 && step < bound2) {
-    workLoad = 120 - 40 * (1.0 / (1.0 + rate * (step - bound1)));
-    executeIteration = 1 + 10 - 10 * (1.0 / (1.0 + rate * (step - bound1)));
-  }
-  else if (step >= bound2 && step <= bound3) {
-    workLoad = 120;
-    executeIteration = 11;
-  }
-  else if (step > bound3 && step <= bound4) {
-    workLoad = 120 - 40 * (1.0 / (1.0 + rate*(bound4 - step)));
-    executeIteration = 1 + 10 - 10 * (1.0 / (1.0 + rate * (bound4 - step)));
-  }
-  else {
-    // last part is low
-    workLoad = 80;
-    executeIteration = 1;
-  }
-  */
-  // workload with fixed time
-  /*
-  struct timespec start, end;
-  clock_gettime(CLOCK_REALTIME, &start);
-  while (true)
+  if (anatype == "S_HIGH")
   {
-    double temp = 0.01 * 0.02 * 0.03 * 0.04 * 0.05 / 0.06;
-    clock_gettime(CLOCK_REALTIME, &end);
-
-    double timespan =
-      (end.tv_sec - start.tv_sec) * 1.0 + (end.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
-    if (timespan > executeTime)
+    int workLoad = 1500;
+    int num = 500;
+    std::vector<double> v(num, 0);
+    double results = 0;
+    for (int i = 0; i < workLoad; i++)
     {
-      break;
-    }
-  }
-  */
-  int num = 600;
-  std::vector<double> v(num, 0);
-  double results = 0;
-  for (int i = 0; i < executeIteration; i++)
-  {
-    for (int j = 0; j < workLoad; j++)
-    {
-      for (int k = 0; k < workLoad; k++)
+      for (int j = 0; j < num; j++)
       {
-        for (int m = 0; m < num; m++)
-        {
-          double rf = (double)rand() / RAND_MAX;
-          v[i] = 0 + rf * (0.1 * i * k - 0);
-        }
-        for (int m = 0; m < num; m++)
-        {
-          results = v[i] + results;
-        }
+        double rf = (double)rand() / RAND_MAX;
+        v[j] = 0 + rf * (0.1 * i - 0);
       }
+      for (int j = 0; j < num; j++)
+      {
+        results = v[j] + results;
+      }
+      //the thallium thread sleep may cause inconsistency between two analtyics
+      std::this_thread::sleep_for(1ms);
     }
+  }
+  else
+  {
+    std::cout << "unsupported cases in staging" << std::endl;
   }
 }
 

@@ -81,6 +81,7 @@ public:
   // this value is used for round roubin
   int m_rank = 0;
   int m_totalServerNum = 0;
+  int m_serverID=0;
   // from the id to server addr
   std::map<int, std::string> m_serverIDToAddr;
 

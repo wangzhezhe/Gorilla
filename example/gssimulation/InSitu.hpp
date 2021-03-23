@@ -12,9 +12,12 @@
 #include <vector>
 #include <vtkPolyData.h>
 #include <vtkSmartPointer.h>
+#include <chrono>
+#include <thread>
 
 namespace tl = thallium;
 using namespace GORILLA;
+using namespace std::chrono_literals;
 
 /*
 inline std::string loadMasterAddr(std::string masterConfigFile)
@@ -95,7 +98,7 @@ public:
 
   void registerRtrigger(int num);
 
-  void dummyAna(int step, int totalStep);
+  void dummyAna(int step, int totalStep, std::string anatype);
 
   ClientForSim* m_uniclient = NULL;
 

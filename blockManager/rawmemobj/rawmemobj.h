@@ -38,13 +38,13 @@ struct RawMemObj : public DataBlockInterface
   {
     throw std::runtime_error("unsupported yet for RawMemObj");
   }
-  //we use the new delete instead of malloc and free
-  //since we want it more general
-  //it can not only contain the void array
-  //but can also conatain the particular class
-  //if there is not constructor
-  //we just use the operator new
-  //or maybe use template here to represnet different type in future
+  // we use the new delete instead of malloc and free
+  // since we want it more general
+  // it can not only contain the void array
+  // but can also conatain the particular class
+  // if there is not constructor
+  // we just use the operator new
+  // or maybe use template here to represnet different type in future
   void* m_rawMemPtr = NULL;
 
   virtual ~RawMemObj()

@@ -54,7 +54,7 @@ struct FunctionManagerRaw
   // TODO maybe try to use macro to register things here
   void testisoExec(std::string blockCompleteName, const std::vector<std::string>& parameters);
 
-  void dummyAna(int step, int totalStep);
+  void dummyAna(int step, int totalStep, std::string anatype);
 
   ~FunctionManagerRaw() { std::cout << "destroy FunctionManagerRaw\n"; };
 
@@ -66,6 +66,8 @@ struct FunctionManagerRaw
 
   // hold a pointer to the block manager
   BlockManager* m_blockManager = NULL;
+
+  tl::engine* m_globalServerEnginePtr = nullptr;
 };
 
 }

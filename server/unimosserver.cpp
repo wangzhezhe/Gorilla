@@ -1483,8 +1483,9 @@ void executeAsyncExp(const tl::request& req, std::string& blockIDSuffix, int& bl
         std::string substr = blockIDSuffix.substr(pos + 1); // get from "live" to the end
         int step = stoi(substr);
         int totalStep = stoi(funcParameters[0]);
-        // funcParameters is the toatl step
-        uniServer->m_frawmanager->dummyAna(step, totalStep);
+        std::string anaType = funcParameters[1];
+        // funcParameters is the type of analtyics
+        uniServer->m_frawmanager->dummyAna(step, totalStep, anaType);
       }
       else
       {
@@ -1743,7 +1744,7 @@ void runRerver(std::string networkingType)
   // tl::engine serverEnginge(mid);
 
   // the latest engine can be created based on hii
-  tl::engine serverEnginge("ofi+gni", THALLIUM_SERVER_MODE, true, 12, &hii);
+  tl::engine serverEnginge("ofi+gni", THALLIUM_SERVER_MODE, true, 32, &hii);
   globalServerEnginePtr = &serverEnginge;
 
 #else
@@ -1824,7 +1825,7 @@ void runRerver(std::string networkingType)
   // init all the important manager of the server
   uniServer = new UniServer();
   uniServer->initManager(globalProc, globalRank, gloablSettings.metaserverNum,
-    gloablSettings.memLimit, clientStaging, true);
+    gloablSettings.memLimit, clientStaging, globalServerEnginePtr, true);
 
   // init the DHT
   // this is initilized based on the partition layout

@@ -43,7 +43,7 @@ struct UniServer
 
 
   void initManager(int globalProc, int globalrank, int metaServerNum, std::string memLimit,
-    ClientForStaging* clientStage, bool ifDistributed)
+    ClientForStaging* clientStage, tl::engine*globalEnginePtr, bool ifDistributed)
   {
     // init global managers
     m_addrManager = new AddrManager();
@@ -80,6 +80,7 @@ struct UniServer
 
     m_frawmanager = new FunctionManagerRaw();
     m_frawmanager->m_blockManager = m_blockManager;
+    m_frawmanager->m_globalServerEnginePtr = globalEnginePtr;
 
     m_metricManager = new MetricManager(50);
   };

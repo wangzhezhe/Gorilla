@@ -558,32 +558,31 @@ void InSitu::decideTaskPlacement(
   // gsinsitu.m_metricManager.putMetric(metricName, currentsavedTime);
 }
 
-void InSitu::dummyAna(int step, int totalStep)
+void InSitu::dummyAna(int step, int totalStep, std::string anatype)
 {
-  // it takes around 0.2s when the workload is 150
-  // dummy high
-  int workLoad = 120;
-  int executeIteration = 10;
 
-  int num = 600;
-  std::vector<double> v(num, 0);
-  double results = 0;
-  for (int i = 0; i < executeIteration; i++)
+  if (anatype == "S_HIGH")
   {
-    for (int j = 0; j < workLoad; j++)
+    int workLoad = 1500;
+    int num = 500;
+    std::vector<double> v(num, 0);
+    double results = 0;
+    for (int i = 0; i < workLoad; i++)
     {
-      for (int k = 0; k < workLoad; k++)
+      for (int j = 0; j < num; j++)
       {
-        for (int m = 0; m < num; m++)
-        {
-          double rf = (double)rand() / RAND_MAX;
-          v[i] = 0 + rf * (0.1 * i * k - 0);
-        }
-        for (int m = 0; m < num; m++)
-        {
-          results = v[i] + results;
-        }
+        double rf = (double)rand() / RAND_MAX;
+        v[j] = 0 + rf * (0.1 * i - 0);
       }
+      for (int j = 0; j < num; j++)
+      {
+        results = v[j] + results;
+      }
+      std::this_thread::sleep_for(1ms);
     }
+  }
+  else
+  {
+    std::cout << "unsupported cases for tightly coupled in-situ" << std::endl;
   }
 }
