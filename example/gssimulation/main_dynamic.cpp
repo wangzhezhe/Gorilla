@@ -303,7 +303,7 @@ int main(int argc, char** argv)
     /*
     process the data by tightly coupled in-situ
     */
-    if (ifTCAna && step ==2)
+    if (ifTCAna)
     {
       // do not use comm since not all sim may decide the ifcAna
       double anaStart = tl::timer::wtime();
@@ -313,16 +313,16 @@ int main(int argc, char** argv)
         // iso surface extraction
         // it may takes long time for some processes more than 40 seconds
         // but only for particular step, it is weird
-        double anaStep0 = tl::timer::wtime();
+        //double anaStep0 = tl::timer::wtime();
         auto polydata = gsinsitu.getPoly(sim, 0.5, rank);
-        double anaStep1 = tl::timer::wtime();
+        //double anaStep1 = tl::timer::wtime();
 
         // caculate the largest region size
         gsinsitu.polyProcess(polydata, step);
-        double anaStep2 = tl::timer::wtime();
+        //double anaStep2 = tl::timer::wtime();
 
-        std::cout << "ana substep 1 " << anaStep1 - anaStep0 << " substep 2 " << anaStep2 - anaStep1
-                  << " iteration " << step << std::endl;
+        //std::cout << "ana substep 1 " << anaStep1 - anaStep0 << " substep 2 " << anaStep2 - anaStep1
+        //          << " iteration " << step << std::endl;
       }
       else
       {
@@ -338,12 +338,12 @@ int main(int argc, char** argv)
       double anaSpan = anaEnd - anaStart;
       gsinsitu.m_metricManager.putMetric(metricName, anaSpan);
 
-      // if (rank == 0)
-      //{
-      // some process takes more then 40 seconds for first step, not sure the reason
-      // jump out the first step
-      std::cout << "step " << step << " rank " << rank << " anaTime: " << anaSpan << std::endl;
-      //}
+      if (rank == 0)
+      {
+        // some process takes more then 40 seconds for first step, not sure the reason
+        // jump out the first step
+        std::cout << "step " << step << " rank " << rank << " anaTime: " << anaSpan << std::endl;
+      }
     }
 
     /*

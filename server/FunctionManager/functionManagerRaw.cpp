@@ -9,6 +9,7 @@
 #include <vtkImageImport.h>
 #include <vtkMarchingCubes.h>
 #include <vtkMassProperties.h>
+#include <vtkFlyingEdges3D.h>
 using namespace std::chrono_literals;
 
 namespace GORILLA
@@ -389,15 +390,14 @@ void FunctionManagerRaw::testisoExec(
   importer->SetImportVoidPointer((double*)(blockData));
 
   // Run the marching cubes algorithm
-  auto mcubes = vtkSmartPointer<vtkMarchingCubes>::New();
-  mcubes->SetInputConnection(importer->GetOutputPort());
-  mcubes->ComputeNormalsOn();
-  mcubes->SetValue(0, 0.5);
-  mcubes->Update();
+  auto isoExtraction = vtkSmartPointer<vtkFlyingEdges3D>::New();
+  isoExtraction->SetInputConnection(importer->GetOutputPort());
+  isoExtraction->ComputeNormalsOn();
+  isoExtraction->SetValue(0, 0.5);
+  isoExtraction->Update();
 
-  // caculate the number of polygonals
-  vtkSmartPointer<vtkPolyData> polyData = mcubes->GetOutput();
-
+  vtkSmartPointer<vtkPolyData> polyData = isoExtraction->GetOutput();
+  
   // int numCells = polyData->GetNumberOfPolys();
   // std::cout << "blockCompleteName " << blockCompleteName << " cell number " << numCells
   //          << std::endl;

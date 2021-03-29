@@ -6,6 +6,7 @@
 #include <vtkCenterOfMass.h>
 #include <vtkConnectivityFilter.h>
 #include <vtkDataSetSurfaceFilter.h>
+#include <vtkFlyingEdges3D.h>
 #include <vtkImageData.h>
 #include <vtkImageImport.h>
 #include <vtkMarchingCubes.h>
@@ -84,7 +85,7 @@ void InSitu::writeImageData(const GrayScott& sim, std::string fileName)
 */
 vtkSmartPointer<vtkPolyData> InSitu::getPoly(const GrayScott& sim, double iso, int rank)
 {
-  //double anaStep0 = tl::timer::wtime();
+  // double anaStep0 = tl::timer::wtime();
 
   std::array<int, 3> indexlb = { { (int)sim.offset_x, (int)sim.offset_y, (int)sim.offset_z } };
   std::array<int, 3> indexub = { { (int)(sim.offset_x + sim.size_x - 1),
@@ -93,7 +94,7 @@ vtkSmartPointer<vtkPolyData> InSitu::getPoly(const GrayScott& sim, double iso, i
   auto importer = vtkSmartPointer<vtkImageImport>::New();
   importer->SetDataSpacing(1, 1, 1);
   importer->SetDataOrigin(0, 0, 0);
-  //double anaStep1 = tl::timer::wtime();
+  // double anaStep1 = tl::timer::wtime();
 
   // from 0 to the shape -1 or from lb to the ub??
   importer->SetWholeExtent(indexlb[0], indexub[0], indexlb[1], indexub[1], indexlb[2], indexub[2]);
@@ -104,19 +105,23 @@ vtkSmartPointer<vtkPolyData> InSitu::getPoly(const GrayScott& sim, double iso, i
   // it basically reoranize the data
   // get the same value here direactly to avoid the copy
   importer->SetImportVoidPointer((double*)(sim.u_noghost().data()));
-  //double anaStep2 = tl::timer::wtime();
+  // double anaStep2 = tl::timer::wtime();
 
   // Run the marching cubes algorithm
-  auto mcubes = vtkSmartPointer<vtkMarchingCubes>::New();
-  mcubes->SetInputConnection(importer->GetOutputPort());
-  //mcubes->ComputeNormalsOn();
-  mcubes->SetValue(0, iso);
-  mcubes->Update();
-  vtkSmartPointer<vtkPolyData> poly = mcubes->GetOutput();
-  //double anaStep3 = tl::timer::wtime();
-  
-  //the step3 takes the longest time for particular process at the first step
-  //std::cout << "rank " << rank << " anastep0 " << anaStep1 - anaStep0 << " anastep1 "
+  // auto mcubes = vtkSmartPointer<vtkMarchingCubes>::New();
+  // fly edge is much faster then the marching cube case
+  // it can avoid the long execution for the first step
+  // refer to https://discourse.vtk.org/t/it-takes-long-time-for-the-iso-surface-extraction-at-first-step/5456
+  auto isoExtraction = vtkSmartPointer<vtkFlyingEdges3D>::New();
+  isoExtraction->SetInputConnection(importer->GetOutputPort());
+  isoExtraction->ComputeNormalsOn();
+  isoExtraction->SetValue(0, iso);
+  isoExtraction->Update();
+  vtkSmartPointer<vtkPolyData> poly = isoExtraction->GetOutput();
+  // double anaStep3 = tl::timer::wtime();
+
+  // the step3 takes the longest time for particular process at the first step
+  // std::cout << "rank " << rank << " anastep0 " << anaStep1 - anaStep0 << " anastep1 "
   //          << anaStep2 - anaStep1 << " anastep2 " << anaStep3 - anaStep2 << std::endl;
 
   // return the poly data
