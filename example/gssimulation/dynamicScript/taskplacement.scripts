@@ -10,22 +10,25 @@ rm unimos_server.log grayscott_dynamic.log
 
 #assume we are at the build dir
 #start the server
-srun -C haswell -N 2 -n 16 -c 8 ./unimos_server ~/cworkspace/src/Gorilla/server/settings_gs_gni.json &> unimos_server.log &
+srun -C haswell -N 2 -n 16 -c 8 ./unimos_server ~/cworkspace/src/Gorilla/server/settings_gs_gni.json &> unimosserver.log &
 
 
 #make sure the server load the pipeline
 result=0
 while [ $result -ne 16 ]
 do
-    result=$(cat unimos_server.log | grep "init server ok" | wc -l)
+    result=$(cat unimosserver.log | grep "init server ok" | wc -l)
     echo "$result server ok"
     sleep 1  
 done
 
 sleep 1
 
-export ANATYPE=S_HIGH
-#export ANATYPE=stationary_low
+#export ANATYPE=S_HIGH
+#export ANATYPE=S_LOW
+#export ANATYPE=V_LHL
+#export ANATYPE=V_HLH
+#export ANATYPE=V_MULTIPLE
 
 srun -C haswell -N 2 -n 32 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_10.json gni alltightly &> alltightly.log 
 #srun -C haswell -N 2 -n 32 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_10.json gni allloosely &> allloosely.log 

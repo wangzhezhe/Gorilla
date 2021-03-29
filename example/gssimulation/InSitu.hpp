@@ -15,6 +15,8 @@
 #include <chrono>
 #include <thread>
 
+
+
 namespace tl = thallium;
 using namespace GORILLA;
 using namespace std::chrono_literals;
@@ -89,7 +91,7 @@ public:
   std::string extractAndwrite(
     const GrayScott& sim, size_t step, int rank, std::string recordInfo = "");
 
-  vtkSmartPointer<vtkPolyData> getPoly(const GrayScott& sim, double iso);
+  vtkSmartPointer<vtkPolyData> getPoly(const GrayScott& sim, double iso, int rank);
 
   void stagePolyData(
     vtkSmartPointer<vtkPolyData> polydata, std::string varName, int step, int rank);

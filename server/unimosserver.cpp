@@ -1194,6 +1194,9 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
     }
 
     uniServer->m_schedulerManager->assignMem(blockSummary.getArraySize(blockSummary.m_blockid));
+    // cache client id
+    clientStaging->cacheClientAddr(std::string(req.get_endpoint()));
+
     req.respond(status);
   }
 
@@ -1419,22 +1422,26 @@ void getStageStatus(const tl::request& req)
   // get the current schedule time and execution time
   // return value is a vector, first is schedule time second is execution time
   std::vector<double> stageStatus(2);
-  // TODO adjust if the key exist, if not exist, return 0
-  if (uniServer->m_metricManager->metricExist("default_schedule") == false)
+
+  int clientid = clientStaging->getIDFromClientAddr(std::string(req.get_endpoint()));
+  std::string scheduleKey = "default_schedule" + std::to_string(clientid);
+  std::string anaKey = "default_ana" + std::to_string(clientid);
+
+  if (uniServer->m_metricManager->metricExist(scheduleKey) == false)
   {
     stageStatus[0] = 0;
   }
   else
   {
-    stageStatus[0] = uniServer->m_metricManager->getLastNmetrics("default_schedule", 1)[0];
+    stageStatus[0] = uniServer->m_metricManager->getLastNmetrics(scheduleKey, 1)[0];
   }
-  if (uniServer->m_metricManager->metricExist("default_ana") == false)
+  if (uniServer->m_metricManager->metricExist(anaKey) == false)
   {
     stageStatus[1] = 0;
   }
   else
   {
-    stageStatus[1] = uniServer->m_metricManager->getLastNmetrics("default_ana", 1)[0];
+    stageStatus[1] = uniServer->m_metricManager->getLastNmetrics(anaKey, 1)[0];
   }
 
   req.respond(stageStatus);
@@ -1449,6 +1456,10 @@ void executeAsyncExp(const tl::request& req, std::string& blockIDSuffix, int& bl
 {
   spdlog::debug("---server rank {} start executeAsyncExp for block {}", globalRank, blockIDSuffix);
 
+  int clientid = clientStaging->getIDFromClientAddr(std::string(req.get_endpoint()));
+  std::string scheduleKey = "default_schedule" + std::to_string(clientid);
+  std::string anaKey = "default_ana" + std::to_string(clientid);
+
   std::string blockCompleteName = blockIDSuffix + "_" + std::to_string(blockIndex);
   std::string timerNameSchedule = "schedule_" + blockCompleteName;
   std::string executeNameSchedule = "execute_" + blockCompleteName;
@@ -1459,7 +1470,7 @@ void executeAsyncExp(const tl::request& req, std::string& blockIDSuffix, int& bl
     [=]() {
       double timeSpan = globalSconfig->endTimer(timerNameSchedule);
       // put data into the metric manager
-      uniServer->m_metricManager->putMetric("default_schedule", timeSpan);
+      uniServer->m_metricManager->putMetric(scheduleKey, timeSpan);
 
       // it is posible that this server contians data with same idsuffix (varname+step)
 
@@ -1473,7 +1484,6 @@ void executeAsyncExp(const tl::request& req, std::string& blockIDSuffix, int& bl
       }
       else if (functionName == "testisoExec")
       {
-
         uniServer->m_frawmanager->testisoExec(blockCompleteName, funcParameters);
       }
       else if (functionName == "dummyAna")
@@ -1482,6 +1492,10 @@ void executeAsyncExp(const tl::request& req, std::string& blockIDSuffix, int& bl
         std::size_t pos = blockIDSuffix.find("_");          // position of "live" in str
         std::string substr = blockIDSuffix.substr(pos + 1); // get from "live" to the end
         int step = stoi(substr);
+        if (funcParameters.size() != 2)
+        {
+          throw std::runtime_error("wrong parameter size");
+        }
         int totalStep = stoi(funcParameters[0]);
         std::string anaType = funcParameters[1];
         // funcParameters is the type of analtyics
@@ -1494,7 +1508,7 @@ void executeAsyncExp(const tl::request& req, std::string& blockIDSuffix, int& bl
 
       timeSpan = globalSconfig->endTimer(executeNameSchedule);
       // put data into the metric manager
-      uniServer->m_metricManager->putMetric("default_ana", timeSpan);
+      uniServer->m_metricManager->putMetric(anaKey, timeSpan);
 
       // remove the current data if it is processed
       uniServer->m_blockManager->eraseBlock(blockCompleteName, BACKEND::MEM);

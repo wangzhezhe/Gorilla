@@ -45,9 +45,6 @@ std::string ClientForSim::getAssociatedServerAddr()
   }
   // check the cache, return if exist
   int serverId = this->m_rank % this->m_totalServerNum;
-  // this can be used to distinguish different clients
-  // such as using the subcomm group
-  serverId=this->m_serverID;
 
   if (this->m_serverIDToAddr.find(serverId) == this->m_serverIDToAddr.end())
   {

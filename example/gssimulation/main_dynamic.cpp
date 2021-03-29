@@ -209,6 +209,18 @@ int main(int argc, char** argv)
   // std::ofstream log(log_fname.str());
   // log << "step\ttotal_gs\tcompute_gs\twrite_gs" << std::endl;
 
+  bool useactualAna = true;
+  std::string anatype = "";
+
+  if (useactualAna == false)
+  {
+    anatype = getenv("ANATYPE");
+    if (anatype == "")
+    {
+      throw std::runtime_error("ANATYPE should not be empty");
+    }
+  }
+
   if (rank == 0)
   {
     // start the timer explicitly
@@ -229,7 +241,7 @@ int main(int argc, char** argv)
       sim.iterate();
 
       // add synthetic execute time
-      std::this_thread::sleep_for(800ms);
+      // std::this_thread::sleep_for(600ms);
 
       MPI_Barrier(comm);
       double simEnd = tl::timer::wtime();
@@ -271,46 +283,67 @@ int main(int argc, char** argv)
     MPI_Barrier(comm);
     double dynamicEnd = tl::timer::wtime();
 
-    if (rank == 0)
-    {
-      std::cout << "step " << step << " ifTCAna " << ifTCAna << " ifWriteToStage " << ifWriteToStage
-                << " decision time " << dynamicEnd - dynamicStart << std::endl;
-    }
+    double decisionTime = dynamicEnd - dynamicStart;
+
+    // if (rank == 0)
+    //{
+    // if we want to know all decisions for every process
+    std::cout << "rank " << rank << " step " << step << " ifTCAna " << ifTCAna << " ifWriteToStage "
+              << ifWriteToStage << " decision time " << decisionTime << std::endl;
+    //}
+
+    // TODO set time out mechanims here?
+    // use async, when it longer then specific time, then let it go
+    // if (decisionTime > 1.0)
+    //{
+    //  ifTCAna = true;
+    //  ifWriteToStage = false;
+    //}
 
     /*
     process the data by tightly coupled in-situ
     */
-    std::string anatype = getenv("ANATYPE");
-    if (anatype == "")
+    if (ifTCAna && step ==2)
     {
-      throw std::runtime_error("ANATYPE should not be empty");
-    }
-    if (ifTCAna)
-    {
-      MPI_Barrier(comm);
+      // do not use comm since not all sim may decide the ifcAna
       double anaStart = tl::timer::wtime();
+      if (useactualAna == true)
+      {
+        // try to do tightly coupled in-situ processing
+        // iso surface extraction
+        // it may takes long time for some processes more than 40 seconds
+        // but only for particular step, it is weird
+        double anaStep0 = tl::timer::wtime();
+        auto polydata = gsinsitu.getPoly(sim, 0.5, rank);
+        double anaStep1 = tl::timer::wtime();
 
-      // try to do tightly coupled in-situ processing
-      // iso surface extraction
-      // auto polydata = gsinsitu.getPoly(sim, 0.1);
-      // caculate the largest region size
-      // gsinsitu.polyProcess(polydata, step);
-      gsinsitu.dummyAna(step, settings.steps, anatype);
+        // caculate the largest region size
+        gsinsitu.polyProcess(polydata, step);
+        double anaStep2 = tl::timer::wtime();
+
+        std::cout << "ana substep 1 " << anaStep1 - anaStep0 << " substep 2 " << anaStep2 - anaStep1
+                  << " iteration " << step << std::endl;
+      }
+      else
+      {
+        gsinsitu.dummyAna(step, settings.steps, anatype);
+      }
 
       // clock_gettime(CLOCK_REALTIME, &anaend1);
       // double anadiff = (anaend1.tv_sec - anastart.tv_sec) * 1.0 +
       //  (anaend1.tv_nsec - anastart.tv_nsec) * 1.0 / BILLION;
-      MPI_Barrier(comm);
       double anaEnd = tl::timer::wtime();
       // tightly coupleds
       std::string metricName = "At";
       double anaSpan = anaEnd - anaStart;
       gsinsitu.m_metricManager.putMetric(metricName, anaSpan);
 
-      if (rank == 0)
-      {
-        std::cout << "step " << step << " anaTime: " << anaSpan << std::endl;
-      }
+      // if (rank == 0)
+      //{
+      // some process takes more then 40 seconds for first step, not sure the reason
+      // jump out the first step
+      std::cout << "step " << step << " rank " << rank << " anaTime: " << anaSpan << std::endl;
+      //}
     }
 
     /*
@@ -318,8 +351,8 @@ int main(int argc, char** argv)
     */
     if (ifWriteToStage)
     {
-
-      MPI_Barrier(comm);
+      // not use barrier, since not all process have the same decision
+      // MPI_Barrier(comm);
       // struct timespec writestart, writeend;
       // double writediff;
       // clock_gettime(CLOCK_REALTIME, &writestart);
@@ -332,12 +365,19 @@ int main(int argc, char** argv)
       // call this when there is depedency between the in-situ task execution
       // MPI_Barrier(comm);
       // call the in-staging execution to trigger functions
-      // std::string funcName = "testisoExec";
-      std::string funcName = "dummyAna";
       std::vector<std::string> funcPara;
-      funcPara.push_back(std::to_string(settings.steps));
+      std::string funcName;
 
-      funcPara.push_back(anatype);
+      if (useactualAna == true)
+      {
+        funcName = "testisoExec";
+      }
+      else
+      {
+        funcName = "dummyAna";
+        funcPara.push_back(std::to_string(settings.steps));
+        funcPara.push_back(anatype);
+      }
 
       // make sure the parameter match with the functions specified at the server
       // the blockid equals to the rank in this case
@@ -352,7 +392,7 @@ int main(int argc, char** argv)
       // clock_gettime(CLOCK_REALTIME, &writeend);
       // writediff = (writeend.tv_sec - writestart.tv_sec) * 1.0 +
       //  (writeend.tv_nsec - writestart.tv_nsec) * 1.0 / BILLION;
-      MPI_Barrier(comm);
+      //   MPI_Barrier(comm);
       double putEnd = tl::timer::wtime();
       double putDiff = putEnd - putStart;
       if (rank == 0)

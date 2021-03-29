@@ -72,7 +72,7 @@ void GrayScott::init_field()
     v2.resize(V, 0.0);
     
     //this value controls the area of the initial space
-    const int d = settings.L / 8;
+    const int d = settings.L / 4;
     for (int z = settings.L / 2 - d; z < settings.L / 2 + d; z++) {
         for (int y = settings.L / 2 - d; y < settings.L / 2 + d; y++) {
             for (int x = settings.L / 2 - d; x < settings.L / 2 + d; x++) {

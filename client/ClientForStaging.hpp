@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
+#include <unordered_map>
 
 #include <vtkCharArray.h>
 #include <vtkCommunicator.h>
@@ -52,7 +53,15 @@ public:
   // associated clients addresses
   std::vector<std::string> m_associatedClients;
 
+  tl::mutex m_mutex_clientAddrToID;
+  std::unordered_map<std::string, int> m_clientAddrToID;
+  int m_base = 0;
+
   std::vector<vtkSmartPointer<vtkPolyData> > aggregatePolyBySuffix(std::string blockIDSuffix);
+
+  void cacheClientAddr(std::string clientAddr);
+
+  int getIDFromClientAddr(std::string clientAddr);
 };
 
 }

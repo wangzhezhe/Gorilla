@@ -58,7 +58,7 @@ int UniClient::getAllServerAddr()
 
   for (auto it = adrList.begin(); it != adrList.end(); it++)
   {
-    std::cout << "debug list index " << it->m_index << " addr " << it->m_addr << std::endl;
+    //std::cout << "debug list index " << it->m_index << " addr " << it->m_addr << std::endl;
     this->m_serverIDToAddr[it->m_index] = it->m_addr;
     auto endpoint = this->m_clientEnginePtr->lookup(it->m_addr);
     this->m_serverToEndpoints[it->m_addr] = endpoint;

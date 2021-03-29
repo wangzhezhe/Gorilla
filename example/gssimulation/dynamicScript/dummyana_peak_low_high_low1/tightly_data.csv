@@ -1,0 +1,69 @@
+Al,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+At,0.0681233,0.0681028,0.0684023,0.0682919,0.0684328,0.0675192,0.0684278,0.0682197,0.0683656,0.0684679,0.0683007,0.0683835,0.0683179,0.068471,0.0683491,0.0683584,0.283339,0.486671,0.638776,0.757666,0.853243,0.931161,0.994301,1.05038,1.09716,1.70662,1.7022,1.707,1.70495,1.70486,1.70317,1.70551,1.70188,1.70696,1.70402,1.705,1.09594,1.05045,0.995136,0.931077,0.851287,0.757278,0.639998,0.486482,0.282809,0.0684841,0.0684047,0.0670619,0.0683684,0.0682902,0.0685656,0.0682273,0.0684471,0.0682697,0.0683165,0.0683119,0.0682831,0.0684297,0.068454,0.0682707
+
+W,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+ 
+0: sim executiontime 86.7221
+
+
+
+  int workLoad = 60;
+  int workLoadhigh = 1500;
+
+  // 0-bound1 steady
+  int bound1 = (totalStep / 6) + 5;
+  // bound1-bound2 increase
+  int bound2 = (2 * totalStep / 6) + 5;
+  // bound2-bound3 steady
+  int bound3 = (3 * totalStep / 6) + 5;
+  // bound2-bound4 decrease
+  int bound4 = (4 * totalStep / 6) + 5;
+  // bound4-last steady
+
+  // 0.2 is a good value to make sure it increase gradually
+  // try this later
+  double rate = 0.2;
+
+  if (step < (bound1))
+  {
+    // first part
+  }
+  else if (step > bound1 && step < bound2)
+  {
+    workLoad = workLoadhigh - workLoadhigh * (1.0 / (1.0 + rate * (step - bound1)));
+  }
+  else if (step >= bound2 && step <= bound3)
+  {
+    workLoad = workLoadhigh;
+  }
+  else if (step > bound3 && step < bound4)
+  {
+    workLoad = workLoadhigh - workLoadhigh * (1.0 / (1.0 + rate * (bound4 - step)));
+  }
+  else
+  {
+    // last part is low
+    workLoad = 60;
+  }
+
+  sim size 626, each iteration +600ms
+
+  {
+    "L": 646,
+    "Du": 1.2,
+    "Dv": 0.8,
+    "F": 0.02,
+    "k": 0.048,
+    "dt": 1.0,
+    "plotgap": 1,
+    "steps": 60,
+    "noise": 0.01,
+    "output": "gs.bp",
+    "checkpoint": false,
+    "checkpoint_freq": 10,
+    "checkpoint_output": "gs_ckpt.bp",
+    "adios_config": "adios2.xml",
+    "adios_span": false,
+    "adios_memory_selection": false,
+    "mesh_type": "image"
+}

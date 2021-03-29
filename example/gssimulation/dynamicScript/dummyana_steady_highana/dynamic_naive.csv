@@ -1,39 +1,16 @@
+Al,0,0,0,0,1.66079,1.67645,1.68132,1.66515,1.69461,1.70872,1.74649,1.71853,1.77161,1.79122,1.71877,1.70111,1.69033,1.66925,1.70323,1.69696,1.68355,1.71805,1.69336,1.72016,1.70685,1.66457,1.66403,1.7012,1.65874,1.71468
+At,1.70564,1.70762
+S,0.928683,0.930919,0.931305,0.928789,0.931567,0.928891,0.929322,0.929157,0.929209,0.92868,0.929335,0.928788,0.929096,0.931254,0.929246,0.92862,0.929267,0.92874,0.929112,0.92882,0.929982,0.928783,0.93276,0.928874,0.929315,0.930865,0.929344,0.928425,0.929142,0.928569
+T,0.233216,0.196178,0.180483,0.204183,0.180916,0.163414,0.154047,0.164747,0.17968,0.155965,0.196315,0.164979,0.175879,0.193547,0.195718,0.199745,0.17007,0.17847,0.166098,0.187813,0.174401,0.194331,0.162662,0.191454,0.208379,0.162778,0.167509,0.166504
+W,0,0,0,1.2807e-05,9.214e-06,9.828e-06,2.4253e-05,1.3556e-05,1.0576e-05,8.868e-06,1.9999e-05,1.115e-05,1.5668e-05,8.406e-06,1.0238e-05,9.707e-06,1.203e-05,1.2198e-05,2.3803e-05,1.9988e-05,1.0364e-05,1.927e-05,8.949e-06,1.4517e-05,1.4043e-05,1.5417e-05,1.5057e-05,1.4204e-05,1.0434e-05,1.039e-05
 
 
 
-time to do the dynamic decision is trival (less than -05) 5.72205e-06
-
-only first two steps are executed by the tightly coupled way
-
-
-the workload configurations
-  int workLoad = 120;
-  int executeIteration = 10;
-
-  int num = 600;
-  std::vector<double> v(num, 0);
-  double results = 0;
-  for (int i = 0; i < executeIteration; i++)
-  {
-    for (int j = 0; j < workLoad; j++)
-    {
-      for (int k = 0; k < workLoad; k++)
-      {
-        for (int m = 0; m < num; m++)
-        {
-          double rf = (double)rand() / RAND_MAX;
-          v[i] = 0 + rf * (0.1 * i * k - 0);
-        }
-        for (int m = 0; m < num; m++)
-        {
-          results = v[i] + results;
-        }
-      }
-    }
-  }
+sim executiontime 36.3878
+main time tick: 38.1756
 
 {
-    "L": 812,
+    "L": 512,
     "Du": 1.2,
     "Dv": 0.8,
     "F": 0.02,
@@ -52,35 +29,35 @@ the workload configurations
     "mesh_type": "image"
 }
 
++0.8s for sim time
 
-
-step 0 ifTCAna 1 ifWriteToStage 0 decision time 1.38283e-05
-step 1 ifTCAna 1 ifWriteToStage 0 decision time 2.38419e-07
-step 2 ifTCAna 0 ifWriteToStage 1 decision time 2.38419e-07
-step 3 ifTCAna 0 ifWriteToStage 1 decision time 0.0159965
-step 4 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
-step 5 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
-step 6 ifTCAna 0 ifWriteToStage 1 decision time 5.48363e-06
-step 7 ifTCAna 0 ifWriteToStage 1 decision time 5.48363e-06
-step 8 ifTCAna 0 ifWriteToStage 1 decision time 5.96046e-06
-step 9 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
-step 10 ifTCAna 0 ifWriteToStage 1 decision time 5.48363e-06
-step 11 ifTCAna 0 ifWriteToStage 1 decision time 5.96046e-06
-step 12 ifTCAna 0 ifWriteToStage 1 decision time 5.48363e-06
-step 13 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
-step 14 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
-step 15 ifTCAna 0 ifWriteToStage 1 decision time 7.86781e-06
-step 16 ifTCAna 0 ifWriteToStage 1 decision time 6.19888e-06
-step 17 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
-step 18 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
-step 19 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
-step 20 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
-step 21 ifTCAna 0 ifWriteToStage 1 decision time 5.96046e-06
-step 22 ifTCAna 0 ifWriteToStage 1 decision time 5.96046e-06
-step 23 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
-step 24 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
-step 25 ifTCAna 0 ifWriteToStage 1 decision time 5.96046e-06
-step 26 ifTCAna 0 ifWriteToStage 1 decision time 1.16825e-05
-step 27 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
-step 28 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
-step 29 ifTCAna 0 ifWriteToStage 1 decision time 5.72205e-06
+ 0: step 0 ifTCAna 1 ifWriteToStage 0 decision time 0.00118184
+ 0: step 1 ifTCAna 1 ifWriteToStage 0 decision time 0.000426769
+ 0: step 2 ifTCAna 0 ifWriteToStage 1 decision time 0.000356913
+ 0: step 3 ifTCAna 0 ifWriteToStage 1 decision time 0.000337124
+ 0: step 4 ifTCAna 0 ifWriteToStage 1 decision time 0.000859499
+ 0: step 5 ifTCAna 0 ifWriteToStage 1 decision time 0.000382185
+ 0: step 6 ifTCAna 0 ifWriteToStage 1 decision time 0.000357151
+ 0: step 7 ifTCAna 0 ifWriteToStage 1 decision time 0.000332117
+ 0: step 8 ifTCAna 0 ifWriteToStage 1 decision time 0.000385761
+ 0: step 9 ifTCAna 0 ifWriteToStage 1 decision time 0.00114083
+ 0: step 10 ifTCAna 0 ifWriteToStage 1 decision time 0.000320673
+ 0: step 11 ifTCAna 0 ifWriteToStage 1 decision time 0.000297546
+ 0: step 12 ifTCAna 0 ifWriteToStage 1 decision time 0.000351667
+ 0: step 13 ifTCAna 0 ifWriteToStage 1 decision time 0.000372887
+ 0: step 14 ifTCAna 0 ifWriteToStage 1 decision time 0.000359535
+ 0: step 15 ifTCAna 0 ifWriteToStage 1 decision time 0.000325918
+ 0: step 16 ifTCAna 0 ifWriteToStage 1 decision time 0.000380039
+ 0: step 17 ifTCAna 0 ifWriteToStage 1 decision time 0.000382423
+ 0: step 18 ifTCAna 0 ifWriteToStage 1 decision time 0.000319004
+ 0: step 19 ifTCAna 0 ifWriteToStage 1 decision time 0.000375748
+ 0: step 20 ifTCAna 0 ifWriteToStage 1 decision time 0.000946045
+ 0: step 21 ifTCAna 0 ifWriteToStage 1 decision time 0.000319719
+ 0: step 22 ifTCAna 0 ifWriteToStage 1 decision time 0.000955343
+ 0: step 23 ifTCAna 0 ifWriteToStage 1 decision time 0.000344753
+ 0: step 24 ifTCAna 0 ifWriteToStage 1 decision time 0.000380754
+ 0: step 25 ifTCAna 0 ifWriteToStage 1 decision time 0.000342131
+ 0: step 26 ifTCAna 0 ifWriteToStage 1 decision time 0.000359058
+ 0: step 27 ifTCAna 0 ifWriteToStage 1 decision time 0.000324488
+ 0: step 28 ifTCAna 0 ifWriteToStage 1 decision time 0.000366926
+ 0: step 29 ifTCAna 0 ifWriteToStage 1 decision time 0.000370979

@@ -63,7 +63,7 @@ public:
     // get endpoints and put it into the cache
     for (auto it = adrList.begin(); it != adrList.end(); it++)
     {
-      std::cout << "debug list index " << it->m_index << " addr " << it->m_addr << std::endl;
+      //std::cout << "debug list index " << it->m_index << " addr " << it->m_addr << std::endl;
       this->m_serverIDToAddr[it->m_index] = it->m_addr;
       // check the endpoint and put it into the cache
       auto endpoint = this->m_clientEnginePtr->lookup(it->m_addr);
@@ -81,7 +81,6 @@ public:
   // this value is used for round roubin
   int m_rank = 0;
   int m_totalServerNum = 0;
-  int m_serverID=0;
   // from the id to server addr
   std::map<int, std::string> m_serverIDToAddr;
 

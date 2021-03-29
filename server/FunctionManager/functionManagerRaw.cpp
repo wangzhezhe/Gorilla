@@ -1,6 +1,7 @@
 #include "functionManagerRaw.h"
 #include <spdlog/spdlog.h>
 
+#include <thread>
 #include <vtkAppendPolyData.h>
 #include <vtkCenterOfMass.h>
 #include <vtkCleanPolyData.h>
@@ -8,7 +9,6 @@
 #include <vtkImageImport.h>
 #include <vtkMarchingCubes.h>
 #include <vtkMassProperties.h>
-#include <thread>
 using namespace std::chrono_literals;
 
 namespace GORILLA
@@ -118,38 +118,248 @@ void polyProcess(vtkSmartPointer<vtkPolyData> polyData)
     auto massProperties = vtkSmartPointer<vtkMassProperties>::New();
     massProperties->SetInputConnection(connectivityFilter->GetOutputPort());
 
-    // std::cout << "Surface area of largest blob is " << massProperties->GetSurfaceArea()
+    //std::cout << "Surface area of largest blob is " << massProperties->GetSurfaceArea()
     //          << std::endl;
   }
 }
 
+// stationalry high
+void shigh()
+{
+  int workLoad = 1500;
+  int num = 500;
+  std::vector<double> v(num, 0);
+  double results = 0;
+  for (int i = 0; i < workLoad; i++)
+  {
+    for (int j = 0; j < num; j++)
+    {
+      double rf = (double)rand() / RAND_MAX;
+      v[j] = 0 + rf * (0.1 * i - 0);
+    }
+    for (int j = 0; j < num; j++)
+    {
+      results = v[j] + results;
+    }
+    std::this_thread::sleep_for(1ms);
+  }
+  return;
+}
+
+void slow()
+{
+  int workLoad = 60;
+  int num = 500;
+  std::vector<double> v(num, 0);
+  double results = 0;
+  for (int i = 0; i < workLoad; i++)
+  {
+    for (int j = 0; j < num; j++)
+    {
+      double rf = (double)rand() / RAND_MAX;
+      v[j] = 0 + rf * (0.1 * i - 0);
+    }
+    for (int j = 0; j < num; j++)
+    {
+      results = v[j] + results;
+    }
+    std::this_thread::sleep_for(1ms);
+  }
+  return;
+}
+// varied low high low
+void vlhl(int step, int totalStep)
+{
+  int workLoad = 60;
+  int workLoadhigh = 1500;
+
+  // 0-bound1 steady
+  int bound1 = (totalStep / 6) + 5;
+  // bound1-bound2 increase
+  int bound2 = (2 * totalStep / 6) + 5;
+  // bound2-bound3 steady
+  int bound3 = (3 * totalStep / 6) + 5;
+  // bound2-bound4 decrease
+  int bound4 = (4 * totalStep / 6) + 5;
+  // bound4-last steady
+
+  // 0.2 is a good value to make sure it increase gradually
+  // try this later
+  double rate = 0.2;
+
+  if (step < (bound1))
+  {
+    // first part
+  }
+  else if (step > bound1 && step < bound2)
+  {
+    workLoad = workLoadhigh - workLoadhigh * (1.0 / (1.0 + rate * (step - bound1)));
+  }
+  else if (step >= bound2 && step <= bound3)
+  {
+    workLoad = workLoadhigh;
+  }
+  else if (step > bound3 && step < bound4)
+  {
+    workLoad = workLoadhigh - workLoadhigh * (1.0 / (1.0 + rate * (bound4 - step)));
+  }
+  else
+  {
+    // last part is low
+    workLoad = 60;
+  }
+
+  int num = 500;
+  std::vector<double> v(num, 0);
+  double results = 0;
+  for (int i = 0; i < workLoad; i++)
+  {
+    for (int j = 0; j < num; j++)
+    {
+      double rf = (double)rand() / RAND_MAX;
+      v[j] = 0 + rf * (0.1 * i - 0);
+    }
+    for (int j = 0; j < num; j++)
+    {
+      results = v[j] + results;
+    }
+    std::this_thread::sleep_for(1ms);
+  }
+
+  return;
+}
+
+void vhlh(int step, int totalStep)
+{
+  int workLoadhigh = 1500;
+  int workLoadlow = 60;
+  int workLoad = 0;
+
+  // 0-bound1 steady
+  int bound1 = (totalStep / 5) - 6;
+  // bound1-bound2 increase
+  int bound2 = (2 * totalStep / 5) - 6;
+  // bound2-bound3 steady
+  int bound3 = (3 * totalStep / 5) + 6;
+  // bound2-bound4 decrease
+  int bound4 = (4 * totalStep / 5) + 6;
+  // bound4-last steady
+
+  // 0.2 is a good value to make sure it increase gradually
+  // try this later
+  double rate = 0.2;
+
+  if (step < (bound1))
+  {
+    workLoad = workLoadhigh;
+    // first part
+  }
+  else if (step > bound1 && step < bound2)
+  {
+    workLoad = workLoadhigh - workLoadhigh * (1.0 / (1.0 + rate * (bound2 - step)));
+  }
+  else if (step >= bound2 && step <= bound3)
+  {
+    workLoad = workLoadlow;
+  }
+  else if (step > bound3 && step < bound4)
+  {
+    workLoad = workLoadhigh - workLoadhigh * (1.0 / (1.0 + rate * (step - bound3)));
+  }
+  else
+  {
+    // last part
+    workLoad = workLoadhigh;
+  }
+
+  int num = 500;
+  std::vector<double> v(num, 0);
+  double results = 0;
+  for (int i = 0; i < workLoad; i++)
+  {
+    for (int j = 0; j < num; j++)
+    {
+      double rf = (double)rand() / RAND_MAX;
+      v[j] = 0 + rf * (0.1 * i - 0);
+    }
+    for (int j = 0; j < num; j++)
+    {
+      results = v[j] + results;
+    }
+    std::this_thread::sleep_for(1ms);
+  }
+  return;
+}
+
+void vmultiple(int step, int totalStep)
+{
+
+  int workLoadhigh = 560;
+  int workLoadMiddle = 250;
+  int workLoadlow = 60;
+  int workLoad = 0;
+  int num = 500;
+  std::vector<double> v(num, 0);
+  double results = 0;
+
+  if (step % 4 == 0)
+  {
+    workLoad = workLoadlow;
+  }
+  if (step % 4 == 1 || step % 4 == 3)
+  {
+    workLoad = workLoadMiddle;
+  }
+  if (step % 4 == 2)
+  {
+    workLoad = workLoadhigh;
+  }
+
+  for (int i = 0; i < workLoad; i++)
+  {
+    for (int j = 0; j < num; j++)
+    {
+      double rf = (double)rand() / RAND_MAX;
+      v[j] = 0 + rf * (0.1 * i - 0);
+    }
+    for (int j = 0; j < num; j++)
+    {
+      results = v[j] + results;
+    }
+    std::this_thread::sleep_for(1ms);
+  }
+  return;
+}
+
 void FunctionManagerRaw::dummyAna(int step, int totalStep, std::string anatype)
 {
+
   if (anatype == "S_HIGH")
   {
-    int workLoad = 1500;
-    int num = 500;
-    std::vector<double> v(num, 0);
-    double results = 0;
-    for (int i = 0; i < workLoad; i++)
-    {
-      for (int j = 0; j < num; j++)
-      {
-        double rf = (double)rand() / RAND_MAX;
-        v[j] = 0 + rf * (0.1 * i - 0);
-      }
-      for (int j = 0; j < num; j++)
-      {
-        results = v[j] + results;
-      }
-      //the thallium thread sleep may cause inconsistency between two analtyics
-      std::this_thread::sleep_for(1ms);
-    }
+    shigh();
+  }
+  else if (anatype == "S_LOW")
+  {
+    slow();
+  }
+  else if (anatype == "V_LHL")
+  {
+    vlhl(step, totalStep);
+  }
+  else if (anatype == "V_HLH")
+  {
+    vhlh(step, totalStep);
+  }
+  else if (anatype == "V_MULTIPLE")
+  {
+    vmultiple(step, totalStep);
   }
   else
   {
     std::cout << "unsupported cases in staging" << std::endl;
   }
+
+  return;
 }
 
 void FunctionManagerRaw::testisoExec(
@@ -247,5 +457,4 @@ std::string FunctionManagerRaw::aggregateProcess(ClientForStaging* uniclient,
 
   return "";
 }
-
 }

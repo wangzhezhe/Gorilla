@@ -141,4 +141,54 @@ std::vector<vtkSmartPointer<vtkPolyData> > ClientForStaging::aggregatePolyBySuff
   return polylist;
 }
 
+void ClientForStaging::cacheClientAddr(std::string clientAddr)
+{
+
+  // if exist, reutrn
+  this->m_mutex_clientAddrToID.lock();
+  int num = this->m_clientAddrToID.count(clientAddr);
+  this->m_mutex_clientAddrToID.unlock();
+
+  if (num != 0)
+  {
+    // if the key exist, then return
+    return;
+  }
+
+  // if not exist
+  // get a new id and then put into the cache
+  this->m_mutex_clientAddrToID.lock();
+  this->m_base++;
+  this->m_clientAddrToID[clientAddr] = this->m_base;
+  this->m_mutex_clientAddrToID.unlock();
+
+  return;
+}
+
+int ClientForStaging::getIDFromClientAddr(std::string clientAddr)
+{
+
+  // if not exist, return -1
+  this->m_mutex_clientAddrToID.lock();
+  int num = this->m_clientAddrToID.count(clientAddr);
+  this->m_mutex_clientAddrToID.unlock();
+
+  if (num == 0)
+  {
+    // if not exist, then cache it
+    this->cacheClientAddr(clientAddr);
+  }
+
+  this->m_mutex_clientAddrToID.lock();
+  num = this->m_clientAddrToID.count(clientAddr);
+  if (num == 0)
+  {
+    throw std::runtime_error("the m_clientAddrToID is not supposed to be empty");
+  }
+  int id = this->m_clientAddrToID[clientAddr];
+  this->m_mutex_clientAddrToID.unlock();
+
+  return id;
+}
+
 }
