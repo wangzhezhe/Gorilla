@@ -1,7 +1,8 @@
 #!/bin/bash
 #SBATCH --qos=debug
-#SBATCH --nodes=11
-#SBATCH --time=29:00
+#SBATCH --nodes=12
+#SBATCH --account=m3502
+#SBATCH --time=10:00
 #SBATCH --licenses=cscratch1
 #SBATCH --constraint=haswell
 
@@ -10,12 +11,13 @@ rm unimos_server.log grayscott_dynamic.log
 
 #assume we are at the build dir
 #start the server
-srun -C haswell -N 2 -n 16 -c 8 ./unimos_server ~/cworkspace/src/Gorilla/server/settings_gs_gni_actualana.json &> unimosserver.log &
+#it needs lots of memory when there is peak for processing, 4 server can predent the oom isssue in our evaluation
+srun -C haswell -N 4 -n 32 -c 8 ./unimos_server ~/cworkspace/src/Gorilla/server/settings_gs_gni_actualana.json &> unimosserver.log &
 
 
 #make sure the server load the pipeline
 result=0
-while [ $result -ne 16 ]
+while [ $result -ne 32 ]
 do
     result=$(cat unimosserver.log | grep "init server ok" | wc -l)
     echo "$result server ok"
@@ -35,9 +37,9 @@ sleep 1
 # maybe try the loosely coupled case with differnet resources options
 
 #srun -C haswell -N 8 -n 128 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni alltightly &> actual_alltightly.log 
-srun -C haswell -N 8 -n 128 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni allloosely &> actual_allloosely.log 
+#srun -C haswell -N 8 -n 128 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni allloosely &> actual_allloosely.log 
 #srun -C haswell -N 8 -n 128 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicNaive &> actual_dynamicNaive.log
-#srun -C haswell -N 8 -n 128 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicEstimation &> actual_dynamicEstimation.log
+srun -C haswell -N 8 -n 128 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicEstimation &> actual_dynamicEstimation.log
 
 # the server may need longer time to finish to process the in-staging tasks
 wait

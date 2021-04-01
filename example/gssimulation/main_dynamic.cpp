@@ -313,15 +313,16 @@ int main(int argc, char** argv)
         // iso surface extraction
         // it may takes long time for some processes more than 40 seconds
         // but only for particular step, it is weird
-        //double anaStep0 = tl::timer::wtime();
+        // double anaStep0 = tl::timer::wtime();
         auto polydata = gsinsitu.getPoly(sim, 0.5, rank);
-        //double anaStep1 = tl::timer::wtime();
+        // double anaStep1 = tl::timer::wtime();
 
         // caculate the largest region size
         gsinsitu.polyProcess(polydata, step);
-        //double anaStep2 = tl::timer::wtime();
+        // double anaStep2 = tl::timer::wtime();
 
-        //std::cout << "ana substep 1 " << anaStep1 - anaStep0 << " substep 2 " << anaStep2 - anaStep1
+        // std::cout << "ana substep 1 " << anaStep1 - anaStep0 << " substep 2 " << anaStep2 -
+        // anaStep1
         //          << " iteration " << step << std::endl;
       }
       else
@@ -360,6 +361,7 @@ int main(int argc, char** argv)
 
       std::string VarNameU = "grascottu";
       gsinsitu.write(sim, VarNameU, step, rank);
+      //std::cout << "rank " << rank << " debug write ok " << std::endl;
 
       // when all write ok, trigger the staging process
       // call this when there is depedency between the in-situ task execution
@@ -387,8 +389,9 @@ int main(int argc, char** argv)
         iflast = true;
       }
 
+      // there is no way to set comm here? since differnet process has different strategies
       gsinsitu.m_uniclient->executeAsyncExp(step, VarNameU, rank, funcName, funcPara, iflast);
-
+      //std::cout << "rank " << rank << " debug executeAsync ok " << std::endl;
       // clock_gettime(CLOCK_REALTIME, &writeend);
       // writediff = (writeend.tv_sec - writestart.tv_sec) * 1.0 +
       //  (writeend.tv_nsec - writestart.tv_nsec) * 1.0 / BILLION;
