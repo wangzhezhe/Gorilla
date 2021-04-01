@@ -59,9 +59,9 @@ public:
 
   std::vector<vtkSmartPointer<vtkPolyData> > aggregatePolyBySuffix(std::string blockIDSuffix);
 
-  void cacheClientAddr(std::string clientAddr);
+  void cacheClientAddr(const std::string& clientAddr);
 
-  int getIDFromClientAddr(std::string clientAddr);
+  int getIDFromClientAddr(const std::string& clientAddr);
 };
 
 }

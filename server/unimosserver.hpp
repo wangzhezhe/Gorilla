@@ -92,7 +92,8 @@ struct UniServer
   //it is convenient to keep a map of datacontainer
   //this map stores all memspace used for data transfering
   //this space is supposed to reused multiple times
-  tl::mutex m_dataContainerMapmutex;
+  //tl::mutex m_dataContainerMapmutex;
+  //make sure these two data structure have the same view, we use same lock here
   std::map<int, void*> m_dataContainerMap;
   
 

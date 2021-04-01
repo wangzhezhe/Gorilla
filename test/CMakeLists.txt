@@ -1,5 +1,5 @@
-add_executable(test_dhtmanager ./DHTManager/test_dhtmanager.cpp ../utils/hilbert/hilbert.c)
-target_link_libraries(test_dhtmanager thallium dhtmanager)
+#add_executable(test_dhtmanager ./DHTManager/test_dhtmanager.cpp ../utils/hilbert/hilbert.c)
+#target_link_libraries(test_dhtmanager thallium dhtmanager)
 
 add_executable(test_dhtmanagerManual ./DHTManager/test_dhtmanagerManual.cpp)
 target_link_libraries(test_dhtmanagerManual dhtmanager)
@@ -103,6 +103,9 @@ target_link_libraries(test_clientforsim thallium gorilla_clientforsim blockManag
 add_executable(test_clientforstage ./Client/test_clientforstage.cpp)
 target_link_libraries(test_clientforstage thallium gorilla_clientforstage)
 
+add_executable(test_clientforstageID ./Client/test_clientforstageID.cpp)
+target_link_libraries(test_clientforstageID thallium gorilla_clientforstage)
+
 #add_executable(adiosthread ./thalimtest/adiosthread.cpp)
 #target_link_libraries(adiosthread )
 
@@ -123,6 +126,9 @@ target_link_libraries(test_vtkexplicitzero ${VTK_LIBRARIES} thallium blockManage
 
 add_executable(test_scheduleTime ./Others/scheduleTime.cpp)
 target_link_libraries(test_scheduleTime thallium ${VTK_LIBRARIES})
+
+
+
 
 # deprecated
 # add_subdirectory(mock)
@@ -156,3 +162,5 @@ add_test( NAME test_putgetevent COMMAND test_putgetevent)
 add_test( NAME test_vtkexplicit COMMAND test_vtkexplicit)
 
 add_test( NAME test_metricManager COMMAND test_metricManager)
+
+add_test( NAME test_clientforstageID COMMAND test_clientforstageID)

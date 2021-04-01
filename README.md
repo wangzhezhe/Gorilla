@@ -35,11 +35,11 @@ module load spack
 #spack load cmake@3.18.2%gcc@8.2.0
 
 module swap PrgEnv-intel PrgEnv-gnu
-# ssg works well for gcc 9.3.0, sometimes it can not be installed with 8.3.0
+# ssg works well for gcc 9.3.0
 module swap gcc/8.3.0 gcc/9.3.0
 
 spack load -r mochi-thallium
-spack load mochi-cfg
+#spack load mochi-cfg
 spack load -r mochi-abt-io
 
 export CRAYPE_LINK_TYPE=dynamic
@@ -47,6 +47,13 @@ cd $SCRATCH/build_Gorilla
 
 
 export MPICH_GNI_NDREG_ENTRIES=1024 
+# get more mercury info
+export HG_NA_LOG_LEVEL=debug
+
+# avoid argobot thred pool issue, and set this to 2M
+# this may helps avoid segfault when we use the processing and IO in large amount
+export ABT_THREAD_STACKSIZE=2097152
+
 # get more mercury info
 export HG_NA_LOG_LEVEL=debug
 ```

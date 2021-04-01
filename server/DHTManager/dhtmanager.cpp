@@ -1,5 +1,4 @@
 #include "dhtmanager.h"
-#include "../utils/hilbert/hilbert.h"
 #include <algorithm>
 #include <string>
 #include <cmath>
@@ -41,6 +40,7 @@ int nextPowerOf2(int n)
 
 // init the metaServerBBOXList according to the metaServerNum(partitionNum) and
 // the bbox of the global domain The hilbert DHT is only suitable for the cubic
+/*
 void DHTManager::initDHTBySFC(size_t ndim, size_t metaServerNum, BBX *globalBBX)
 {
 
@@ -250,6 +250,7 @@ void DHTManager::initDHTBySFC(size_t ndim, size_t metaServerNum, BBX *globalBBX)
 
   return;
 }
+*/
 
 void DHTManager::initDHTManually(std::vector<int> &lenArray, std::vector<int> &partitionLayout)
 {

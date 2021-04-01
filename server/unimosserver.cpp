@@ -990,6 +990,9 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
   double diff1, diff2, diff3;
   clock_gettime(CLOCK_REALTIME, &start);
 
+  // cache client id
+  clientStaging->cacheClientAddr(req.get_endpoint());
+
   if (blockSummary.m_backend != BACKEND::MEM)
   {
     throw std::runtime_error("the backend is supposed to be mem for putrawdata");
@@ -1015,38 +1018,44 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
   // currently we assume there is one channel per client
   // create the new memory space when the clientid is not exist
 
+  // make sure the bulk view and the m_dataContainerMap view is consistent, so we use one lock for
+  // these data
   uniServer->m_bulkMapmutex.lock();
+
   if (uniServer->m_bulkMap.find(clientID) == uniServer->m_bulkMap.end())
   {
-
+    // not exist
     // update the accouting info for mem space
     uniServer->m_schedulerManager->assignMem(transferSize);
-    uniServer->m_dataContainerMapmutex.lock();
 
-    uniServer->m_dataContainerMap[clientID] = (void*)malloc(transferSize);
+    void* dataContainer = (void*)malloc(transferSize);
+    spdlog::info("clientID {} assign ok", clientID);
 
     std::vector<std::pair<void*, std::size_t> > segments(1);
-    segments[0].first = uniServer->m_dataContainerMap[clientID];
+    segments[0].first = dataContainer;
     segments[0].second = transferSize;
-    uniServer->m_dataContainerMapmutex.unlock();
 
     uniServer->m_bulkMap[clientID] =
       globalServerEnginePtr->expose(segments, tl::bulk_mode::write_only);
+
+    // record the data
+    uniServer->m_dataContainerMap[clientID] = dataContainer;
 
     spdlog::info("allocate new bulk for clientID {} serverRank {} size {}", clientID, globalRank,
       transferSize);
   }
   else
   {
+    // exist
     // TODO need to be updated here, even for the same client
     // the data size can also change？how to process this?
     size_t oldSize = uniServer->m_bulkMap[clientID].size();
-    // if old size not equal with the previous one
-    // reallocate the space
+
+    // if the size is not equal with the previous one
+    // just resize it(we need to create a new bulk), no matter it is larger or smaller
     if (oldSize != transferSize)
     {
       spdlog::debug("old size {} new size {}", oldSize, transferSize);
-      uniServer->m_dataContainerMapmutex.lock();
       // create the new mem when the client exists but the memsize is not enough
       if (uniServer->m_dataContainerMap[clientID] != nullptr)
       {
@@ -1054,26 +1063,24 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
         uniServer->m_schedulerManager->releaseMem(oldSize);
       }
 
+      // free old one and assign new one
       uniServer->m_schedulerManager->assignMem(transferSize);
-      uniServer->m_dataContainerMap[clientID] = (void*)malloc(transferSize);
+      void* dataContainer = (void*)malloc(transferSize);
       spdlog::info("resize the new memsize of client {} to {}", clientID, transferSize);
-      uniServer->m_dataContainerMapmutex.unlock();
+
+      std::vector<std::pair<void*, std::size_t> > segments(1);
+      segments[0].first = dataContainer;
+      segments[0].second = transferSize;
+
+      uniServer->m_bulkMap[clientID] =
+        globalServerEnginePtr->expose(segments, tl::bulk_mode::write_only);
+
+      // record the new address
+      uniServer->m_dataContainerMap[clientID] = dataContainer;
     }
-
-    // if the size is not equal with the previous one
-    // just resize it(we need to create a new bulk), no matter it is larger or smaller
-    uniServer->m_dataContainerMapmutex.lock();
-    std::vector<std::pair<void*, std::size_t> > segments(1);
-    segments[0].first = uniServer->m_dataContainerMap[clientID];
-    segments[0].second = transferSize;
-    uniServer->m_dataContainerMapmutex.unlock();
-
-    uniServer->m_bulkMap[clientID] =
-      globalServerEnginePtr->expose(segments, tl::bulk_mode::write_only);
   }
 
   tl::bulk currentBulk = uniServer->m_bulkMap[clientID];
-  uniServer->m_bulkMapmutex.unlock();
 
   clock_gettime(CLOCK_REALTIME, &end1);
   diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
@@ -1082,6 +1089,8 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
   tl::endpoint ep = req.get_endpoint();
   // pull the data onto the server
   dataBulk.on(ep) >> currentBulk;
+  // the operation for currentBulk equals to the operation to current Map
+  uniServer->m_bulkMapmutex.unlock();
 
   clock_gettime(CLOCK_REALTIME, &end2);
   diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
@@ -1123,9 +1132,9 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
     // when the memory of the vtkchar array is allocated???
     // TODO add the condition varible here
     // start to memcopy when the datacontainer is not used
-    uniServer->m_dataContainerMapmutex.lock();
+    uniServer->m_bulkMapmutex.lock();
     memcpy(recvbuffer->GetPointer(0), uniServer->m_dataContainerMap[clientID], transferSize);
-    uniServer->m_dataContainerMapmutex.unlock();
+    uniServer->m_bulkMapmutex.unlock();
 
     // check the data content
     // recvbuffer->PrintSelf(std::cout, vtkIndent(5));
@@ -1177,10 +1186,10 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
       uniServer->m_addrManager->nodeAddr, uniServer->m_blockManager->DataBlockMap.size());
 
     // persist the data, and put it into the blockManager
-    uniServer->m_dataContainerMapmutex.lock();
+    uniServer->m_bulkMapmutex.lock();
     int status = uniServer->m_blockManager->putBlock(
       blockSummary, BACKEND::MEM, uniServer->m_dataContainerMap[clientID]);
-    uniServer->m_dataContainerMapmutex.unlock();
+    uniServer->m_bulkMapmutex.unlock();
 
     spdlog::debug("--- ok put block {} on server {}", blockSummary.m_blockid,
       uniServer->m_addrManager->nodeAddr);
@@ -1194,8 +1203,6 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
     }
 
     uniServer->m_schedulerManager->assignMem(blockSummary.getArraySize(blockSummary.m_blockid));
-    // cache client id
-    clientStaging->cacheClientAddr(std::string(req.get_endpoint()));
 
     req.respond(status);
   }
@@ -1423,7 +1430,9 @@ void getStageStatus(const tl::request& req)
   // return value is a vector, first is schedule time second is execution time
   std::vector<double> stageStatus(2);
 
-  int clientid = clientStaging->getIDFromClientAddr(std::string(req.get_endpoint()));
+  // int clientid = 0;
+  int clientid = clientStaging->getIDFromClientAddr(req.get_endpoint());
+
   std::string scheduleKey = "default_schedule" + std::to_string(clientid);
   std::string anaKey = "default_ana" + std::to_string(clientid);
 
@@ -1455,8 +1464,8 @@ void executeAsyncExp(const tl::request& req, std::string& blockIDSuffix, int& bl
   std::string& functionName, std::vector<std::string>& funcParameters, bool ifLastStep)
 {
   spdlog::debug("---server rank {} start executeAsyncExp for block {}", globalRank, blockIDSuffix);
-
-  int clientid = clientStaging->getIDFromClientAddr(std::string(req.get_endpoint()));
+  // int clientid = 0;
+  int clientid = clientStaging->getIDFromClientAddr(req.get_endpoint());
   std::string scheduleKey = "default_schedule" + std::to_string(clientid);
   std::string anaKey = "default_ana" + std::to_string(clientid);
 
@@ -1642,6 +1651,8 @@ void initDHT()
   // config the dht manager
   if (gloablSettings.partitionMethod.compare("SFC") == 0)
   {
+    throw std::runtime_error("unsupported SFC currently");
+    /*
     int maxLen = 0;
     for (int i = 0; i < dataDims; i++)
     {
@@ -1655,6 +1666,7 @@ void initDHT()
       globalBBX->BoundList.push_back(tempb);
     }
     uniServer->m_dhtManager->initDHTBySFC(dataDims, gloablSettings.metaserverNum, globalBBX);
+    */
   }
   else if (gloablSettings.partitionMethod.compare("manual") == 0)
   {

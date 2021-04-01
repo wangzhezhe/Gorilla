@@ -141,54 +141,35 @@ std::vector<vtkSmartPointer<vtkPolyData> > ClientForStaging::aggregatePolyBySuff
   return polylist;
 }
 
-void ClientForStaging::cacheClientAddr(std::string clientAddr)
+void ClientForStaging::cacheClientAddr(const std::string& clientAddr)
 {
-
+  // std::cout << " debug cacheClientAddr, addr: " << clientAddr << std::endl;
   // if exist, reutrn
-  this->m_mutex_clientAddrToID.lock();
-  int num = this->m_clientAddrToID.count(clientAddr);
-  this->m_mutex_clientAddrToID.unlock();
 
-  if (num != 0)
+  std::lock_guard<tl::mutex> g(this->m_mutex_clientAddrToID);
+  if (this->m_clientAddrToID.find(clientAddr) == this->m_clientAddrToID.end())
   {
-    // if the key exist, then return
-    return;
+    // not found
+    this->m_base++;
+    this->m_clientAddrToID[clientAddr] = this->m_base;
   }
-
-  // if not exist
-  // get a new id and then put into the cache
-  this->m_mutex_clientAddrToID.lock();
-  this->m_base++;
-  this->m_clientAddrToID[clientAddr] = this->m_base;
-  this->m_mutex_clientAddrToID.unlock();
-
+  // found
   return;
 }
 
-int ClientForStaging::getIDFromClientAddr(std::string clientAddr)
+int ClientForStaging::getIDFromClientAddr(const std::string& clientAddr)
 {
-
+  // std::cout << " debug getIDFromClientAddr, addr: " << clientAddr << std::endl;
   // if not exist, return -1
-  this->m_mutex_clientAddrToID.lock();
-  int num = this->m_clientAddrToID.count(clientAddr);
-  this->m_mutex_clientAddrToID.unlock();
-
-  if (num == 0)
+  std::lock_guard<tl::mutex> g(this->m_mutex_clientAddrToID);
+  if (this->m_clientAddrToID.find(clientAddr) == this->m_clientAddrToID.end())
   {
-    // if not exist, then cache it
-    this->cacheClientAddr(clientAddr);
+    // not found
+    this->m_base++;
+    this->m_clientAddrToID[clientAddr] = this->m_base;
   }
-
-  this->m_mutex_clientAddrToID.lock();
-  num = this->m_clientAddrToID.count(clientAddr);
-  if (num == 0)
-  {
-    throw std::runtime_error("the m_clientAddrToID is not supposed to be empty");
-  }
-  int id = this->m_clientAddrToID[clientAddr];
-  this->m_mutex_clientAddrToID.unlock();
-
-  return id;
+  // found
+  return this->m_clientAddrToID[clientAddr];
 }
 
 }

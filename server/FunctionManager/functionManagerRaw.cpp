@@ -6,10 +6,10 @@
 #include <vtkCenterOfMass.h>
 #include <vtkCleanPolyData.h>
 #include <vtkConnectivityFilter.h>
+#include <vtkFlyingEdges3D.h>
 #include <vtkImageImport.h>
 #include <vtkMarchingCubes.h>
 #include <vtkMassProperties.h>
-#include <vtkFlyingEdges3D.h>
 using namespace std::chrono_literals;
 
 namespace GORILLA
@@ -98,6 +98,8 @@ void polyProcess(vtkSmartPointer<vtkPolyData> polyData, std::string blockIDSuffi
 
 void polyProcess(vtkSmartPointer<vtkPolyData> polyData)
 {
+  std::cout << "debug polyProcess start" << std::endl;
+
   int numCells = polyData->GetNumberOfPolys();
   if (numCells > 0)
   {
@@ -119,7 +121,7 @@ void polyProcess(vtkSmartPointer<vtkPolyData> polyData)
     auto massProperties = vtkSmartPointer<vtkMassProperties>::New();
     massProperties->SetInputConnection(connectivityFilter->GetOutputPort());
 
-    //std::cout << "Surface area of largest blob is " << massProperties->GetSurfaceArea()
+    // std::cout << "Surface area of largest blob is " << massProperties->GetSurfaceArea()
     //          << std::endl;
   }
 }
@@ -366,6 +368,8 @@ void FunctionManagerRaw::dummyAna(int step, int totalStep, std::string anatype)
 void FunctionManagerRaw::testisoExec(
   std::string blockCompleteName, const std::vector<std::string>& parameters)
 {
+  //std::cout << "debug testisoExec start" << std::endl;
+
   // std::cout << "testisoExec for block: " << blockCompleteName << std::endl;
   // get block summary
   BlockSummary bs = this->m_blockManager->getBlockSummary(blockCompleteName);
@@ -374,6 +378,16 @@ void FunctionManagerRaw::testisoExec(
   // bs.printSummary();
   void* blockData = nullptr;
   this->m_blockManager->getBlock(blockCompleteName, bs.m_backend, blockData);
+
+  // maybe block not exist here, since put process not finish? this might be an issue anyway
+  if (blockData == nullptr)
+  {
+    std::cout << "testisoExec error, blockCompleteName: " << blockCompleteName << " not exist"
+              << std::endl;
+    return;
+  }
+
+  //std::cout << "debug testisoExec ok get block" << std::endl;
 
   std::array<int, 3> indexlb = bs.m_indexlb;
   std::array<int, 3> indexub = bs.m_indexub;
@@ -397,13 +411,15 @@ void FunctionManagerRaw::testisoExec(
   isoExtraction->Update();
 
   vtkSmartPointer<vtkPolyData> polyData = isoExtraction->GetOutput();
-  
+
   // int numCells = polyData->GetNumberOfPolys();
   // std::cout << "blockCompleteName " << blockCompleteName << " cell number " << numCells
   //          << std::endl;
 
   // get the largest region
+
   polyProcess(polyData);
+  //std::cout << "debug testisoExec finish" << std::endl;
 
   return;
 }
