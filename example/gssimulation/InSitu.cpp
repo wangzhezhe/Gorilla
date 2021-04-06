@@ -111,7 +111,8 @@ vtkSmartPointer<vtkPolyData> InSitu::getPoly(const GrayScott& sim, double iso, i
   // auto mcubes = vtkSmartPointer<vtkMarchingCubes>::New();
   // fly edge is much faster then the marching cube case
   // it can avoid the long execution for the first step
-  // refer to https://discourse.vtk.org/t/it-takes-long-time-for-the-iso-surface-extraction-at-first-step/5456
+  // refer to
+  // https://discourse.vtk.org/t/it-takes-long-time-for-the-iso-surface-extraction-at-first-step/5456
   auto isoExtraction = vtkSmartPointer<vtkFlyingEdges3D>::New();
   isoExtraction->SetInputConnection(importer->GetOutputPort());
   isoExtraction->ComputeNormalsOn();
@@ -519,7 +520,7 @@ void InSitu::decideTaskPlacement(
   {
     mset = this->naiveGet();
   }
-  else if (strategy == "dynamicEstimation")
+  else if (strategy.find("dynamicEstimation") != std::string::npos)
   {
     // we assume the freq is 1 and currSimStep equals to the currInSituStep
     mset = this->estimationGet(lastDecision, step);

@@ -1,13 +1,13 @@
 #!/bin/bash
 #SBATCH --qos=debug
-#SBATCH --nodes=12
+#SBATCH --nodes=20
 #SBATCH --account=m3502
 #SBATCH --time=10:00
 #SBATCH --licenses=cscratch1
 #SBATCH --constraint=haswell
 
 # copy metadata server to current dir
-rm unimos_server.log grayscott_dynamic.log
+rm unimosserver.log grayscott_dynamic.log
 
 #assume we are at the build dir
 #start the server
@@ -26,20 +26,34 @@ done
 
 sleep 1
 
+
 #export ANATYPE=S_HIGH
 #export ANATYPE=S_LOW
 #export ANATYPE=V_LHL
 #export ANATYPE=V_HLH
 #export ANATYPE=V_MULTIPLE
 
-
-
 # maybe try the loosely coupled case with differnet resources options
 
-#srun -C haswell -N 8 -n 128 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni alltightly &> actual_alltightly.log 
-#srun -C haswell -N 8 -n 128 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni allloosely &> actual_allloosely.log 
-#srun -C haswell -N 8 -n 128 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicNaive &> actual_dynamicNaive.log
-srun -C haswell -N 8 -n 128 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicEstimation &> actual_dynamicEstimation.log
+#srun -C haswell -N 16 -n 256 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni alltightly &> actual_alltightly_256.log 
+#srun -C haswell -N 16 -n 256 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni allloosely &> actual_allloosely_256.log 
+#srun -C haswell -N 16 -n 256 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicNaive &> actual_dynamicNaive_256.log
+#srun -C haswell -N 16 -n 256 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicEstimation &> actual_dynamicEstimation_256.log
+srun -C haswell -N 16 -n 256 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicEstimationVote &> actual_dynamicEstimationVote_256.log
+
+
+#srun -C haswell -N 8 -n 128 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni alltightly &> actual_alltightly_128.log 
+#srun -C haswell -N 8 -n 128 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni allloosely &> actual_allloosely_128.log 
+#srun -C haswell -N 8 -n 128 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicNaive &> actual_dynamicNaive_128.log
+#srun -C haswell -N 8 -n 128 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicEstimation &> actual_dynamicEstimation_128.log
+#srun -C haswell -N 8 -n 128 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicEstimationVote &> actual_dynamicEstimationVote_128.log
+
+#srun -C haswell -N 4 -n 64 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni alltightly &> actual_alltightly_64.log 
+#srun -C haswell -N 4 -n 64 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni allloosely &> actual_allloosely_64.log 
+#srun -C haswell -N 4 -n 64 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicNaive &> actual_dynamicNaive_64.log
+#srun -C haswell -N 4 -n 64 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicEstimation &> actual_dynamicEstimation_64.log
+#srun -C haswell -N 4 -n 64 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicEstimationVote &> actual_dynamicEstimationVote_64.log
+
 
 # the server may need longer time to finish to process the in-staging tasks
 wait

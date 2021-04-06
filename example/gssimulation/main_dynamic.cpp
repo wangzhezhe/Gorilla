@@ -116,6 +116,7 @@ int main(int argc, char** argv)
   bool ifTCAna = false;
   bool ifWriteToStage = false;
   bool ifdynamic = false;
+  bool ifVote = false;
   if (pattern == "baseline")
   {
     ifTCAna = true;
@@ -133,6 +134,10 @@ int main(int argc, char** argv)
   {
     // we have the dynamicNaive and dynamicEstimation
     ifdynamic = true;
+    if (pattern.find("Vote") != std::string::npos)
+    {
+      ifVote = true;
+    }
   }
   else
   {
@@ -299,6 +304,23 @@ int main(int argc, char** argv)
     //  ifTCAna = true;
     //  ifWriteToStage = false;
     //}
+    if (ifVote)
+    {
+      int localTostage = 0;
+      int totalTostage = 0;
+      if (ifWriteToStage)
+      {
+        localTostage = 1;
+      }
+      MPI_Allreduce(&localTostage, &totalTostage, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+      // if more than half decide the staging, go with staging
+      if (totalTostage > (procs / 2))
+      {
+        ifTCAna = false;
+        ifWriteToStage = true;
+      }
+    }
 
     /*
     process the data by tightly coupled in-situ
@@ -361,7 +383,7 @@ int main(int argc, char** argv)
 
       std::string VarNameU = "grascottu";
       gsinsitu.write(sim, VarNameU, step, rank);
-      //std::cout << "rank " << rank << " debug write ok " << std::endl;
+      // std::cout << "rank " << rank << " debug write ok " << std::endl;
 
       // when all write ok, trigger the staging process
       // call this when there is depedency between the in-situ task execution
@@ -391,7 +413,7 @@ int main(int argc, char** argv)
 
       // there is no way to set comm here? since differnet process has different strategies
       gsinsitu.m_uniclient->executeAsyncExp(step, VarNameU, rank, funcName, funcPara, iflast);
-      //std::cout << "rank " << rank << " debug executeAsync ok " << std::endl;
+      // std::cout << "rank " << rank << " debug executeAsync ok " << std::endl;
       // clock_gettime(CLOCK_REALTIME, &writeend);
       // writediff = (writeend.tv_sec - writestart.tv_sec) * 1.0 +
       //  (writeend.tv_nsec - writestart.tv_nsec) * 1.0 / BILLION;

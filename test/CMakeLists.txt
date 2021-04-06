@@ -133,7 +133,7 @@ target_link_libraries(test_scheduleTime thallium ${VTK_LIBRARIES})
 # deprecated
 # add_subdirectory(mock)
 
-add_test( NAME test_dhtmanager COMMAND test_dhtmanager)
+#add_test( NAME test_dhtmanager COMMAND test_dhtmanager)
 
 add_test( NAME test_metadatamanager COMMAND test_metadatamanager)
 

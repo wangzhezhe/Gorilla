@@ -4,6 +4,8 @@
 #SBATCH --time=10:00
 #SBATCH --licenses=cscratch1
 #SBATCH --constraint=haswell
+#SBATCH --account=m3502
+
 
 # copy metadata server to current dir
 rm unimos_server.log grayscott_dynamic.log

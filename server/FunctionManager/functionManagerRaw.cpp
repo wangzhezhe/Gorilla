@@ -98,7 +98,7 @@ void polyProcess(vtkSmartPointer<vtkPolyData> polyData, std::string blockIDSuffi
 
 void polyProcess(vtkSmartPointer<vtkPolyData> polyData)
 {
-  std::cout << "debug polyProcess start" << std::endl;
+  //std::cout << "debug polyProcess start" << std::endl;
 
   int numCells = polyData->GetNumberOfPolys();
   if (numCells > 0)

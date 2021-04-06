@@ -115,7 +115,8 @@ ArraySummary BlockManager::getArray(
   DataBlockInterface* handle = getBlockHandle(blockName, backend);
   // get summary from the block array
   int status = handle->getArray(as, dataPointer);
-  if(status!=0){
+  if (status != 0)
+  {
     throw std::runtime_error("failed to get array with arrayName");
   }
   return as;
@@ -180,7 +181,7 @@ BlockSummary BlockManager::getBlock(std::string blockID, int backend, void*& dat
   // the data put should be executed firstly
   if (backend == MEMVTKPTR || backend == MEMVTKEXPLICIT || backend == MEM)
   {
-    //check if the data exist
+    // check if the data exist
     this->m_DataBlockMapMutex.lock();
     int count = this->DataBlockMap.count(blockID);
     this->m_DataBlockMapMutex.unlock();
@@ -190,8 +191,8 @@ BlockSummary BlockManager::getBlock(std::string blockID, int backend, void*& dat
       return BlockSummary();
     }
   }
-  //for the file backend, it is ok if the data does not exist previously
-  //we may need to load data from the file
+  // for the file backend, it is ok if the data does not exist previously
+  // we may need to load data from the file
   DataBlockInterface* handle = getBlockHandle(blockID, backend);
   BlockSummary bs = handle->getData(dataContainer);
   return bs;
@@ -243,14 +244,18 @@ bool BlockManager::checkDataExistance(std::string blockID, int backend)
 
 int BlockManager::eraseBlock(std::string blockID, int backend)
 {
-  DataBlockInterface* handle = getBlockHandle(blockID, backend);
-  this->m_DataBlockMapMutex.unlock();
-  handle->eraseData();
-  // the destructor is called here
-  // the data will be remoevd when destructor is called
-  delete handle;
-  DataBlockMap.erase(blockID);
-  this->m_DataBlockMapMutex.unlock();
+  //TODO 
+  //we do not go through the getBlockHandle here, the backend parameter is unnecessary here
+  std::lock_guard<tl::mutex> lck(this->m_DataBlockMapMutex);
+  if (this->DataBlockMap.find(blockID) != this->DataBlockMap.end())
+  {
+    // find
+    this->DataBlockMap[blockID]->eraseData();
+    delete this->DataBlockMap[blockID];
+    this->DataBlockMap.erase(blockID);
+  }
+
+  // not find or finish delete
   return 0;
 }
 

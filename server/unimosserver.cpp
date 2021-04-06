@@ -1081,7 +1081,9 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
   }
 
   tl::bulk currentBulk = uniServer->m_bulkMap[clientID];
+  uniServer->m_bulkMapmutex.unlock();
 
+  
   clock_gettime(CLOCK_REALTIME, &end1);
   diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
   spdlog::debug("server put registermem : {}", diff1);
@@ -1090,7 +1092,7 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
   // pull the data onto the server
   dataBulk.on(ep) >> currentBulk;
   // the operation for currentBulk equals to the operation to current Map
-  uniServer->m_bulkMapmutex.unlock();
+
 
   clock_gettime(CLOCK_REALTIME, &end2);
   diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
@@ -1432,25 +1434,33 @@ void getStageStatus(const tl::request& req)
 
   // int clientid = 0;
   int clientid = clientStaging->getIDFromClientAddr(req.get_endpoint());
-
-  std::string scheduleKey = "default_schedule" + std::to_string(clientid);
-  std::string anaKey = "default_ana" + std::to_string(clientid);
-
-  if (uniServer->m_metricManager->metricExist(scheduleKey) == false)
+  if (clientid == -1)
   {
+    // the data is not put here
     stageStatus[0] = 0;
-  }
-  else
-  {
-    stageStatus[0] = uniServer->m_metricManager->getLastNmetrics(scheduleKey, 1)[0];
-  }
-  if (uniServer->m_metricManager->metricExist(anaKey) == false)
-  {
     stageStatus[1] = 0;
   }
   else
   {
-    stageStatus[1] = uniServer->m_metricManager->getLastNmetrics(anaKey, 1)[0];
+    std::string scheduleKey = "default_schedule" + std::to_string(clientid);
+    std::string anaKey = "default_ana" + std::to_string(clientid);
+
+    if (uniServer->m_metricManager->metricExist(scheduleKey) == false)
+    {
+      stageStatus[0] = 0;
+    }
+    else
+    {
+      stageStatus[0] = uniServer->m_metricManager->getLastNmetrics(scheduleKey, 1)[0];
+    }
+    if (uniServer->m_metricManager->metricExist(anaKey) == false)
+    {
+      stageStatus[1] = 0;
+    }
+    else
+    {
+      stageStatus[1] = uniServer->m_metricManager->getLastNmetrics(anaKey, 1)[0];
+    }
   }
 
   req.respond(stageStatus);
@@ -1466,6 +1476,10 @@ void executeAsyncExp(const tl::request& req, std::string& blockIDSuffix, int& bl
   spdlog::debug("---server rank {} start executeAsyncExp for block {}", globalRank, blockIDSuffix);
   // int clientid = 0;
   int clientid = clientStaging->getIDFromClientAddr(req.get_endpoint());
+  if (clientid == -1)
+  {
+    throw std::runtime_error("the execute async is called but there is not clientid");
+  }
   std::string scheduleKey = "default_schedule" + std::to_string(clientid);
   std::string anaKey = "default_ana" + std::to_string(clientid);
 

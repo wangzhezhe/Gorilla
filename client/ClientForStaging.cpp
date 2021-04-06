@@ -165,8 +165,8 @@ int ClientForStaging::getIDFromClientAddr(const std::string& clientAddr)
   if (this->m_clientAddrToID.find(clientAddr) == this->m_clientAddrToID.end())
   {
     // not found
-    this->m_base++;
-    this->m_clientAddrToID[clientAddr] = this->m_base;
+    // there the putrawdata operation is not called in this case
+    return -1;
   }
   // found
   return this->m_clientAddrToID[clientAddr];

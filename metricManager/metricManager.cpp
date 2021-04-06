@@ -10,51 +10,49 @@ void MetricManager::putMetric(std::string metricName, double metricValue)
   // if the metric name is null
   // create the array, insert the value and put it into the map
   CircularDoubleArray* arrayPtr;
-  this->m_metricsMapMutex.lock();
-  int exist = this->m_metricsMap.count(metricName);
-  if (exist == 0)
   {
-    arrayPtr = new CircularDoubleArray(this->m_slot);
-    this->m_metricsMap[metricName] = arrayPtr;
+    std::lock_guard<tl::mutex> g(this->m_metricsMapMutex);
+    if (this->m_metricsMap.find(metricName) == this->m_metricsMap.end())
+    {
+      // not found
+      arrayPtr = new CircularDoubleArray(this->m_slot);
+      this->m_metricsMap[metricName] = arrayPtr;
+    }
+    else
+    {
+      // found
+      arrayPtr = this->m_metricsMap[metricName];
+    }
   }
-  else
-  {
-    arrayPtr = this->m_metricsMap[metricName];
-  }
-  this->m_metricsMapMutex.unlock();
-
-  // insert value into array ptr
-  // different ptr use different lock
   arrayPtr->addElement(metricValue);
+
+  return;
 };
 
 std::vector<double> MetricManager::getLastNmetrics(std::string metricName, uint32_t number)
 {
   CircularDoubleArray* arrayPtr;
-  this->m_metricsMapMutex.lock();
-  int exist = this->m_metricsMap.count(metricName);
-  if (exist == 0)
   {
-    this->m_metricsMapMutex.unlock();
-    throw std::runtime_error("metric name not exist");
+    std::lock_guard<tl::mutex> g(this->m_metricsMapMutex);
+    if (this->m_metricsMap.find(metricName) == this->m_metricsMap.end())
+    {
+      // not found
+      throw std::runtime_error("metric name not exist");
+    }
+    else
+    {
+      // found
+      arrayPtr = this->m_metricsMap[metricName];
+    }
   }
-  else
-  {
-    arrayPtr = this->m_metricsMap[metricName];
-  }
-
-  this->m_metricsMapMutex.unlock();
-
   // extract the data from the array
   return arrayPtr->getLastN(number);
 };
 
 bool MetricManager::metricExist(std::string metricName)
 {
-  this->m_metricsMapMutex.lock();
+  std::lock_guard<tl::mutex> g(this->m_metricsMapMutex);
   int count = this->m_metricsMap.count(metricName);
-  this->m_metricsMapMutex.unlock();
-
   if (count != 0)
   {
     return true;
@@ -84,10 +82,9 @@ void MetricManager::dumpall(int rank)
 
 int MetricManager::getBufferLen(std::string metricName)
 {
-  this->m_metricsMapMutex.lock();
-  int count = this->m_metricsMap[metricName]->bufferLen();
-  this->m_metricsMapMutex.unlock();
 
+  std::lock_guard<tl::mutex> g(this->m_metricsMapMutex);
+  int count = this->m_metricsMap[metricName]->bufferLen();
   return count;
 }
 
