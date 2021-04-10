@@ -731,23 +731,23 @@ void vhlh(int step, int totalStep)
 void vmultiple(int step, int totalStep)
 {
 
-  int workLoadhigh = 560;
-  int workLoadMiddle = 250;
+  int workLoadhigh = 250;
+  int workLoadMiddle = 100;
   int workLoadlow = 60;
   int workLoad = 0;
   int num = 500;
   std::vector<double> v(num, 0);
   double results = 0;
 
-  if (step % 4 == 0)
+  if (step % 8 == 0 || step % 8 == 1 || step % 8 == 2)
   {
     workLoad = workLoadlow;
   }
-  if (step % 4 == 1 || step % 4 == 3)
+  if (step % 8 == 3 || step % 8 == 7)
   {
     workLoad = workLoadMiddle;
   }
-  if (step % 4 == 2)
+  if (step % 8 == 4 || step % 8 == 5 || step % 8 == 6)
   {
     workLoad = workLoadhigh;
   }

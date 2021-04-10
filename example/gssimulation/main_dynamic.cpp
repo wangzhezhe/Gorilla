@@ -97,7 +97,7 @@ int main(int argc, char** argv)
   MPI_Comm_rank(comm, &rank);
   MPI_Comm_size(comm, &procs);
 
-  if (argc < 4)
+  if (argc < 5)
   {
     if (rank == 0)
     {
@@ -112,6 +112,7 @@ int main(int argc, char** argv)
 
   // variable related with dynamic thing
   std::string pattern = argv[3];
+  std::string anaType = argv[4];
   double totalsavedTime = 0;
   bool ifTCAna = false;
   bool ifWriteToStage = false;
@@ -142,6 +143,21 @@ int main(int argc, char** argv)
   else
   {
     throw std::runtime_error("wrong pattern value");
+  }
+
+  bool useactualAna = true;
+
+  if (anaType == "actual")
+  {
+    useactualAna = true;
+  }
+  else if (anaType == "synthetic")
+  {
+    useactualAna = false;
+  }
+  else
+  {
+    throw std::runtime_error("error to get anaType");
   }
 
   GrayScott sim(settings, comm);
@@ -214,7 +230,6 @@ int main(int argc, char** argv)
   // std::ofstream log(log_fname.str());
   // log << "step\ttotal_gs\tcompute_gs\twrite_gs" << std::endl;
 
-  bool useactualAna = true;
   std::string anatype = "";
 
   if (useactualAna == false)
@@ -304,22 +319,39 @@ int main(int argc, char** argv)
     //  ifTCAna = true;
     //  ifWriteToStage = false;
     //}
-    if (ifVote)
-    {
-      int localTostage = 0;
-      int totalTostage = 0;
-      if (ifWriteToStage)
-      {
-        localTostage = 1;
-      }
-      MPI_Allreduce(&localTostage, &totalTostage, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
-      // if more than half decide the staging, go with staging
-      if (totalTostage > (procs / 2))
+    if (ifVote && step >= 3)
+    {
+      double Al = gsinsitu.m_metricManager.getLastNmetrics("Al", 1)[0];
+      double At = gsinsitu.m_metricManager.getLastNmetrics("At", 1)[0];
+      double transfer = gsinsitu.m_metricManager.getLastNmetrics("T", 1)[0];
+
+      // when T > max L(transfer), every block have the similar T based on our assumption
+      if (At != 0 && At > transfer)
       {
-        ifTCAna = false;
-        ifWriteToStage = true;
+        // we use an experienced value here
+        if ((Al > 1.05 * At) && ifTCAna)
+        {
+          ifTCAna = false;
+          ifWriteToStage = true;
+        }
       }
+
+      // int localTostage = 0;
+      // int totalTostage = 0;
+      // if (ifWriteToStage)
+      //{
+      //  localTostage = 1;
+      //}
+      // MPI_Allreduce(&localTostage, &totalTostage, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+      // get max value of the loosely group
+      // if Al>At, then this might be an error
+      // if more than half decide the staging, go with staging
+      // if (totalTostage > (procs / 2))
+      //{
+      //  ifTCAna = false;
+      //  ifWriteToStage = true;
+      //}
     }
 
     /*
