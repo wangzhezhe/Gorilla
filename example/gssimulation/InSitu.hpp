@@ -9,13 +9,11 @@
 #include "gray-scott.h"
 #include "settings.h"
 
+#include <chrono>
+#include <thread>
 #include <vector>
 #include <vtkPolyData.h>
 #include <vtkSmartPointer.h>
-#include <chrono>
-#include <thread>
-
-
 
 namespace tl = thallium;
 using namespace GORILLA;
@@ -100,11 +98,12 @@ public:
 
   void registerRtrigger(int num);
 
-  void dummyAna(int step, int totalStep, std::string anatype);
+  void dummyAna(int step, int dataID, int totalStep, std::string anatype);
 
   ClientForSim* m_uniclient = NULL;
 
-  void decideTaskPlacement(int step, std::string strategy, bool& ifTCAna, bool& ifWriteToStage);
+  void decideTaskPlacement(
+    int step, int rank, int totalprocs, std::string strategy, bool& ifTCAna, bool& ifWriteToStage);
 
   MetricsSet estimationGet(std::string lastDecision, int currStep);
 

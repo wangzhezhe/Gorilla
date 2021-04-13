@@ -1,4 +1,11 @@
 
 
- 0: sim executiontime 38.2118
- main time tick: 42.7545
+
+0: sim executiontime 39.219 accumulatedSim 10.1047
+main time tick: 55.667
+
+0: sim executiontime 39.9425 accumulatedSim 10.0448
+main time tick: 54.9852
+
+0: sim executiontime 39.9549 accumulatedSim 10.1011
+main time tick: 56.3936

@@ -98,7 +98,7 @@ void polyProcess(vtkSmartPointer<vtkPolyData> polyData, std::string blockIDSuffi
 
 void polyProcess(vtkSmartPointer<vtkPolyData> polyData)
 {
-  //std::cout << "debug polyProcess start" << std::endl;
+  // std::cout << "debug polyProcess start" << std::endl;
 
   int numCells = polyData->GetNumberOfPolys();
   if (numCells > 0)
@@ -297,23 +297,23 @@ void vhlh(int step, int totalStep)
 void vmultiple(int step, int totalStep)
 {
 
-  int workLoadhigh = 560;
-  int workLoadMiddle = 250;
+  int workLoadhigh = 250;
+  int workLoadMiddle = 100;
   int workLoadlow = 60;
   int workLoad = 0;
   int num = 500;
   std::vector<double> v(num, 0);
   double results = 0;
 
-  if (step % 4 == 0)
+  if (step % 8 == 0 || step % 8 == 1 || step % 8 == 2)
   {
     workLoad = workLoadlow;
   }
-  if (step % 4 == 1 || step % 4 == 3)
+  if (step % 8 == 3 || step % 8 == 7)
   {
     workLoad = workLoadMiddle;
   }
-  if (step % 4 == 2)
+  if (step % 8 == 4 || step % 8 == 5 || step % 8 == 6)
   {
     workLoad = workLoadhigh;
   }
@@ -334,7 +334,50 @@ void vmultiple(int step, int totalStep)
   return;
 }
 
-void FunctionManagerRaw::dummyAna(int step, int totalStep, std::string anatype)
+void vinconsistency(int step, int dataID, int totalStep)
+{
+
+  int workLoadhigh = 10000;
+  int workLoadlow = 50;
+  int workLoad = 0;
+  double rate = 0.1;
+  int num = 500;
+  std::vector<double> v(num, 0);
+  double results = 0;
+
+  if (dataID % 2 == 0)
+  {
+    workLoad = workLoadlow;
+  }
+  else
+  {
+    if (step <= totalStep / 3)
+    {
+      workLoad = workLoadlow;
+    }
+    else
+    {
+      // increase gradually
+      workLoad = workLoadhigh - workLoadhigh * (1.0 / (1.0 + rate * (step - totalStep / 3)));
+    }
+  }
+  // unit of the work
+  for (int i = 0; i < workLoad; i++)
+  {
+    for (int j = 0; j < num; j++)
+    {
+      double rf = (double)rand() / RAND_MAX;
+      v[j] = 0 + rf * (0.1 * i - 0);
+    }
+    for (int j = 0; j < num; j++)
+    {
+      results = v[j] + results;
+    }
+    std::this_thread::sleep_for(1ms);
+  }
+}
+
+void FunctionManagerRaw::dummyAna(int step, int dataID, int totalStep, std::string anatype)
 {
 
   if (anatype == "S_HIGH")
@@ -357,6 +400,10 @@ void FunctionManagerRaw::dummyAna(int step, int totalStep, std::string anatype)
   {
     vmultiple(step, totalStep);
   }
+  else if (anatype == "V_INCONSISTENCY")
+  {
+    vinconsistency(step, dataID, totalStep);
+  }
   else
   {
     std::cout << "unsupported cases in staging" << std::endl;
@@ -368,7 +415,7 @@ void FunctionManagerRaw::dummyAna(int step, int totalStep, std::string anatype)
 void FunctionManagerRaw::testisoExec(
   std::string blockCompleteName, const std::vector<std::string>& parameters)
 {
-  //std::cout << "debug testisoExec start" << std::endl;
+  // std::cout << "debug testisoExec start" << std::endl;
 
   // std::cout << "testisoExec for block: " << blockCompleteName << std::endl;
   // get block summary
@@ -387,7 +434,7 @@ void FunctionManagerRaw::testisoExec(
     return;
   }
 
-  //std::cout << "debug testisoExec ok get block" << std::endl;
+  // std::cout << "debug testisoExec ok get block" << std::endl;
 
   std::array<int, 3> indexlb = bs.m_indexlb;
   std::array<int, 3> indexub = bs.m_indexub;
@@ -419,7 +466,7 @@ void FunctionManagerRaw::testisoExec(
   // get the largest region
 
   polyProcess(polyData);
-  //std::cout << "debug testisoExec finish" << std::endl;
+  // std::cout << "debug testisoExec finish" << std::endl;
 
   return;
 }

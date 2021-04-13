@@ -449,10 +449,14 @@ MetricsSet InSitu::estimationGet(std::string lastDecision, int currStep)
     if (mset.Al < mset.At)
     {
       emset.Al = mset.At;
+      // insert the loosely coupled value
+      // is not helpful
+      //this->m_metricManager.putMetric("Al", emset.Al);
     }
     p = mset.At;
-    this->m_Tmin = std::min(this->m_Tmin, mset.T);
-    emset.T = m_Tmin;
+    //one asusmption is that the data size are same between different ranks
+    //this->m_Tmin = std::min(this->m_Tmin, mset.T);
+    //emset.T = m_Tmin;
   }
   else if (lastDecision == "loosely")
   {
@@ -461,6 +465,8 @@ MetricsSet InSitu::estimationGet(std::string lastDecision, int currStep)
     if (mset.Al < mset.At && mset.Al != 0)
     {
       emset.At = mset.Al;
+      // insert the tightly coupled value
+      // this->m_metricManager.putMetric("At", emset.At);
     }
     p = mset.T;
   }
@@ -476,8 +482,55 @@ MetricsSet InSitu::estimationGet(std::string lastDecision, int currStep)
   return emset;
 }
 
+void adjustment(int totalProcs, int step, MetricsSet& mset, bool& ifTCAna, bool& ifWriteToStage,
+  std::string& lastDecision)
+{
+
+  int localTostage = 0;
+  int totalTostage = 0;
+  if (ifWriteToStage)
+  {
+    localTostage = 1;
+  }
+  MPI_Allreduce(&localTostage, &totalTostage, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  // std::cout << "debug step " << step << " totalTostage " << totalTostage << " totalProcs "
+  //          << totalProcs << std::endl;
+  if (totalTostage > 0 && totalTostage < totalProcs)
+  {
+    std::cout << "debug step " << step << " ifTCAna " << ifTCAna << " mset.At " << mset.At
+              << " mset.T " << mset.T << " mset.Al " << mset.Al << " mset.S " << mset.S
+              << std::endl;
+    // there is inconsistency
+    if (ifTCAna == true && mset.At > mset.T)
+    {
+      double overhead = mset.T + mset.W + mset.Al - (mset.At + mset.S);
+      double benifit = mset.At - mset.T;
+      // std::cout << "debug step " << step << " mset.At " << mset.At << " mset.T " << mset.T
+      //          << " benifit " << benifit << " overhead " << overhead << std::endl;
+
+      if (benifit > overhead)
+      {
+        // adjust the decision
+        ifWriteToStage = true;
+        ifTCAna = false;
+      }
+
+      // if most of them decide to go staging, server is ok
+      // some of them decide to go tightly, this might caused by outdated of At, false assume it is
+      // too small
+      // we might not know if it is caused dy the server overload or the data is outdated
+      if (lastDecision == "loosely" && totalTostage > totalProcs / 2)
+      {
+        // this may caused by the false anticipation of too small At
+        ifWriteToStage = true;
+        ifTCAna = false;
+      }
+    }
+  }
+}
+
 void InSitu::decideTaskPlacement(
-  int step, std::string strategy, bool& ifTCAna, bool& ifWriteToStage)
+  int step, int rank, int totalprocs, std::string strategy, bool& ifTCAna, bool& ifWriteToStage)
 {
 
   if (step <= 1)
@@ -558,6 +611,18 @@ void InSitu::decideTaskPlacement(
   // totalsavedTime = totalsavedTime + currentsavedTime;
   // std::string metricName = "Saved";
   // gsinsitu.m_metricManager.putMetric(metricName, currentsavedTime);
+
+  bool oldifTCAna = ifTCAna;
+  bool oldifWriteToStage = ifWriteToStage;
+  if (strategy.find("Adjust") != std::string::npos && step >= 3)
+  {
+    adjustment(totalprocs, step, mset, ifTCAna, ifWriteToStage, lastDecision);
+  }
+  if (ifTCAna != oldifTCAna || ifWriteToStage != oldifWriteToStage)
+  {
+    std::cout << "after adjustment rank " << rank << " step " << step << " ifTCAna " << ifTCAna
+              << " ifWriteToStage " << ifWriteToStage << std::endl;
+  }
 }
 
 // stationalry high
@@ -768,7 +833,49 @@ void vmultiple(int step, int totalStep)
   return;
 }
 
-void InSitu::dummyAna(int step, int totalStep, std::string anatype)
+void vinconsistency(int step, int dataID, int totalStep)
+{
+  int workLoadhigh = 10000;
+  int workLoadlow = 50;
+  int workLoad = 0;
+  double rate = 0.1;
+  int num = 500;
+  std::vector<double> v(num, 0);
+  double results = 0;
+
+  if (dataID % 2 == 0)
+  {
+    workLoad = workLoadlow;
+  }
+  else
+  {
+    if (step <= totalStep / 3)
+    {
+      workLoad = workLoadlow;
+    }
+    else
+    {
+      // increase gradually
+      workLoad = workLoadhigh - workLoadhigh * (1.0 / (1.0 + rate * (step - totalStep / 3)));
+    }
+  }
+  // unit of the work
+  for (int i = 0; i < workLoad; i++)
+  {
+    for (int j = 0; j < num; j++)
+    {
+      double rf = (double)rand() / RAND_MAX;
+      v[j] = 0 + rf * (0.1 * i - 0);
+    }
+    for (int j = 0; j < num; j++)
+    {
+      results = v[j] + results;
+    }
+    std::this_thread::sleep_for(1ms);
+  }
+}
+
+void InSitu::dummyAna(int step, int dataID, int totalStep, std::string anatype)
 {
 
   if (anatype == "S_HIGH")
@@ -790,6 +897,10 @@ void InSitu::dummyAna(int step, int totalStep, std::string anatype)
   else if (anatype == "V_MULTIPLE")
   {
     vmultiple(step, totalStep);
+  }
+  else if (anatype == "V_INCONSISTENCY")
+  {
+    vinconsistency(step, dataID, totalStep);
   }
   else
   {

@@ -4,7 +4,7 @@
 #SBATCH --time=10:00
 #SBATCH --licenses=cscratch1
 #SBATCH --constraint=haswell
-#SBATCH --account=m3502
+#SBATCH --account=m2956
 
 
 #assume we are at the build dir
@@ -28,12 +28,18 @@ sleep 1
 #export ANATYPE=S_LOW
 #export ANATYPE=V_LHL
 #export ANATYPE=V_HLH
-export ANATYPE=V_MULTIPLE
+#export ANATYPE=V_MULTIPLE
+export ANATYPE=V_INCONSISTENCY
 
-#srun -C haswell -N 2 -n 32 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_synthetic.json gni alltightly synthetic &> alltightly_synthetic.log 
+srun -C haswell -N 2 -n 32 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_synthetic.json gni alltightly synthetic &> alltightly_synthetic.log 
 #srun -C haswell -N 2 -n 32 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_synthetic.json gni allloosely synthetic &> allloosely_synthetic.log 
-srun -C haswell -N 2 -n 32 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_synthetic.json gni dynamicNaive synthetic &> dynamicNaive_synthetic.log 
+#srun -C haswell -N 2 -n 32 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_synthetic.json gni dynamicNaive synthetic &> dynamicNaive_synthetic.log 
 #srun -C haswell -N 2 -n 32 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_synthetic.json gni dynamicEstimation synthetic &> dynamicEstimation_synthetic.log 
+#srun -C haswell -N 2 -n 32 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_synthetic.json gni dynamicEstimationAdjust synthetic &> dynamicEstimationAdjust_synthetic.log 
+
+
+
+
 
 # the server may need longer time to finish to process the in-staging tasks
 wait

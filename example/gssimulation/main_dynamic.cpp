@@ -117,7 +117,7 @@ int main(int argc, char** argv)
   bool ifTCAna = false;
   bool ifWriteToStage = false;
   bool ifdynamic = false;
-  bool ifVote = false;
+  bool ifAdjust = false;
   if (pattern == "baseline")
   {
     ifTCAna = true;
@@ -135,9 +135,9 @@ int main(int argc, char** argv)
   {
     // we have the dynamicNaive and dynamicEstimation
     ifdynamic = true;
-    if (pattern.find("Vote") != std::string::npos)
+    if (pattern.find("Adjust") != std::string::npos)
     {
-      ifVote = true;
+      ifAdjust = true;
     }
   }
   else
@@ -246,7 +246,7 @@ int main(int argc, char** argv)
     // start the timer explicitly
     gsinsitu.startwftimer();
   }
-
+  double accumulatedSim = 0;
   for (int step = 0; step < settings.steps;)
   {
     MPI_Barrier(comm);
@@ -269,7 +269,7 @@ int main(int argc, char** argv)
       double simDiff = simEnd - simStart;
       std::string metricName = "S";
       gsinsitu.m_metricManager.putMetric(metricName, simDiff);
-
+      accumulatedSim = accumulatedSim + simDiff;
       if (rank == 0)
       {
         std::cout << "step " << step << " avg sim " << simDiff << std::endl;
@@ -297,7 +297,7 @@ int main(int argc, char** argv)
 
     if (ifdynamic)
     {
-      gsinsitu.decideTaskPlacement(step, pattern, ifTCAna, ifWriteToStage);
+      gsinsitu.decideTaskPlacement(step, rank, procs, pattern, ifTCAna, ifWriteToStage);
     }
 
     MPI_Barrier(comm);
@@ -305,53 +305,12 @@ int main(int argc, char** argv)
 
     double decisionTime = dynamicEnd - dynamicStart;
 
-    // if (rank == 0)
-    //{
-    // if we want to know all decisions for every process
-    std::cout << "rank " << rank << " step " << step << " ifTCAna " << ifTCAna << " ifWriteToStage "
-              << ifWriteToStage << " decision time " << decisionTime << std::endl;
-    //}
+    std::cout << "final decision rank " << rank << " step " << step << " ifTCAna " << ifTCAna
+              << " ifWriteToStage " << ifWriteToStage << std::endl;
 
-    // TODO set time out mechanims here?
-    // use async, when it longer then specific time, then let it go
-    // if (decisionTime > 1.0)
-    //{
-    //  ifTCAna = true;
-    //  ifWriteToStage = false;
-    //}
-
-    if (ifVote && step >= 3)
+    if (rank == 0)
     {
-      double Al = gsinsitu.m_metricManager.getLastNmetrics("Al", 1)[0];
-      double At = gsinsitu.m_metricManager.getLastNmetrics("At", 1)[0];
-      double transfer = gsinsitu.m_metricManager.getLastNmetrics("T", 1)[0];
-
-      // when T > max L(transfer), every block have the similar T based on our assumption
-      if (At != 0 && At > transfer)
-      {
-        // we use an experienced value here
-        if ((Al > 1.05 * At) && ifTCAna)
-        {
-          ifTCAna = false;
-          ifWriteToStage = true;
-        }
-      }
-
-      // int localTostage = 0;
-      // int totalTostage = 0;
-      // if (ifWriteToStage)
-      //{
-      //  localTostage = 1;
-      //}
-      // MPI_Allreduce(&localTostage, &totalTostage, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-      // get max value of the loosely group
-      // if Al>At, then this might be an error
-      // if more than half decide the staging, go with staging
-      // if (totalTostage > (procs / 2))
-      //{
-      //  ifTCAna = false;
-      //  ifWriteToStage = true;
-      //}
+      std::cout << "step " << step << " decision time " << decisionTime << std::endl;
     }
 
     /*
@@ -381,7 +340,7 @@ int main(int argc, char** argv)
       }
       else
       {
-        gsinsitu.dummyAna(step, settings.steps, anatype);
+        gsinsitu.dummyAna(step, rank, settings.steps, anatype);
       }
 
       // clock_gettime(CLOCK_REALTIME, &anaend1);
@@ -393,12 +352,12 @@ int main(int argc, char** argv)
       double anaSpan = anaEnd - anaStart;
       gsinsitu.m_metricManager.putMetric(metricName, anaSpan);
 
-      if (rank == 0)
-      {
+      //if (rank == 0)
+      //{
         // some process takes more then 40 seconds for first step, not sure the reason
         // jump out the first step
         std::cout << "step " << step << " rank " << rank << " anaTime: " << anaSpan << std::endl;
-      }
+      //}
     }
 
     /*
@@ -433,6 +392,8 @@ int main(int argc, char** argv)
         funcName = "dummyAna";
         funcPara.push_back(std::to_string(settings.steps));
         funcPara.push_back(anatype);
+        std::string dataID = std::to_string(rank);
+        funcPara.push_back(dataID);
       }
 
       // make sure the parameter match with the functions specified at the server
@@ -475,7 +436,8 @@ int main(int argc, char** argv)
   double wfEnd = tl::timer::wtime();
   if (rank == 0)
   {
-    std::cout << "sim executiontime " << wfEnd - wfStart << std::endl;
+    std::cout << "sim executiontime " << wfEnd - wfStart << " accumulatedSim " << accumulatedSim
+              << std::endl;
     // both ana and sim set tick, compare the maximum one
     // gsinsitu.endwftimer();
     // TODO try to dump out the data in the metric monitor

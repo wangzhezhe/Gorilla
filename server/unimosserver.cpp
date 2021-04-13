@@ -1515,14 +1515,17 @@ void executeAsyncExp(const tl::request& req, std::string& blockIDSuffix, int& bl
         std::size_t pos = blockIDSuffix.find("_");          // position of "live" in str
         std::string substr = blockIDSuffix.substr(pos + 1); // get from "live" to the end
         int step = stoi(substr);
-        if (funcParameters.size() != 2)
+        if (funcParameters.size() != 3)
         {
-          throw std::runtime_error("wrong parameter size");
+          throw std::runtime_error("wrong parameter size, it should includes totalstep, anatype and dataID");
         }
+
         int totalStep = stoi(funcParameters[0]);
         std::string anaType = funcParameters[1];
+        int dataID = stoi(funcParameters[2]);
+
         // funcParameters is the type of analtyics
-        uniServer->m_frawmanager->dummyAna(step, totalStep, anaType);
+        uniServer->m_frawmanager->dummyAna(step, dataID, totalStep, anaType);
       }
       else
       {

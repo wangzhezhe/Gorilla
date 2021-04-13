@@ -1,0 +1,30 @@
+
+
+
+0: sim executiontime 69.1737
+main time tick: 66.954
+
+
+ 
+ 
+ 
+ 
+ 
+ 0: sim executiontime 78.1183 accumulatedSim 39.6328
+ main time tick: 84.4906
+
+reason
+
+37: debug step 36 ifTCAna 0 mset.At 7.79259 mset.T 0.140237 mset.Al 9.61157 mset.S 5.01209
+38: debug step 36 ifTCAna 0 mset.At 7.4728 mset.T 0.260534 mset.Al 8.19104 mset.S 5.01761
+22: debug step 36 ifTCAna 0 mset.At 7.74703 mset.T 0.24096 mset.Al 9.98007 mset.S 5.0275
+41: debug step 36 ifTCAna 0 mset.At 7.86522 mset.T 0.125168 mset.Al 9.72691 mset.S 5.02352
+42: debug step 36 ifTCAna 0 mset.At 7.78982 mset.T 0.123357 mset.Al 9.7864 mset.S 5.09282
+25: debug step 36 ifTCAna 0 mset.At 7.8186 mset.T 0.16144 mset.Al 10.1207 mset.S 5.0312
+26: debug step 36 ifTCAna 0 mset.At 7.91114 mset.T 0.223895 mset.Al 9.88792 mset.S 5.12603
+
+large Al may make overhead large
+
+
+ 0: sim executiontime 51.0477 accumulatedSim 39.8279
+ main time tick: 72.1894

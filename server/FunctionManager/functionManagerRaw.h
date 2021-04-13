@@ -54,7 +54,7 @@ struct FunctionManagerRaw
   // TODO maybe try to use macro to register things here
   void testisoExec(std::string blockCompleteName, const std::vector<std::string>& parameters);
 
-  void dummyAna(int step, int totalStep, std::string anatype);
+  void dummyAna(int step, int dataID, int totalStep, std::string anatype);
 
   ~FunctionManagerRaw() { std::cout << "destroy FunctionManagerRaw\n"; };
 
