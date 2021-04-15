@@ -9,24 +9,13 @@ old data:
 0: sim executiontime 43.2015
 
 
-main time tick: 53.4976
-main time tick: 52.7146
-main time tick: 52.7551
-main time tick: 55.5854
-main time tick: 49.5197
-main time tick: 51.7093
-main time tick: 50.6316
 
-
-the latest data
-0: sim executiontime 49.8569
-0: sim executiontime 51.0657
-0: sim executiontime 51.2337 accumulatedSim 20.102
-0: sim executiontime 52.6236 accumulatedSim 20.0562
-0: sim executiontime 50.3077 accumulatedSim 20.0649
+0: sim executiontime 35.5581 accumulatedSim 20.097
+0: sim executiontime 34.2374 accumulatedSim 19.9481
+0: sim executiontime 33.515 accumulatedSim 19.9968
 
 main time tick: 50.6316
 main time tick: 51.3486
-main time tick: 54.3269
-main time tick: 54.5538
-main time tick: 57.0697
+main time tick: 52.9214
+main time tick: 52.6542
+main time tick: 51.2585

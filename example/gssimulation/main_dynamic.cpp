@@ -296,12 +296,19 @@ int main(int argc, char** argv)
     gsinsitu.m_metricManager.putMetric(metricName, stageStatus[1]);
 
     double burden = stageStatus[2];
-    std::cout << "rank " << rank << " step " << step << " burden [running thread/physical thread] "
-              << burden << std::endl;
+    // std::cout << "rank " << rank << " step " << step << " burden [running thread/physical thread]
+    // "
+    //          << burden << std::endl;
 
     if (ifdynamic)
     {
-      gsinsitu.decideTaskPlacement(step, rank, procs, burden, pattern, ifTCAna, ifWriteToStage);
+      bool laststep = false;
+      if (step == (settings.steps - 1))
+      {
+        laststep = true;
+      }
+      gsinsitu.decideTaskPlacement(
+        step, rank, procs, burden, pattern, ifTCAna, ifWriteToStage, laststep);
     }
 
     MPI_Barrier(comm);

@@ -2,14 +2,15 @@
 
 
 
+burden 0.8
 
 
-0: sim executiontime 35.2208 accumulatedSim 10.1584
-main time tick: 36.6394
+0: sim executiontime 29.9555 accumulatedSim 10.1502
+main time tick: 39.5223
+
+0: sim executiontime 29.3389 accumulatedSim 10.1096
+main time tick: 39.8064
 
 
-0: sim executiontime 34.5219 accumulatedSim 10.1474
-main time tick: 35.5512
-
-0: sim executiontime 34.6131 accumulatedSim 10.1638
-main time tick: 37.0418
+0: sim executiontime 30.3017 accumulatedSim 10.0977
+main time tick: 38.1716
