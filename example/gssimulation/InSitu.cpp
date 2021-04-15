@@ -434,7 +434,7 @@ MetricsSet InSitu::naiveGet()
   return mset;
 }
 
-MetricsSet InSitu::estimationGet(std::string lastDecision, int currStep)
+MetricsSet InSitu::estimationGet(std::string lastDecision, int currStep, double burden)
 {
   // total step can be acquired from the in-situ code
   MetricsSet mset = this->naiveGet();
@@ -446,17 +446,23 @@ MetricsSet InSitu::estimationGet(std::string lastDecision, int currStep)
   if (lastDecision == "tightly")
   {
     // loosely coupled case is outdated
+    // if (mset.Al < mset.At)
+    // todo add the burdern not large
     if (mset.Al < mset.At)
     {
       emset.Al = mset.At;
       // insert the loosely coupled value
       // is not helpful
-      //this->m_metricManager.putMetric("Al", emset.Al);
+      // this->m_metricManager.putMetric("Al", emset.Al);
+    }
+    if (mset.Al > mset.At && burden < 0.1)
+    {
+      emset.Al = mset.At;
     }
     p = mset.At;
-    //one asusmption is that the data size are same between different ranks
-    //this->m_Tmin = std::min(this->m_Tmin, mset.T);
-    //emset.T = m_Tmin;
+    // one asusmption is that the data size are same between different ranks
+    // this->m_Tmin = std::min(this->m_Tmin, mset.T);
+    // emset.T = m_Tmin;
   }
   else if (lastDecision == "loosely")
   {
@@ -476,14 +482,14 @@ MetricsSet InSitu::estimationGet(std::string lastDecision, int currStep)
   }
   this->m_savg = this->m_savg + 1.0 * (mset.S - this->m_savg) / (1.0 * currStep);
   this->m_pavg = this->m_pavg + 1.0 * (p - this->m_pavg) / (1.0 * currStep);
-  double esim = (this->m_totalStep - currStep) * (this->m_savg + this->m_pavg);
+  double esim = (this->m_totalStep - 1 - currStep) * (this->m_savg + this->m_pavg) + this->m_pavg;
   emset.S = esim;
 
   return emset;
 }
 
-void adjustment(int totalProcs, int step, MetricsSet& mset, bool& ifTCAna, bool& ifWriteToStage,
-  std::string& lastDecision)
+void InSitu::adjustment(int totalProcs, int step, MetricsSet& mset, bool& ifTCAna,
+  bool& ifWriteToStage, std::string& lastDecision, double burden)
 {
 
   int localTostage = 0;
@@ -493,44 +499,99 @@ void adjustment(int totalProcs, int step, MetricsSet& mset, bool& ifTCAna, bool&
     localTostage = 1;
   }
   MPI_Allreduce(&localTostage, &totalTostage, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
   // std::cout << "debug step " << step << " totalTostage " << totalTostage << " totalProcs "
   //          << totalProcs << std::endl;
+  // this threshould can be parameter of the algorithm
+  // if burden is ok
+  if (burden < 0.5)
+  {
+    return;
+  }
+
+  // remove the largest one between tightly group
+  double totalAt = 0;
+  double totalAl = 0;
+
+  int color = 0;
+  MPI_Comm tightlyana_comm;
+  int tightlyana_procs = 0;
+  if (ifTCAna)
+  {
+    color = 1;
+  }
+  MPI_Comm_split(MPI_COMM_WORLD, color, this->m_rank, &tightlyana_comm);
+  MPI_Allreduce(&mset.At, &totalAt, 1, MPI_DOUBLE, MPI_SUM, tightlyana_comm);
+  MPI_Allreduce(&mset.Al, &totalAl, 1, MPI_DOUBLE, MPI_SUM, tightlyana_comm);
+
+  MPI_Comm_size(tightlyana_comm, &tightlyana_procs);
+  double avgAt = totalAt / (1.0 * tightlyana_procs);
+  double avgAl = totalAl / (1.0 * tightlyana_procs);
+
+  // some at may still harmfule here
+  // even if we execute at for all
+  // not the last step (currently, the last step is 39)
+  // TODO remove the hardcode values here
+  if (ifTCAna && (step != 39))
+    if (mset.Al > avgAl || mset.At > avgAt)
+    {
+      ifWriteToStage = true;
+      ifTCAna = false;
+    }
+  
+  // remove the largest one between tightly and loosely coupled group
   if (totalTostage > 0 && totalTostage < totalProcs)
   {
+    // there is inconsistency
     std::cout << "debug step " << step << " ifTCAna " << ifTCAna << " mset.At " << mset.At
               << " mset.T " << mset.T << " mset.Al " << mset.Al << " mset.S " << mset.S
               << std::endl;
-    // there is inconsistency
-    if (ifTCAna == true && mset.At > mset.T)
-    {
-      double overhead = mset.T + mset.W + mset.Al - (mset.At + mset.S);
-      double benifit = mset.At - mset.T;
-      // std::cout << "debug step " << step << " mset.At " << mset.At << " mset.T " << mset.T
-      //          << " benifit " << benifit << " overhead " << overhead << std::endl;
 
-      if (benifit > overhead)
+    if (ifTCAna == true)
+    {
+      // this part is harmful, more cases goes to loosely if we add this
+      /* the al can still be large which cause the extra overhead, no matter last is tightly or
+      loosely we use the huristic
+      // to much differences between the An time
+      if (lastDecision == "tightly")
       {
-        // adjust the decision
-        ifWriteToStage = true;
-        ifTCAna = false;
+        // At is accurate
+        double overhead = mset.T + mset.W + mset.Al - (mset.At + mset.S);
+        double benifit = mset.At - mset.T;
+        // std::cout << "debug step " << step << " mset.At " << mset.At << " mset.T " << mset.T
+        //          << " benifit " << benifit << " overhead " << overhead << std::endl;
+        if (benifit>0 && benifit > overhead)
+        {
+          // adjust the decision
+          ifWriteToStage = true;
+          ifTCAna = false;
+        }
       }
+      */
 
       // if most of them decide to go staging, server is ok
       // some of them decide to go tightly, this might caused by outdated of At, false assume it is
       // too small
       // we might not know if it is caused dy the server overload or the data is outdated
+      // switch this part may decrease the harmful value and not give too much burdern to the
+      // staging
       if (lastDecision == "loosely" && totalTostage > totalProcs / 2)
       {
-        // this may caused by the false anticipation of too small At
-        ifWriteToStage = true;
-        ifTCAna = false;
+        // not try at, since it is possible caused by the outdated at
+        // the al data is accurate
+        if (mset.Al > mset.T || mset.At > mset.T)
+        {
+          // this may caused by the false anticipation of too small At
+          ifWriteToStage = true;
+          ifTCAna = false;
+        }
       }
     }
   }
 }
 
-void InSitu::decideTaskPlacement(
-  int step, int rank, int totalprocs, std::string strategy, bool& ifTCAna, bool& ifWriteToStage)
+void InSitu::decideTaskPlacement(int step, int rank, int totalprocs, double burdern,
+  std::string strategy, bool& ifTCAna, bool& ifWriteToStage)
 {
 
   if (step <= 1)
@@ -576,7 +637,7 @@ void InSitu::decideTaskPlacement(
   else if (strategy.find("dynamicEstimation") != std::string::npos)
   {
     // we assume the freq is 1 and currSimStep equals to the currInSituStep
-    mset = this->estimationGet(lastDecision, step);
+    mset = this->estimationGet(lastDecision, step, burdern);
   }
   else
   {
@@ -616,7 +677,7 @@ void InSitu::decideTaskPlacement(
   bool oldifWriteToStage = ifWriteToStage;
   if (strategy.find("Adjust") != std::string::npos && step >= 3)
   {
-    adjustment(totalprocs, step, mset, ifTCAna, ifWriteToStage, lastDecision);
+    adjustment(totalprocs, step, mset, ifTCAna, ifWriteToStage, lastDecision, burdern);
   }
   if (ifTCAna != oldifTCAna || ifWriteToStage != oldifWriteToStage)
   {

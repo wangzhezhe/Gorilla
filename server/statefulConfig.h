@@ -73,9 +73,9 @@ struct statefulConfig
     clock_gettime(CLOCK_REALTIME, &end);
     double timespan = (end.tv_sec - this->m_timer_map[timerName].tv_sec) * 1.0 +
       (end.tv_nsec - this->m_timer_map[timerName].tv_nsec) * 1.0 / BILLION;
-    
+
     spdlog::debug("timerName {} time span: {}", timerName, timespan);
-    
+
     // delete the timer
     this->m_timer_map.erase(timerName);
     // return the caculated time
@@ -122,6 +122,7 @@ struct statefulConfig
   // timer info
   tl::mutex m_timerLock;
   std::unordered_map<std::string, struct timespec> m_timer_map;
+
 };
 
 #endif

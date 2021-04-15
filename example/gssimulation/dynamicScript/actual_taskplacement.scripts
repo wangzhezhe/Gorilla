@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --qos=debug
-#SBATCH --nodes=12
+#SBATCH --nodes=8
 #SBATCH --account=m2956
 #SBATCH --time=10:00
 #SBATCH --licenses=cscratch1
@@ -38,13 +38,13 @@ sleep 1
 #srun -C haswell -N 8 -n 128 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni allloosely actual &> actual_allloosely_128.log 
 #srun -C haswell -N 8 -n 128 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicNaive actual &> actual_dynamicNaive_128.log
 #srun -C haswell -N 8 -n 128 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicEstimation actual &> actual_dynamicEstimation_128.log
-srun -C haswell -N 8 -n 128 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicEstimationAdjust actual &> actual_dynamicEstimationAdjust_128.log
+#srun -C haswell -N 8 -n 128 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicEstimationAdjust actual &> actual_dynamicEstimationAdjust_128.log
 
 #srun -C haswell -N 4 -n 64 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni alltightly actual &> actual_alltightly_64.log 
 #srun -C haswell -N 4 -n 64 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni allloosely actual &> actual_allloosely_64.log 
 #srun -C haswell -N 4 -n 64 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicNaive actual &> actual_dynamicNaive_64.log
 #srun -C haswell -N 4 -n 64 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicEstimation actual &> actual_dynamicEstimation_64.log
-#srun -C haswell -N 4 -n 64 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicEstimationAdjust actual &> actual_dynamicEstimationAdjust_64.log
+srun -C haswell -N 4 -n 64 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicEstimationAdjust actual &> actual_dynamicEstimationAdjust_64.log
 
 
 # the server may need longer time to finish to process the in-staging tasks

@@ -63,6 +63,9 @@ public:
 
   void dumpall(int rank);
 
+  tl::mutex m_runningThreadsLock;
+  int m_runningThreads = 0;
+
 private:
   size_t m_slot;
   tl::mutex m_metricsMapMutex;

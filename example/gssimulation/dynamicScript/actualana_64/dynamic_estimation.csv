@@ -13,8 +13,19 @@
   main time tick: 85.9471
 
 
+0: sim executiontime 75.4992 accumulatedSim 39.7573
+main time tick: 78.2193
 
- updated version
+
+
+ updated version (if consider al>>at at the first part and let it be Al >> 2*At, then switch, this may too prefer the staging)
 
   0: sim executiontime 49.9724 accumulatedSim 39.7483
   main time tick: 71.2706
+
+
+
+  the latest one
+
+  0: sim executiontime 75.4992 accumulatedSim 39.7573
+main time tick: 78.2193

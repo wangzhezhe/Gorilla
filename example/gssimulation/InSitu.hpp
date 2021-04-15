@@ -61,6 +61,7 @@ public:
     int metribuffer = 80)
     : m_metricManager(metribuffer)
     , m_totalStep(totalStep)
+    , m_rank(rank)
   {
     m_uniclient = new ClientForSim(clientEnginePtr, addrServer, rank);
   };
@@ -102,12 +103,15 @@ public:
 
   ClientForSim* m_uniclient = NULL;
 
-  void decideTaskPlacement(
-    int step, int rank, int totalprocs, std::string strategy, bool& ifTCAna, bool& ifWriteToStage);
+  void decideTaskPlacement(int step, int rank, int totalprocs, double burden, std::string strategy,
+    bool& ifTCAna, bool& ifWriteToStage);
 
-  MetricsSet estimationGet(std::string lastDecision, int currStep);
+  MetricsSet estimationGet(std::string lastDecision, int currStep, double burden);
 
   MetricsSet naiveGet();
+
+  void adjustment(int totalProcs, int step, MetricsSet& mset, bool& ifTCAna, bool& ifWriteToStage,
+  std::string& lastDecision,double burden);
 
   // metric monitor
   MetricManager m_metricManager;
@@ -118,6 +122,8 @@ public:
   double m_pavg = 0;
   double m_savg = 0;
   double m_sim = 0;
+
+  int m_rank;
 
   ~InSitu()
   {

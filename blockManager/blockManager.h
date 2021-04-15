@@ -133,6 +133,8 @@ public:
 
   // void* getBlockPointer(std::string blockID);
 
+  int getCurrentBlockNum();
+
   ~BlockManager() {};
 
   // private:

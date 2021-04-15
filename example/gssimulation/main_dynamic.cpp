@@ -295,9 +295,13 @@ int main(int argc, char** argv)
     metricName = "Al";
     gsinsitu.m_metricManager.putMetric(metricName, stageStatus[1]);
 
+    double burden = stageStatus[2];
+    std::cout << "rank " << rank << " step " << step << " burden [running thread/physical thread] "
+              << burden << std::endl;
+
     if (ifdynamic)
     {
-      gsinsitu.decideTaskPlacement(step, rank, procs, pattern, ifTCAna, ifWriteToStage);
+      gsinsitu.decideTaskPlacement(step, rank, procs, burden, pattern, ifTCAna, ifWriteToStage);
     }
 
     MPI_Barrier(comm);
@@ -352,11 +356,11 @@ int main(int argc, char** argv)
       double anaSpan = anaEnd - anaStart;
       gsinsitu.m_metricManager.putMetric(metricName, anaSpan);
 
-      //if (rank == 0)
+      // if (rank == 0)
       //{
-        // some process takes more then 40 seconds for first step, not sure the reason
-        // jump out the first step
-        std::cout << "step " << step << " rank " << rank << " anaTime: " << anaSpan << std::endl;
+      // some process takes more then 40 seconds for first step, not sure the reason
+      // jump out the first step
+      std::cout << "step " << step << " rank " << rank << " anaTime: " << anaSpan << std::endl;
       //}
     }
 

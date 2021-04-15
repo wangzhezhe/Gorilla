@@ -1083,7 +1083,6 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
   tl::bulk currentBulk = uniServer->m_bulkMap[clientID];
   uniServer->m_bulkMapmutex.unlock();
 
-  
   clock_gettime(CLOCK_REALTIME, &end1);
   diff1 = (end1.tv_sec - start.tv_sec) * 1.0 + (end1.tv_nsec - start.tv_nsec) * 1.0 / BILLION;
   spdlog::debug("server put registermem : {}", diff1);
@@ -1092,7 +1091,6 @@ void putrawdata(const tl::request& req, int clientID, size_t& step, std::string&
   // pull the data onto the server
   dataBulk.on(ep) >> currentBulk;
   // the operation for currentBulk equals to the operation to current Map
-
 
   clock_gettime(CLOCK_REALTIME, &end2);
   diff2 = (end2.tv_sec - end1.tv_sec) * 1.0 + (end2.tv_nsec - end1.tv_nsec) * 1.0 / BILLION;
@@ -1430,7 +1428,8 @@ void getStageStatus(const tl::request& req)
 {
   // get the current schedule time and execution time
   // return value is a vector, first is schedule time second is execution time
-  std::vector<double> stageStatus(2);
+  // the third parameter is the blocknum
+  std::vector<double> stageStatus(3);
 
   // int clientid = 0;
   int clientid = clientStaging->getIDFromClientAddr(req.get_endpoint());
@@ -1439,6 +1438,7 @@ void getStageStatus(const tl::request& req)
     // the data is not put here
     stageStatus[0] = 0;
     stageStatus[1] = 0;
+    stageStatus[2] = 0;
   }
   else
   {
@@ -1461,6 +1461,7 @@ void getStageStatus(const tl::request& req)
     {
       stageStatus[1] = uniServer->m_metricManager->getLastNmetrics(anaKey, 1)[0];
     }
+    stageStatus[2] = (uniServer->m_metricManager->m_runningThreads)*1.0/32.0;
   }
 
   req.respond(stageStatus);
@@ -1495,6 +1496,11 @@ void executeAsyncExp(const tl::request& req, std::string& blockIDSuffix, int& bl
       // put data into the metric manager
       uniServer->m_metricManager->putMetric(scheduleKey, timeSpan);
 
+      // add running thread value
+      uniServer->m_metricManager->m_runningThreadsLock.lock();
+      uniServer->m_metricManager->m_runningThreads+=1;
+      uniServer->m_metricManager->m_runningThreadsLock.unlock();
+
       // it is posible that this server contians data with same idsuffix (varname+step)
 
       globalSconfig->startTimer(executeNameSchedule);
@@ -1517,7 +1523,8 @@ void executeAsyncExp(const tl::request& req, std::string& blockIDSuffix, int& bl
         int step = stoi(substr);
         if (funcParameters.size() != 3)
         {
-          throw std::runtime_error("wrong parameter size, it should includes totalstep, anatype and dataID");
+          throw std::runtime_error(
+            "wrong parameter size, it should includes totalstep, anatype and dataID");
         }
 
         int totalStep = stoi(funcParameters[0]);
@@ -1538,6 +1545,12 @@ void executeAsyncExp(const tl::request& req, std::string& blockIDSuffix, int& bl
 
       // remove the current data if it is processed
       uniServer->m_blockManager->eraseBlock(blockCompleteName, BACKEND::MEM);
+
+      // decrease running thread vlaue
+      uniServer->m_metricManager->m_runningThreadsLock.lock();
+      uniServer->m_metricManager->m_runningThreads-=1;
+      uniServer->m_metricManager->m_runningThreadsLock.unlock();
+
       // tick timer
       // the clientStaging send request to the master server
       if (ifLastStep)

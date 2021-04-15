@@ -244,8 +244,8 @@ bool BlockManager::checkDataExistance(std::string blockID, int backend)
 
 int BlockManager::eraseBlock(std::string blockID, int backend)
 {
-  //TODO 
-  //we do not go through the getBlockHandle here, the backend parameter is unnecessary here
+  // TODO
+  // we do not go through the getBlockHandle here, the backend parameter is unnecessary here
   std::lock_guard<tl::mutex> lck(this->m_DataBlockMapMutex);
   if (this->DataBlockMap.find(blockID) != this->DataBlockMap.end())
   {
@@ -257,6 +257,12 @@ int BlockManager::eraseBlock(std::string blockID, int backend)
 
   // not find or finish delete
   return 0;
+}
+
+int BlockManager::getCurrentBlockNum()
+{
+  std::lock_guard<tl::mutex> lck(this->m_DataBlockMapMutex);
+  return this->DataBlockMap.size();
 }
 
 }
