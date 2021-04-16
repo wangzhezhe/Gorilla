@@ -1,20 +1,15 @@
 
-Al,0,0,0,0,1.65974,1.75062,1.77308,1.76837,1.68706,1.66311,1.71655,1.63976,1.68408,1.64689,1.6772,1.6962,1.64777,1.70085,1.75039,1.71929,1.69726,1.70829,1.70174,1.69434,1.7317,1.7244,1.72136,1.70908,1.76008,1.72309
-At,1.70255,1.70504
-S,0.933286,0.930162,0.93092,0.929258,0.928486,0.928322,0.930145,0.928633,0.928932,0.930151,0.931282,0.930573,0.930788,0.930255,0.929059,0.930202,0.929352,0.928617,0.929157,0.928817,0.929349,0.929001,0.9287,0.92874,0.931904,0.928679,0.929244,0.930997,0.929331,0.928835
-T,0.2304,0.166042,0.175405,0.167811,0.165029,0.172339,0.16341,0.186322,0.164849,0.188435,0.200294,0.164226,0.190957,0.165494,0.193927,0.164288,0.173483,0.158113,0.165738,0.194081,0.182103,0.15687,0.199674,0.193531,0.167459,0.170817,0.16599,0.18977
-W,0,0,0,1.1915e-05,1.4498e-05,2.2536e-05,1.645e-05,1.617e-05,8.845e-06,1.2766e-05,1.6094e-05,1.1381e-05,1.1582e-05,1.0888e-05,1.0914e-05,9.069e-06,1.6365e-05,1.4071e-05,1.1008e-05,1.3799e-05,1.2715e-05,2.5231e-05,9.836e-06,1.004e-05,1.7487e-05,1.66e-05,1.2919e-05,1.3941e-05,9.641e-06,2.1136e-05
 
-sim executiontime 36.2951
-main time tick: 38.0791
+ 0: sim executiontime 39.4093 accumulatedSim 29.0565
+main time tick: 39.5547
 
- 0: sim executiontime 39.3491 accumulatedSim 29.0201
- main time tick: 39.645
+ 0: sim executiontime 39.4949 accumulatedSim 29.0842
+main time tick: 39.8472
 
-wfavg 38.60106667
-wfstdev 0.9040727865
+stdev 0.04942118304
+wf 39.43783333
 
- 0: final decision rank 0 step 0 ifTCAna 1 ifWriteToStage 0
+  0: final decision rank 0 step 0 ifTCAna 1 ifWriteToStage 0
  0: final decision rank 0 step 1 ifTCAna 1 ifWriteToStage 0
  0: final decision rank 0 step 2 ifTCAna 0 ifWriteToStage 1
  0: final decision rank 0 step 3 ifTCAna 0 ifWriteToStage 1
@@ -43,4 +38,4 @@ wfstdev 0.9040727865
  0: final decision rank 0 step 26 ifTCAna 0 ifWriteToStage 1
  0: final decision rank 0 step 27 ifTCAna 0 ifWriteToStage 1
  0: final decision rank 0 step 28 ifTCAna 0 ifWriteToStage 1
- 0: final decision rank 0 step 29 ifTCAna 1 ifWriteToStage 0
+ 0: final decision rank 0 step 29 ifTCAna 0 ifWriteToStage 1

@@ -1,0 +1,62 @@
+burden 0.2 0.8
+32+4
+
+0: sim executiontime 13.4629 accumulatedSim 2.89341
+main time tick: 15.5746
+
+
+Reasons:
+
+collective operation may take long time
+decision overhead
+
+   0: step 0 decision time 0.0108101
+   0: step 1 decision time 0.00841165
+   0: step 2 decision time 0.00913954
+   0: step 3 decision time 0.0114012
+   0: step 4 decision time 0.0102935
+   0: step 5 decision time 0.00996375
+   0: step 6 decision time 0.010232
+   0: step 7 decision time 0.0103621
+   0: step 8 decision time 0.00984859
+   0: step 9 decision time 0.0219648
+   0: step 10 decision time 0.00960684
+   0: step 11 decision time 0.0107267
+   0: step 12 decision time 0.00971293
+   0: step 13 decision time 0.0094173
+   0: step 14 decision time 0.00988603
+   0: step 15 decision time 0.01002
+   0: step 16 decision time 0.00948215
+   0: step 17 decision time 0.00947022
+   0: step 18 decision time 0.00991082
+   0: step 19 decision time 0.0102129
+   0: step 20 decision time 0.0101469
+   0: step 21 decision time 0.0102327
+   0: step 22 decision time 0.0104177
+   0: step 23 decision time 0.0105705
+   0: step 24 decision time 0.0104353
+   0: step 25 decision time 0.020376
+   0: step 26 decision time 0.0199919
+   0: step 27 decision time 0.0158675
+   0: step 28 decision time 0.0150163
+   0: step 29 decision time 0.0675292
+   0: step 30 decision time 0.575371
+   0: step 31 decision time 0.0207837
+   0: step 32 decision time 0.610769
+   0: step 33 decision time 0.0234728
+   0: step 34 decision time 0.210088
+   0: step 35 decision time 0.0186265
+   0: step 36 decision time 0.0264978
+   0: step 37 decision time 0.163921
+   0: step 38 decision time 1.50884
+   0: step 39 decision time 1.48829
+
+
+but sim time is really small
+
+   0: step 34 avg sim 0.0745354
+   0: step 35 avg sim 0.0751605
+   0: step 36 avg sim 0.0814505
+   0: step 37 avg sim 0.0797555
+   0: step 38 avg sim 0.0753176
+   0: step 39 avg sim 0.0751357

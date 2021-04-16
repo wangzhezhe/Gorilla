@@ -5,6 +5,10 @@
  0: sim executiontime 71.4012
 main time tick: 71.5109
 
+ 0: sim executiontime 72.8936 accumulatedSim 58.1516
+
+avg 72.4327
+std 0.7983022172
 
  0: rank 0 step 0 ifTCAna 1 ifWriteToStage 0 decision time 0.00266361
  0: rank 0 step 1 ifTCAna 1 ifWriteToStage 0 decision time 0.00178671

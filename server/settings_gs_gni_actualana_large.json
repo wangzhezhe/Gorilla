@@ -1,0 +1,11 @@
+{
+    "lenArray":[646,646,646],
+    "partitionMethod":"manual",    
+    "metaserverNum": 64,
+    "partitionLayout":[4,4,4],
+    "protocol": "gni",
+    "masterInfo":"./unimos_server.conf",
+    "addTrigger": false,
+    "memLimit": "250G",
+    "logLevel":0
+}

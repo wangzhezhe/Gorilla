@@ -541,7 +541,7 @@ void InSitu::adjustment(int totalProcs, int step, MetricsSet& mset, bool& ifTCAn
 
   if (ifTCAna)
   {
-    if (mset.Al > avgAl || mset.At > avgAt)
+    if (mset.Al > 1.25*avgAl || mset.At > 1.25*avgAt)
     {
       ifWriteToStage = true;
       ifTCAna = false;
@@ -554,6 +554,11 @@ void InSitu::adjustment(int totalProcs, int step, MetricsSet& mset, bool& ifTCAn
     std::cout << "debug step " << step << " ifTCAna " << ifTCAna << " mset.At " << mset.At
               << " mset.T " << mset.T << " mset.Al " << mset.Al << " mset.S " << mset.S
               << std::endl;
+
+    if (burden < 0.2 || burden > 0.8 || lastStep)
+    {
+      return;
+    }
 
     if (ifTCAna == true)
     {
@@ -584,16 +589,15 @@ void InSitu::adjustment(int totalProcs, int step, MetricsSet& mset, bool& ifTCAn
       // switch this part may decrease the harmful value and not give too much burdern to the
       // staging
       // if (lastDecision == "loosely" && totalTostage > totalProcs / 2)
-      if (lastDecision == "loosely")
+      // if (lastDecision == "loosely")
+      //{
+      // not try at, since it is possible caused by the outdated at
+      // the al data is accurate
+      if (mset.Al > mset.T || mset.At > mset.T)
       {
-        // not try at, since it is possible caused by the outdated at
-        // the al data is accurate
-        if (mset.Al > mset.T || mset.At > mset.T)
-        {
-          // this may caused by the false anticipation of too small At
-          ifWriteToStage = true;
-          ifTCAna = false;
-        }
+        // this may caused by the false anticipation of too small At
+        ifWriteToStage = true;
+        ifTCAna = false;
       }
     }
   }

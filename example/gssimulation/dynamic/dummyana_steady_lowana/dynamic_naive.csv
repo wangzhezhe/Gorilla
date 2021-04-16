@@ -12,6 +12,9 @@ sim executiontime 30.6331
 sim executiontime 30.8315
 sim executiontime 30.8937
 
+avg 30.7861
+stdev 0.1361027553
+
 for total execuion time it is also 30.6331
 
 since there is not external part

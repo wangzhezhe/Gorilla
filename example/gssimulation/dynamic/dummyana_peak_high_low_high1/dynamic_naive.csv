@@ -8,6 +8,15 @@ W,0,0,0,1.5291e-05,1.0352e-05,1.1599e-05,8.902e-06,9.888e-06,1.2541e-05,1.097e-0
 0: sim executiontime 76.2678
 main time tick: 78.0828
 
+0: sim executiontime 73.0609 accumulatedSim 58.1368
+main time tick: 74.8962
+
+ 0: sim executiontime 72.8936 accumulatedSim 58.1516
+main time tick: 74.7438
+
+avg 75.9076
+stdev 1.885318997
+
  0: step 0 ifTCAna 1 ifWriteToStage 0 decision time 0.0021317
  0: step 1 ifTCAna 1 ifWriteToStage 0 decision time 0.000300884
  0: step 2 ifTCAna 0 ifWriteToStage 1 decision time 0.000363588

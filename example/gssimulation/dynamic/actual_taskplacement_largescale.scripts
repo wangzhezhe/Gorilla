@@ -1,0 +1,54 @@
+#!/bin/bash
+#SBATCH --qos=debug
+#SBATCH --nodes=36
+#SBATCH --account=m2956
+#SBATCH --time=5:00
+#SBATCH --licenses=cscratch1
+#SBATCH --constraint=haswell
+
+# copy metadata server to current dir
+rm unimosserver.log grayscott_dynamic.log
+
+#assume we are at the build dir
+#start the server
+#it needs lots of memory when there is peak for processing, 4 server can predent the oom isssue in our evaluation
+#srun -C haswell -N 8 -n 64 -c 8 ./unimos_server ~/cworkspace/src/Gorilla/server/settings_gs_gni_actualana_large.json &> unimosserver.log &
+srun -C haswell -N 4 -n 32 -c 8 ./unimos_server ~/cworkspace/src/Gorilla/server/settings_gs_gni_actualana.json &> unimosserver.log &
+
+
+#make sure the server load the pipeline
+result=0
+while [ $result -ne 32 ]
+do
+    result=$(cat unimosserver.log | grep "init server ok" | wc -l)
+    echo "$result server ok"
+    sleep 1  
+done
+
+sleep 1
+
+
+#srun -C haswell -N 16 -n 512 -c 2 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni alltightly actual &> actual_alltightly_512.log 
+#srun -C haswell -N 16 -n 512 -c 2 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni allloosely actual &> actual_allloosely_512.log 
+#srun -C haswell -N 16 -n 512 -c 2 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicNaive actual &> actual_dynamicNaive_512.log
+#srun -C haswell -N 16 -n 512 -c 2 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicEstimation actual &> actual_dynamicEstimation_512.log
+#srun -C haswell -N 16 -n 512 -c 2 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicEstimationAdjust actual &> actual_dynamicEstimationAdjust_512.log
+
+
+#srun -C haswell -N 32 -n 1024 -c 2 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni alltightly actual &> actual_alltightly_1024.log 
+#srun -C haswell -N 32 -n 1024 -c 2 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni allloosely actual &> actual_allloosely_1024.log 
+#srun -C haswell -N 32 -n 1024 -c 2 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicNaive actual &> actual_dynamicNaive_1024.log
+#srun -C haswell -N 32 -n 1024 -c 2 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicEstimation actual &> actual_dynamicEstimation_1024.log
+#srun -C haswell -N 32 -n 1024 -c 2 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicEstimationAdjust actual &> actual_dynamicEstimationAdjust_1024.log
+
+
+srun -C haswell -N 32 -n 2048 -c 1 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni alltightly actual &> actual_alltightly_2048.log 
+#srun -C haswell -N 32 -n 2048 -c 1 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni allloosely actual &> actual_allloosely_2048.log 
+#srun -C haswell -N 32 -n 2048 -c 1 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicNaive actual &> actual_dynamicNaive_2048.log
+#srun -C haswell -N 32 -n 2048 -c 1 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicEstimation actual &> actual_dynamicEstimation_2048.log
+#srun -C haswell -N 32 -n 2048 -c 1 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_actual.json gni dynamicEstimationAdjust actual &> actual_dynamicEstimationAdjust_2048.log
+
+
+
+# the server may need longer time to finish to process the in-staging tasks
+wait

@@ -9,6 +9,10 @@ W,0,0,0,1.2481e-05,1.2481e-05,1.2481e-05,1.2481e-05,1.2481e-05,1.2481e-05,1.2481
 
 0: sim executiontime 71.3301
 
+0: sim executiontime 72.2651 accumulatedSim 58.1363
+
+avg 71.95343333
+stdev 0.5398225017
 
 
  0: step 0 ifTCAna 1 ifWriteToStage 0 decision time 0.0010252

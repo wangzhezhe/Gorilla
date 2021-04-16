@@ -5,3 +5,11 @@ W,0,0.000489758,1.1503e-05,0.000531405,1.1216e-05,0.000501611,9.89e-06,1.2061e-0
 
 sim executiontime 33.3519
 main time tick: 35.2206
+
+
+ 0: sim executiontime 35.295 accumulatedSim 29.0815
+ main time tick: 37.0764
+
+
+ wfavg 36.41066667
+ wfstdev  1.033050092

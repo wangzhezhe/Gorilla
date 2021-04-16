@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --qos=debug
 #SBATCH --nodes=4
-#SBATCH --time=10:00
+#SBATCH --time=5:00
 #SBATCH --licenses=cscratch1
 #SBATCH --constraint=haswell
 #SBATCH --account=m2956
@@ -9,7 +9,7 @@
 
 #assume we are at the build dir
 #start the server
-srun -C haswell -N 2 -n 16 -c 8 ./unimos_server ~/cworkspace/src/Gorilla/server/settings_gs_gni.json &> unimosserver.log &
+srun -C haswell -N 2 -n 16 -c 8 ./unimos_server ~/cworkspace/src/Gorilla/server/settings_gs_gni_512_16.json &> unimosserver.log &
 
 
 #make sure the server load the pipeline
@@ -25,21 +25,16 @@ sleep 1
 
 #set associated env to start the synthetic ana
 #export ANATYPE=S_HIGH
-#export ANATYPE=S_LOW
+export ANATYPE=S_LOW
 #export ANATYPE=V_LHL
 #export ANATYPE=V_HLH
 #export ANATYPE=V_MULTIPLE
-export ANATYPE=V_INCONSISTENCY
+#export ANATYPE=V_INCONSISTENCY
 
-srun -C haswell -N 2 -n 32 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_synthetic.json gni alltightly synthetic &> alltightly_synthetic.log 
-#srun -C haswell -N 2 -n 32 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_synthetic.json gni allloosely synthetic &> allloosely_synthetic.log 
-#srun -C haswell -N 2 -n 32 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_synthetic.json gni dynamicNaive synthetic &> dynamicNaive_synthetic.log 
-#srun -C haswell -N 2 -n 32 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_synthetic.json gni dynamicEstimation synthetic &> dynamicEstimation_synthetic.log 
-#srun -C haswell -N 2 -n 32 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_synthetic.json gni dynamicEstimationAdjust synthetic &> dynamicEstimationAdjust_synthetic.log 
+#srun -C haswell -N 2 -n 32 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_synthetic_512.json gni alltightly synthetic &> alltightly_synthetic.log 
+#srun -C haswell -N 2 -n 32 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_synthetic_512.json gni allloosely synthetic &> allloosely_synthetic.log 
+#srun -C haswell -N 2 -n 32 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_synthetic_512.json gni dynamicNaive synthetic &> dynamicNaive_synthetic.log 
+srun -C haswell -N 2 -n 32 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_synthetic_512.json gni dynamicEstimation synthetic &> dynamicEstimation_synthetic.log 
+#srun -C haswell -N 2 -n 32 -c 4 -l ./example/gray-scott-dynamic ~/cworkspace/src/Gorilla/example/gssimulation/settings_synthetic_512.json gni dynamicEstimationAdjust synthetic &> dynamicEstimationAdjust_synthetic.log 
 
-
-
-
-
-# the server may need longer time to finish to process the in-staging tasks
 wait
