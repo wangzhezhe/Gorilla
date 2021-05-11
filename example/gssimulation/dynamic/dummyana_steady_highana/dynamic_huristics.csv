@@ -1,0 +1,41 @@
+
+
+ 0: sim executiontime 39.4093 accumulatedSim 29.0565
+main time tick: 39.5547
+
+ 0: sim executiontime 39.4949 accumulatedSim 29.0842
+main time tick: 39.8472
+
+stdev 0.04942118304
+wf 39.43783333
+
+  0: final decision rank 0 step 0 ifTCAna 1 ifWriteToStage 0
+ 0: final decision rank 0 step 1 ifTCAna 1 ifWriteToStage 0
+ 0: final decision rank 0 step 2 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 3 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 4 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 5 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 6 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 7 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 8 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 9 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 10 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 11 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 12 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 13 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 14 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 15 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 16 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 17 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 18 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 19 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 20 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 21 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 22 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 23 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 24 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 25 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 26 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 27 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 28 ifTCAna 0 ifWriteToStage 1
+ 0: final decision rank 0 step 29 ifTCAna 0 ifWriteToStage 1

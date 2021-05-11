@@ -1,0 +1,72 @@
+
+
+0: sim executiontime 27.3527 accumulatedSim 2.6603
+main time tick: 29.0968
+
+  0: step 0 iter 0.803511
+   0: step 1 iter 0.326482
+   0: step 2 iter 0.173425
+   0: step 3 iter 0.188771
+   0: step 4 iter 0.171326
+   0: step 5 iter 0.174097
+   0: step 6 iter 0.175651
+   0: step 7 iter 0.173681
+   0: step 8 iter 0.179165
+   0: step 9 iter 0.174456
+   0: step 10 iter 0.209924
+   0: step 11 iter 0.178096
+   0: step 12 iter 0.175898
+   0: step 13 iter 0.173419
+   0: step 14 iter 0.175224
+   0: step 15 iter 0.174752
+   0: step 16 iter 0.183566
+   0: step 17 iter 0.18302
+   0: step 18 iter 0.190771
+   0: step 19 iter 0.248833
+   0: step 20 iter 0.202734
+   0: step 21 iter 0.20965
+   0: step 22 iter 0.185982
+   0: step 23 iter 0.447507
+   0: step 24 iter 0.314867
+   0: step 25 iter 0.41501
+   0: step 26 iter 0.461944
+   0: step 27 iter 1.13908
+   0: step 28 iter 0.917458
+   0: step 29 iter 1.3644
+   0: step 30 iter 1.17115
+   0: step 31 iter 1.31304
+   0: step 32 iter 0.8128
+   0: step 33 iter 2.17851
+   0: step 34 iter 1.02612
+   0: step 35 iter 2.66444
+   0: step 36 iter 1.28786
+   0: step 37 iter 1.69506
+   0: step 38 iter 2.35807
+   0: step 39 iter 2.74351
+
+   0: step 32 put data: 0.0918684
+   0: step 33 put data: 0.14373
+   0: step 34 put data: 0.545142
+   0: step 35 put data: 0.557199
+   0: step 36 put data: 0.152068
+   0: step 37 put data: 0.239603
+   0: step 38 put data: 0.136574
+   0: step 39 put data: 0.393884
+
+
+
+      0: step 25 decision time 0.0311599
+   0: step 26 decision time 0.0344095
+   0: step 27 decision time 0.237782
+   0: step 28 decision time 0.18172
+   0: step 29 decision time 0.534623
+   0: step 30 decision time 0.317816
+   0: step 31 decision time 0.156921
+   0: step 32 decision time 0.182812
+   0: step 33 decision time 0.757157
+   0: step 34 decision time 0.0500062
+   0: step 35 decision time 0.135829
+   0: step 36 decision time 0.0424168
+   0: step 37 decision time 0.1083
+   0: step 38 decision time 0.644187
+   0: step 39 decision time 0.372781

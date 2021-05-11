@@ -1,0 +1,75 @@
+
+Al,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+At,1.70917,1.71382,1.6641,1.70195,1.70326,1.70672,1.69682,1.16738,1.14059,1.09746,1.04932,0.997777,0.930469,0.851593,0.743901,0.641016,0.485646,0.283982,0.0673687,0.0676577,0.0671833,0.0674951,0.0674436,0.0672202,0.0669272,0.0671544,0.0683441,0.0674357,0.0676072,0.0671349,0.0677969,0.0684986,0.0676792,0.0677016,0.0674608,0.0675344,0.0682793,0.0672469,0.0675442,0.0673926,0.0676699,0.0676212,0.0673366,0.282681,0.48881,0.641139,0.757638,0.854491,0.928956,0.995731,1.05196,1.0928,1.1387,1.1773,1.71433,1.71167,1.71053,1.70814,1.70868,1.70673
+S,0.97026,0.969864,0.974162,0.973307,0.973209,0.974963,0.974022,0.974602,0.973383,0.973066,0.973179,0.97353,0.973665,0.973809,0.978071,0.973841,0.973786,0.974094,0.973438,0.973039,0.972849,0.973475,0.978034,0.993678,0.976257,0.972993,0.973716,0.973845,0.973794,0.978716,0.997543,0.977775,0.973596,0.977727,0.976916,0.976352,0.974679,0.974301,0.976455,0.975265,0.987946,0.974873,0.97528,0.974405,0.974695,0.975183,0.975499,0.975744,0.975651,1.00221,0.976103,0.976671,0.975776,0.970948,0.974181,0.9747,0.974824,0.974594,0.974873,0.974812
+W,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+0: sim executiontime 94.441
+
+0: sim executiontime 101.064 accumulatedSim 58.1874
+0: sim executiontime 100.955 accumulatedSim 58.0971
+
+avg 100.9913333
+stdev 0.06293117934
+
+void vhlh(int step, int totalStep)
+{
+  int workLoadhigh = 1500;
+  int workLoadlow = 60;
+  int workLoad = 0;
+
+  // 0-bound1 steady
+  int bound1 = (totalStep / 5) - 6;
+  // bound1-bound2 increase
+  int bound2 = (2 * totalStep / 5) - 6;
+  // bound2-bound3 steady
+  int bound3 = (3 * totalStep / 5) + 6;
+  // bound2-bound4 decrease
+  int bound4 = (4 * totalStep / 5) + 6;
+  // bound4-last steady
+
+  // 0.2 is a good value to make sure it increase gradually
+  // try this later
+  double rate = 0.2;
+
+  if (step < (bound1))
+  {
+    workLoad = workLoadhigh;
+    // first part
+  }
+  else if (step > bound1 && step < bound2)
+  {
+    workLoad = workLoadhigh - workLoadhigh * (1.0 / (1.0 + rate * (bound2 - step)));
+  }
+  else if (step >= bound2 && step <= bound3)
+  {
+    workLoad = workLoadlow;
+  }
+  else if (step > bound3 && step < bound4)
+  {
+    workLoad = workLoadhigh - workLoadhigh * (1.0 / (1.0 + rate * (step - bound3)));
+  }
+  else
+  {
+    // last part
+    workLoad = workLoadhigh;
+  }
+
+  int num = 500;
+  std::vector<double> v(num, 0);
+  double results = 0;
+  for (int i = 0; i < workLoad; i++)
+  {
+    for (int j = 0; j < num; j++)
+    {
+      double rf = (double)rand() / RAND_MAX;
+      v[j] = 0 + rf * (0.1 * i - 0);
+    }
+    for (int j = 0; j < num; j++)
+    {
+      results = v[j] + results;
+    }
+    std::this_thread::sleep_for(1ms);
+  }
+  return;
+}

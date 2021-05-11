@@ -1,0 +1,59 @@
+
+T,0.198398
+W,0,0,0,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05,3.8355e-05
+S,0.963463,0.962791,0.984931,0.971235,0.962916,0.964084,0.96381,0.97415,0.970912,0.964057,0.964387,0.96306,0.963409,0.963781,0.963888,0.963658,0.969091,0.964106,0.973406,0.96413,0.964503,1.00732,0.964797,0.966196,0.968006,0.964129,0.964716,0.964626,0.964653,0.972004
+At,0.0421076,0.0429912,0.0421138,0.0424809,0.0422935,0.0421793,0.0421262,0.0421245,0.0421367,0.0421019,0.0421069,0.0421517,0.0421572,0.0421984,0.0429716,0.0421636,0.0421624,0.0421274,0.0420699,0.043005,0.0421619,0.0422051,0.0429928,0.0422077,0.0421636,0.042098,0.0421433,0.0421052,0.04211
+Al,0,0,0,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933,0.041933
+Saved,0,0,0,0.155407,0.156284,0.155917,0.156104,0.156218,0.156272,0.156273,0.156261,0.156296,0.156291,0.156246,0.156241,0.156199,0.155426,0.156234,0.156235,0.15627,0.156328,0.155393,0.156236,0.156193,0.155405,0.15619,0.156234,0.1563,0.156254,0.156293
+
+
+only write the staging service for one step for the aim of collecting data
+sim executiontime 30.6331
+sim executiontime 30.8315
+sim executiontime 30.8937
+
+avg 30.7861
+stdev 0.1361027553
+
+for total execuion time it is also 30.6331
+
+since there is not external part
+
+int executeIteration = 1;
+int workLoad = 80;
+
+{
+    "L": 512,
+    "Du": 1.2,
+    "Dv": 0.8,
+    "F": 0.02,
+    "k": 0.048,
+    "dt": 1.0,
+    "plotgap": 1,
+    "steps": 30,
+    "noise": 0.01,
+    "output": "gs.bp",
+    "checkpoint": false,
+    "checkpoint_freq": 10,
+    "checkpoint_output": "gs_ckpt.bp",
+    "adios_config": "adios2.xml",
+    "adios_span": false,
+    "adios_memory_selection": false,
+    "mesh_type": "image"
+}
+
+step 0 ifTCAna 1 ifWriteToStage 0 decision time 4.05312e-06
+step 1 ifTCAna 1 ifWriteToStage 0 decision time 2.38419e-07
+step 2 ifTCAna 0 ifWriteToStage 1 decision time 2.38419e-07
+step 3 ifTCAna 1 ifWriteToStage 0 decision time 3.3617e-05
+step 4 ifTCAna 1 ifWriteToStage 0 decision time 5.72205e-06
+step 5 ifTCAna 1 ifWriteToStage 0 decision time 5.48363e-06
+step 6 ifTCAna 1 ifWriteToStage 0 decision time 5.24521e-06
+step 7 ifTCAna 1 ifWriteToStage 0 decision time 5.96046e-06
+step 8 ifTCAna 1 ifWriteToStage 0 decision time 5.24521e-06
+step 9 ifTCAna 1 ifWriteToStage 0 decision time 5.48363e-06
+step 10 ifTCAna 1 ifWriteToStage 0 decision time 5.48363e-06
+step 11 ifTCAna 1 ifWriteToStage 0 decision time 5.72205e-06
+step 12 ifTCAna 1 ifWriteToStage 0 decision time 5.24521e-06
+...
+step 29 ifTCAna 1 ifWriteToStage 0 decision time 5.72205e-06

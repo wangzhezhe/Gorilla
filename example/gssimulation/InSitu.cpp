@@ -455,7 +455,7 @@ MetricsSet InSitu::estimationGet(std::string lastDecision, int currStep, double 
       // is not helpful
       // this->m_metricManager.putMetric("Al", emset.Al);
     }
-    if (mset.Al > mset.At && burden < 0.1)
+    if (mset.Al > mset.At && burden < 0.2)
     {
       emset.Al = mset.At;
     }
@@ -474,6 +474,10 @@ MetricsSet InSitu::estimationGet(std::string lastDecision, int currStep, double 
       // insert the tightly coupled value
       // this->m_metricManager.putMetric("At", emset.At);
     }
+    if (mset.Al > mset.At && burden < 0.2)
+    {
+      emset.At = mset.Al;
+    }
     p = mset.T;
   }
   else
@@ -489,7 +493,7 @@ MetricsSet InSitu::estimationGet(std::string lastDecision, int currStep, double 
 }
 
 void InSitu::adjustment(int totalProcs, int step, MetricsSet& mset, bool& ifTCAna,
-  bool& ifWriteToStage, std::string& lastDecision, double burden)
+  bool& ifWriteToStage, std::string& lastDecision, double burden, bool lastStep)
 {
 
   int localTostage = 0;
@@ -504,15 +508,8 @@ void InSitu::adjustment(int totalProcs, int step, MetricsSet& mset, bool& ifTCAn
   //          << totalProcs << std::endl;
   // this threshould can be parameter of the algorithm
   // if burden is ok
-  if (burden < 0.5)
-  {
-    return;
-  }
 
-  // remove the largest one between tightly group
-  double totalAt = 0;
-  double totalAl = 0;
-
+  // get subcomm for ana task
   int color = 0;
   MPI_Comm tightlyana_comm;
   int tightlyana_procs = 0;
@@ -521,31 +518,47 @@ void InSitu::adjustment(int totalProcs, int step, MetricsSet& mset, bool& ifTCAn
     color = 1;
   }
   MPI_Comm_split(MPI_COMM_WORLD, color, this->m_rank, &tightlyana_comm);
+  // most of them goes to tightly
+  double totalAt = 0;
+  double totalAl = 0;
+
   MPI_Allreduce(&mset.At, &totalAt, 1, MPI_DOUBLE, MPI_SUM, tightlyana_comm);
   MPI_Allreduce(&mset.Al, &totalAl, 1, MPI_DOUBLE, MPI_SUM, tightlyana_comm);
-
   MPI_Comm_size(tightlyana_comm, &tightlyana_procs);
   double avgAt = totalAt / (1.0 * tightlyana_procs);
   double avgAl = totalAl / (1.0 * tightlyana_procs);
 
-  // some at may still harmfule here
-  // even if we execute at for all
+  // make sure every process execute the split part
   // not the last step (currently, the last step is 39)
   // TODO remove the hardcode values here
-  if (ifTCAna && (step != 39))
-    if (mset.Al > avgAl || mset.At > avgAt)
+  if (burden > 0.8 || lastStep)
+  {
+    return;
+  }
+
+  // some at may still harmfule here
+  // even if we execute at for all
+
+  if (ifTCAna)
+  {
+    if (mset.Al > 1.25*avgAl || mset.At > 1.25*avgAt)
     {
       ifWriteToStage = true;
       ifTCAna = false;
     }
-  
-  // remove the largest one between tightly and loosely coupled group
+  }
+
   if (totalTostage > 0 && totalTostage < totalProcs)
   {
     // there is inconsistency
     std::cout << "debug step " << step << " ifTCAna " << ifTCAna << " mset.At " << mset.At
               << " mset.T " << mset.T << " mset.Al " << mset.Al << " mset.S " << mset.S
               << std::endl;
+
+    if (burden < 0.2 || burden > 0.8 || lastStep)
+    {
+      return;
+    }
 
     if (ifTCAna == true)
     {
@@ -575,23 +588,23 @@ void InSitu::adjustment(int totalProcs, int step, MetricsSet& mset, bool& ifTCAn
       // we might not know if it is caused dy the server overload or the data is outdated
       // switch this part may decrease the harmful value and not give too much burdern to the
       // staging
-      if (lastDecision == "loosely" && totalTostage > totalProcs / 2)
+      // if (lastDecision == "loosely" && totalTostage > totalProcs / 2)
+      // if (lastDecision == "loosely")
+      //{
+      // not try at, since it is possible caused by the outdated at
+      // the al data is accurate
+      if (mset.Al > mset.T || mset.At > mset.T)
       {
-        // not try at, since it is possible caused by the outdated at
-        // the al data is accurate
-        if (mset.Al > mset.T || mset.At > mset.T)
-        {
-          // this may caused by the false anticipation of too small At
-          ifWriteToStage = true;
-          ifTCAna = false;
-        }
+        // this may caused by the false anticipation of too small At
+        ifWriteToStage = true;
+        ifTCAna = false;
       }
     }
   }
 }
 
 void InSitu::decideTaskPlacement(int step, int rank, int totalprocs, double burdern,
-  std::string strategy, bool& ifTCAna, bool& ifWriteToStage)
+  std::string strategy, bool& ifTCAna, bool& ifWriteToStage, bool lastStep)
 {
 
   if (step <= 1)
@@ -677,7 +690,7 @@ void InSitu::decideTaskPlacement(int step, int rank, int totalprocs, double burd
   bool oldifWriteToStage = ifWriteToStage;
   if (strategy.find("Adjust") != std::string::npos && step >= 3)
   {
-    adjustment(totalprocs, step, mset, ifTCAna, ifWriteToStage, lastDecision, burdern);
+    adjustment(totalprocs, step, mset, ifTCAna, ifWriteToStage, lastDecision, burdern, lastStep);
   }
   if (ifTCAna != oldifTCAna || ifWriteToStage != oldifWriteToStage)
   {

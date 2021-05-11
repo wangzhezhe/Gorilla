@@ -296,12 +296,19 @@ int main(int argc, char** argv)
     gsinsitu.m_metricManager.putMetric(metricName, stageStatus[1]);
 
     double burden = stageStatus[2];
-    std::cout << "rank " << rank << " step " << step << " burden [running thread/physical thread] "
-              << burden << std::endl;
+    // std::cout << "rank " << rank << " step " << step << " burden [running thread/physical thread]
+    // "
+    //          << burden << std::endl;
 
     if (ifdynamic)
     {
-      gsinsitu.decideTaskPlacement(step, rank, procs, burden, pattern, ifTCAna, ifWriteToStage);
+      bool laststep = false;
+      if (step == (settings.steps - 1))
+      {
+        laststep = true;
+      }
+      gsinsitu.decideTaskPlacement(
+        step, rank, procs, burden, pattern, ifTCAna, ifWriteToStage, laststep);
     }
 
     MPI_Barrier(comm);
@@ -309,11 +316,13 @@ int main(int argc, char** argv)
 
     double decisionTime = dynamicEnd - dynamicStart;
 
-    std::cout << "final decision rank " << rank << " step " << step << " ifTCAna " << ifTCAna
-              << " ifWriteToStage " << ifWriteToStage << std::endl;
+    // comment out this part for large scale case
 
     if (rank == 0)
     {
+      std::cout << "final decision rank " << rank << " step " << step << " ifTCAna " << ifTCAna
+                << " ifWriteToStage " << ifWriteToStage << std::endl;
+
       std::cout << "step " << step << " decision time " << decisionTime << std::endl;
     }
 
@@ -356,12 +365,12 @@ int main(int argc, char** argv)
       double anaSpan = anaEnd - anaStart;
       gsinsitu.m_metricManager.putMetric(metricName, anaSpan);
 
-      // if (rank == 0)
-      //{
-      // some process takes more then 40 seconds for first step, not sure the reason
-      // jump out the first step
-      std::cout << "step " << step << " rank " << rank << " anaTime: " << anaSpan << std::endl;
-      //}
+      if (rank == 0)
+      {
+        // some process takes more then 40 seconds for first step, not sure the reason
+        // jump out the first step
+        std::cout << "step " << step << " rank " << rank << " anaTime: " << anaSpan << std::endl;
+      }
     }
 
     /*
@@ -448,8 +457,10 @@ int main(int argc, char** argv)
   }
 
   // std::cout << "taotal saved time " << totalsavedTime << std::endl;
-
-  gsinsitu.m_metricManager.dumpall(rank);
+  if (procs <= 128)
+  {
+    gsinsitu.m_metricManager.dumpall(rank);
+  }
 
   // self terminate the client engine
   // just call the finalize

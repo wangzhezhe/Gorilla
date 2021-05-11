@@ -104,14 +104,14 @@ public:
   ClientForSim* m_uniclient = NULL;
 
   void decideTaskPlacement(int step, int rank, int totalprocs, double burden, std::string strategy,
-    bool& ifTCAna, bool& ifWriteToStage);
+    bool& ifTCAna, bool& ifWriteToStage, bool lastStep);
 
   MetricsSet estimationGet(std::string lastDecision, int currStep, double burden);
 
   MetricsSet naiveGet();
 
   void adjustment(int totalProcs, int step, MetricsSet& mset, bool& ifTCAna, bool& ifWriteToStage,
-  std::string& lastDecision,double burden);
+  std::string& lastDecision,double burden, bool lastStep);
 
   // metric monitor
   MetricManager m_metricManager;

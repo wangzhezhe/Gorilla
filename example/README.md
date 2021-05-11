@@ -60,4 +60,6 @@ For the figure shown above, there is the 8 partition of the outputted data. The 
 
 <img src="fig/demo1.png" alt="drawing" width="300"/>
 
-For the figure shown above, the colored region is the data partition queried by the analytics, the bounding box of the queried data is from `[15,15,15]` to `[47,47,47]`。
+For the figure shown above, the colored region is the data partition queried by the analytics, the bounding box of the queried data is from `[15,15,15]` to `[47,47,47]`.
+
+

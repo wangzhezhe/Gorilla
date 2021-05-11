@@ -52,10 +52,9 @@ export HG_NA_LOG_LEVEL=debug
 
 # avoid argobot thred pool issue, and set this to 2M
 # this may helps avoid segfault when we use the processing and IO in large amount
-export ABT_THREAD_STACKSIZE=2097152
-
-# get more mercury info
-export HG_NA_LOG_LEVEL=debug
+# export ABT_THREAD_STACKSIZE=2097152
+# to make sure ther eis enough stack and not oom
+export ABT_THREAD_STACKSIZE=1048576
 ```
 
 refer to the ./scripts dir to check exmaples of running multiple servers. The configuration of the server contains item such as protocol used by communication layer, the log level, the global domain and if the trigger is started and so on. The example of the configuration is in ./server/settings.json

@@ -1,0 +1,33 @@
+
+
+  0: step 39 avg sim 0.141715
+  0: step 39 decision time 0.0144515
+  0: step 39 iter 1.62107
+  0: sim executiontime 18.5173 accumulatedSim 5.51819
+
+ main time tick: 22.0694
+
+
+
+  0: step 29 decision time 0.00544143
+  0: step 30 decision time 0.00817633
+  0: step 31 decision time 0.00564718
+  0: step 32 decision time 0.00745726
+  0: step 33 decision time 0.0208776
+  0: step 34 decision time 0.0115879
+  0: step 35 decision time 0.0111101
+  0: step 36 decision time 0.0135477
+  0: step 37 decision time 0.00799489
+  0: step 38 decision time 0.0231926
+  0: step 39 decision time 0.0144515
+
+    0: step 30 iter 0.41235
+  0: step 31 iter 0.364828
+  0: step 32 iter 0.444381
+  0: step 33 iter 1.0969
+  0: step 34 iter 1.48107
+  0: step 35 iter 1.55205
+  0: step 36 iter 1.5297
+  0: step 37 iter 1.55635
+  0: step 38 iter 1.59188
+  0: step 39 iter 1.62107

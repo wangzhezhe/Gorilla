@@ -1,0 +1,17 @@
+0: sim executiontime 26.9472 accumulatedSim 5.31131
+main time tick: 34.4589
+
+
+
+the staging may overburden when there are lots of
+
+  0: step 30 decision time 0.00531602
+  0: step 31 decision time 0.0154436
+  0: step 32 decision time 0.0111649
+  0: step 33 decision time 0.0176725
+  0: step 34 decision time 0.00612378
+  0: step 35 decision time 0.117318
+  0: step 36 decision time 1.72589
+  0: step 37 decision time 1.25719
+  0: step 38 decision time 1.64061
+  0: step 39 decision time 1.49779
