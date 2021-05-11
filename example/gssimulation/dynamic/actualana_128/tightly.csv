@@ -3,6 +3,9 @@ sim executiontime 74.4071
 0: sim executiontime 74.5318 accumulatedSim 20.0417
 0: sim executiontime 74.5318 accumulatedSim 20.0417
 
+avg 74.49023333
+stdev 0.07199557857
+
 {
     "L": 646,
     "Du": 1.1,

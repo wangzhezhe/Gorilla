@@ -8,8 +8,11 @@ the ana is really small
 
 
    0: sim executiontime 18.941 accumulatedSim 2.9467
+  0: sim executiontime 18.7537 accumulatedSim 2.84613
+main time tick: 19.2792
 
-
+avg 18.9913
+stdev 0.2663364977
 
    0: step 37 avg sim 0.0877998
    0: step 38 avg sim 0.0790288

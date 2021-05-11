@@ -486,7 +486,7 @@ MetricsSet InSitu::estimationGet(std::string lastDecision, int currStep, double 
   }
   this->m_savg = this->m_savg + 1.0 * (mset.S - this->m_savg) / (1.0 * currStep);
   this->m_pavg = this->m_pavg + 1.0 * (p - this->m_pavg) / (1.0 * currStep);
-  double esim = (this->m_totalStep - 1 - currStep) * (this->m_savg + this->m_pavg) + this->m_pavg;
+  double esim = (this->m_totalStep - 1 - currStep) * (this->m_savg + this->m_pavg);
   emset.S = esim;
 
   return emset;

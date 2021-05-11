@@ -10,3 +10,6 @@ main time tick: 56.7556
 0: sim executiontime 53.6948
 0: sim executiontime 57.0758
 0: sim executiontime 56.0871 accumulatedSim 20.02
+
+avg 55.93763333
+stdev 1.219787532

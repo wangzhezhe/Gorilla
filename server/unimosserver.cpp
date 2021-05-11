@@ -457,6 +457,14 @@ void eraseMetaAndRaw(size_t step)
   return;
 }
 
+/*
+TODO simplify the code here
+immediately respond to the request, 
+then call tl::thread::yield(); 
+then do the analysis from within the RPC handler. 
+This will have the same effect, except that you don’t need to create a new ULT.
+By this way, we can reuse the existing RPC and do not create a new user level thread
+*/
 // the manager of the matadata controller should be maintained at this level
 void putmetadata(const tl::request& req, size_t& step, std::string& varName, BlockDescriptor rde)
 {

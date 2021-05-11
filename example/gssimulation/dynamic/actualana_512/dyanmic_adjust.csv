@@ -4,10 +4,14 @@
   0: step 39 decision time 0.0144515
   0: step 39 iter 1.62107
   0: sim executiontime 18.5173 accumulatedSim 5.51819
+  0: sim executiontime 17.9712 accumulatedSim 5.28413
 
  main time tick: 22.0694
 
+main time tick: 22.0531
 
+avg 22.06396667
+std 0.009410809388
 
   0: step 29 decision time 0.00544143
   0: step 30 decision time 0.00817633
