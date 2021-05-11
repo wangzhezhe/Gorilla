@@ -1,7 +1,12 @@
 0: sim executiontime 26.9472 accumulatedSim 5.31131
 main time tick: 34.4589
 
+ 0: sim executiontime 28.1903 accumulatedSim 5.27785
 
+ main time tick: 34.8635
+
+ avg 34.59376667
+ std 0.2335959189
 
 the staging may overburden when there are lots of
 

@@ -4,6 +4,11 @@ burden 0.2 0.8
 0: sim executiontime 13.4629 accumulatedSim 2.89341
 main time tick: 15.5746
 
+  0: sim executiontime 15.2917 accumulatedSim 2.86002
+  main time tick: 17.4242
+
+avg 16.19113333
+atdev 1.067867058
 
 Reasons:
 

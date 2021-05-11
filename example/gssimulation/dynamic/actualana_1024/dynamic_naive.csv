@@ -3,6 +3,11 @@
 0: sim executiontime 11.9305 accumulatedSim 2.95459
 main time tick: 12.7884
 
+ 0: sim executiontime 12.1666 accumulatedSim 2.85787
+ main time tick: 14.0753
+
+ avg 13.21736667
+ stdev 0.7429920614
 
   0: step 0 decision time 0.0427859
    0: step 1 decision time 0.00832033

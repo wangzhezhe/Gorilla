@@ -52,6 +52,10 @@ std::string ClientForSim::getAssociatedServerAddr()
       std::to_string(this->m_totalServerNum));
   }
 
+  //TODO split the MPI comm according to the server id and choose the master one of the sub-comm
+  //tell this master addr to the server, only the master server ask the staging status
+  //then it propagate this info to the all subcomm group
+
   return this->m_serverIDToAddr[serverId];
 }
 
