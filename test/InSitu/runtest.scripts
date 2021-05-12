@@ -1,0 +1,33 @@
+#!/bin/bash
+#SBATCH --qos=debug
+#SBATCH --nodes=2
+#SBATCH --licenses=cscratch1
+#SBATCH --constraint=haswell
+#SBATCH --time=3:00
+
+# copy metadata server to current dir
+rm unimos_server.conf Gorila_cred_conf gray_scott_pe_* conf* core cred stage_*.log
+
+#start the server
+srun -C haswell -N 1 -n 1 -c 1 ./unimos_server ~/cworkspace/src/Gorilla/server/settings_gs_gni_test_1.json &> test_unimosserver.log &
+
+result=0
+while [ $result -ne 1 ]
+do
+    result=$(cat test_unimosserver.log | grep "init server ok" | wc -l)
+    echo "$result server ok"
+    sleep 1  
+done
+
+sleep 1
+
+#if we do not make sure how many node that stage servers use 
+#it always keeps busy such as "Requested nodes are busy"
+
+srun -C haswell -N 1 -n 1 -c 1 ./test/test_clientforsim &> test_clientforsim.log 
+
+srun -C haswell -N 1 -n 1 -c 1 ./test/test_transfer_gsadaptor &> test_transfer_gsadaptor.log 
+
+srun -C haswell -N 1 -n 1 -c 1 ./test/test_transfercommon &> test_transfercommon.log 
+
+wait

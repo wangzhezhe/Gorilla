@@ -61,9 +61,10 @@ public:
     // caculate the total server number
     this->m_totalServerNum = adrList.size();
     // get endpoints and put it into the cache
+
     for (auto it = adrList.begin(); it != adrList.end(); it++)
     {
-      //std::cout << "debug list index " << it->m_index << " addr " << it->m_addr << std::endl;
+      // std::cout << "debug list index " << it->m_index << " addr " << it->m_addr << std::endl;
       this->m_serverIDToAddr[it->m_index] = it->m_addr;
       // check the endpoint and put it into the cache
       auto endpoint = this->m_clientEnginePtr->lookup(it->m_addr);
@@ -118,8 +119,8 @@ public:
   int putVTKData(
     size_t step, std::string varName, BlockSummary& dataSummary, void* dataContainerSrc);
 
-  void executeAsyncExp(int step, std::string varName, int blockIndex,
-    std::string funcName, std::vector<std::string> funcParameters, bool iflast);
+  void executeAsyncExp(int step, std::string varName, int blockIndex, std::string funcName,
+    std::vector<std::string> funcParameters, bool iflast);
 
   int putrawdata(
     size_t step, std::string varName, BlockSummary& dataSummary, void* dataContainerSrc);

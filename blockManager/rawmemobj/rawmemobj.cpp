@@ -23,6 +23,7 @@ int RawMemObj::putData(void* dataSourcePtr)
   {
     throw std::runtime_error("failed to putData the memroy for RawMemObj, there is existing data");
   }
+  //TODO use the unique pointer here
   this->m_rawMemPtr = (void*)::operator new(memSize);
   if (m_rawMemPtr == NULL)
   {

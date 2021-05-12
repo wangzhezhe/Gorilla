@@ -1,3 +1,4 @@
+
 #add_executable(test_dhtmanager ./DHTManager/test_dhtmanager.cpp ../utils/hilbert/hilbert.c)
 #target_link_libraries(test_dhtmanager thallium dhtmanager)
 
@@ -98,7 +99,7 @@ add_executable(test_client_watcher ./Client/test_watcher.cpp)
 target_link_libraries(test_client_watcher thallium gorilla_clientforsim)
 
 add_executable(test_clientforsim ./Client/test_clientforsim.cpp)
-target_link_libraries(test_clientforsim thallium gorilla_clientforsim blockManager ${DRC_LIBRARIES})
+target_link_libraries(test_clientforsim thallium gorilla_clientforsim blockManager ${DRC_LIBRARIES} MPI::MPI_C)
 
 add_executable(test_clientforstage ./Client/test_clientforstage.cpp)
 target_link_libraries(test_clientforstage thallium gorilla_clientforstage)
@@ -127,8 +128,14 @@ target_link_libraries(test_vtkexplicitzero ${VTK_LIBRARIES} thallium blockManage
 add_executable(test_scheduleTime ./Others/scheduleTime.cpp)
 target_link_libraries(test_scheduleTime thallium ${VTK_LIBRARIES})
 
+add_executable(test_transfercommon ./InSitu/test_transfer_common.cpp )
+target_link_libraries(test_transfercommon thallium gorilla_clientforsim gorilla_insitu_transfer ${VTK_LIBRARIES} ${DRC_LIBRARIES} MPI::MPI_C)
 
+add_executable(test_transfer_gsadaptor ./InSitu/test_transfer_gsadaptor.cpp ./InSitu/gsinsitu/gray-scott.cpp ./InSitu/gsinsitu/gstransferadaptor.cpp)
+target_link_libraries(test_transfer_gsadaptor thallium gorilla_clientforsim gorilla_insitu_transfer ${VTK_LIBRARIES} ${DRC_LIBRARIES} MPI::MPI_C)
 
+add_executable(test_insitu_ana ./InSitu/test_insitu_ana.cpp)
+target_link_libraries(test_insitu_ana gorilla_insitu_ana ${VTK_LIBRARIES})
 
 # deprecated
 # add_subdirectory(mock)

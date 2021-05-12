@@ -15,6 +15,8 @@
 #include <vtkPolyData.h>
 #include <vtkSmartPointer.h>
 
+#include <insitu/InSituAnaCommon.hpp>
+
 namespace tl = thallium;
 using namespace GORILLA;
 using namespace std::chrono_literals;
@@ -50,6 +52,7 @@ struct MetricsSet
   ~MetricsSet() = default;
 };
 
+// TODO, this need to inherit the HybridInsitu
 class InSitu
 {
 
@@ -95,11 +98,11 @@ public:
   void stagePolyData(
     vtkSmartPointer<vtkPolyData> polydata, std::string varName, int step, int rank);
 
-  void polyProcess(vtkSmartPointer<vtkPolyData> polyData, int step);
-
   void registerRtrigger(int num);
 
-  void dummyAna(int step, int dataID, int totalStep, std::string anatype);
+  // move these two to the gsinsitu ana, which is also shared by the staging service
+  // void polyProcess(vtkSmartPointer<vtkPolyData> polyData, int step);
+  // void dummyAna(int step, int dataID, int totalStep, std::string anatype);
 
   ClientForSim* m_uniclient = NULL;
 
@@ -111,7 +114,7 @@ public:
   MetricsSet naiveGet();
 
   void adjustment(int totalProcs, int step, MetricsSet& mset, bool& ifTCAna, bool& ifWriteToStage,
-  std::string& lastDecision,double burden, bool lastStep);
+    std::string& lastDecision, double burden, bool lastStep);
 
   // metric monitor
   MetricManager m_metricManager;
@@ -124,6 +127,8 @@ public:
   double m_sim = 0;
 
   int m_rank;
+
+  InSituAnaCommon m_insituana;
 
   ~InSitu()
   {

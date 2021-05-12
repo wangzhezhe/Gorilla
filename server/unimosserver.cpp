@@ -1539,8 +1539,8 @@ void executeAsyncExp(const tl::request& req, std::string& blockIDSuffix, int& bl
         std::string anaType = funcParameters[1];
         int dataID = stoi(funcParameters[2]);
 
-        // funcParameters is the type of analtyics
-        uniServer->m_frawmanager->dummyAna(step, dataID, totalStep, anaType);
+        // use the computational kernal that separtes with the data transfer
+        uniServer->m_frawmanager->m_insituana.dummyAna(step, dataID, totalStep, anaType);
       }
       else
       {

@@ -22,13 +22,19 @@ cmake ~/cworkspace/src/Gorilla/ -DCMAKE_CXX_COMPILER=CC -DCMAKE_C_COMPILER=cc -D
 If the paraveiw is used for particular test
 
 ```
+old one
 cmake ~/cworkspace/src/Gorilla/ -DCMAKE_CXX_COMPILER=CC -DCMAKE_C_COMPILER=cc -DVTK_DIR=$SCRATCH/build_paraview_matthieu_release/ -DUSE_GNI=ON -DParaView_DIR=$SCRATCH/build_paraview_matthieu/ -DBUILD_SHARED_LIBS=ON -DAMReX_DIR=/global/cscratch1/sd/zw241/build_amrex/install/lib/cmake/AMReX
 ```
+```
+new one (the cray based MPI can be detected and used in this case when we use the cc and CC)
+cmake ~/cworkspace/src/Gorilla/ -DCMAKE_CXX_COMPILER=CC -DCMAKE_C_COMPILER=cc -DVTK_DIR=/global/cscratch1/sd/zw241/build_vtk/lib64/cmake/vtk-9.0 -DUSE_GNI=ON
+```
 
-this is the content of the `~/.gorilla` file on cori cluster:
+this is the content of the `~/.gorilla_cpu` file on cori cluster:
 
 ```
 #!/bin/bash
+
 source ~/.color
 module load cmake/3.18.2
 module load spack
@@ -38,12 +44,13 @@ module swap PrgEnv-intel PrgEnv-gnu
 # ssg works well for gcc 9.3.0
 module swap gcc/8.3.0 gcc/9.3.0
 
-spack load -r mochi-thallium
+spack load -r mochi-thallium%gcc@9.3.0
 #spack load mochi-cfg
-spack load -r mochi-abt-io
+spack load -r mochi-abt-io%gcc@9.3.0
 
 export CRAYPE_LINK_TYPE=dynamic
-cd $SCRATCH/build_Gorilla
+# we do not use GPU and vtkm for this version
+cd $SCRATCH/build_Gorilla_cpu
 
 
 export MPICH_GNI_NDREG_ENTRIES=1024 
@@ -58,6 +65,46 @@ export ABT_THREAD_STACKSIZE=1048576
 ```
 
 refer to the ./scripts dir to check exmaples of running multiple servers. The configuration of the server contains item such as protocol used by communication layer, the log level, the global domain and if the trigger is started and so on. The example of the configuration is in ./server/settings.json
+
+
+### build on gpu nodes
+
+this is the content of the `~/.gorilla_gpu` file on cori cluster:
+
+```
+#!/bin/bash
+source ~/.color
+module load cmake/3.18.2
+module load spack
+module swap PrgEnv-intel PrgEnv-gnu
+module swap gcc/8.3.0 gcc/9.3.0
+# cuda can not use this cray-mpich
+module unload cray-mpich/7.7.10
+module load cgpu cuda openmpi
+
+# for thallium
+spack load -r mochi-thallium%gcc@9.3.0
+spack load -r mochi-abt-io%gcc@9.3.0
+
+export CRAYPE_LINK_TYPE=dynamic
+cd $SCRATCH/build_Gorilla_gpu
+salloc -C gpu -t 60 -c 8 -G 1 -q interactive
+```
+
+build
+
+```
+cmake ~/cworkspace/src/Gorilla/ -DCMAKE_CUDA_COMPILER=nvcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DVTKm_DIR=/global/cscratch1/sd/zw241/build_vtkm/lib/cmake/vtkm-1.6 -DVTK_DIR=/global/cscratch1/sd/zw241/build_vtk/lib64/cmake/vtk-9.0 -DUSE_GNI=ON -DUSE_GPU=ON -DBUILD_SHARED_LIBS=ON
+```
+
+
+example to run the test
+
+```
+srun -C gpu -n 1 --gpus-per-task=1  nvprof ./test/test_insitu_ana
+```
+
+
 
 ### run
 

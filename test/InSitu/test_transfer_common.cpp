@@ -1,11 +1,11 @@
-
-
-#include "../../client/ClientForSim.hpp"
+#include <insitu/InSituTransferCommon.hpp>
+#include <memory>
 #include <string>
 #include <thallium.hpp>
 #include <vector>
 #include <mpi.h>
-
+// we still need the runtest.scripts to do this test since there still exists issues
+// to run gni communication between different programs
 #ifdef USE_GNI
 extern "C"
 {
@@ -50,6 +50,7 @@ std::string loadMasterAddr(std::string masterConfigFile)
 
 int main(int argc, char** argv)
 {
+  std::cout << "start to create the InSituTransferCommon" << std::endl;
   MPI_Init(&argc, &argv);
   int ret;
 #ifdef USE_GNI
@@ -95,19 +96,13 @@ int main(int argc, char** argv)
 #endif
 
   // get the server addr by configfile
+  // it is critical to ge the root addr server befor initing any other clients
   std::string addrServer = loadMasterAddr("unimos_server.conf");
 
-  // start a client for this server
-  ClientRPCWrapper rpcWrapper(&engine, addrServer);
+  std::cout << "start to create the transferCommon" << std::endl;
 
-  // try to create the rpc wrapper to see if it works
-  std::cout << rpcWrapper.m_addrServerEndpoint << std::endl;
+  // this will call the server api to check the addr
+  InSituTransferCommon transferCommon(&engine, addrServer, 0, 1);
 
-  // start sim client
-  ClientForSim clientSim(&engine, addrServer, 0);
-
-  // shut down the server
-  std::cout << "ok to test the ClientForSim" << std::endl;
-
-  return 0;
+  std::cout << "ok to create the InSituTransferCommon, finish test" << std::endl;
 }

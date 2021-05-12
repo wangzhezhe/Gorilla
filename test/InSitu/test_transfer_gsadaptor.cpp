@@ -1,11 +1,11 @@
+#include "gsinsitu/gray-scott.h"
+#include "gsinsitu/gstransferadaptor.hpp"
 
-
-#include "../../client/ClientForSim.hpp"
+#include <memory>
 #include <string>
 #include <thallium.hpp>
 #include <vector>
 #include <mpi.h>
-
 #ifdef USE_GNI
 extern "C"
 {
@@ -32,7 +32,6 @@ namespace tl = thallium;
 
 std::string loadMasterAddr(std::string masterConfigFile)
 {
-
   std::ifstream infile(masterConfigFile);
   std::string content = "";
   std::getline(infile, content);
@@ -51,6 +50,9 @@ std::string loadMasterAddr(std::string masterConfigFile)
 int main(int argc, char** argv)
 {
   MPI_Init(&argc, &argv);
+
+  std::cout << "start test" << std::endl;
+
   int ret;
 #ifdef USE_GNI
   drc_info_handle_t drc_credential_info;
@@ -93,21 +95,15 @@ int main(int argc, char** argv)
   tl::engine engine("tcp", THALLIUM_CLIENT_MODE);
 
 #endif
+  std::cout << "ok to create the engine" << std::endl;
 
   // get the server addr by configfile
   std::string addrServer = loadMasterAddr("unimos_server.conf");
 
-  // start a client for this server
-  ClientRPCWrapper rpcWrapper(&engine, addrServer);
+  std::cout << "start to create the adaptor" << std::endl;
 
-  // try to create the rpc wrapper to see if it works
-  std::cout << rpcWrapper.m_addrServerEndpoint << std::endl;
+  // this will call the server api to check the addr
+  GSTransferAdaptor transferadaptor(&engine, addrServer, 0, 1);
 
-  // start sim client
-  ClientForSim clientSim(&engine, addrServer, 0);
-
-  // shut down the server
-  std::cout << "ok to test the ClientForSim" << std::endl;
-
-  return 0;
+  std::cout << "ok to create the GSTransferAdaptor, finish test" << std::endl;
 }

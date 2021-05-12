@@ -1,5 +1,13 @@
 **TODO list**
 
+under development (replace the code in example part when this is tested ok):
+
+update the in-situ part, use adaptor to transfer customized data into the standard format (such as vtk)
+use one class as the data ana part, which only focuse on data processing based on standard format
+even when get edge case such as specilized data format, we still need to transfer it to some standard format for further processing
+therefore, it is good to separate these things: data transfer, data processing, and data format conversion for in-situ processing
+
+----old----
 from the simple case to the complicated case
 
 level 1 (ok)

@@ -7,6 +7,7 @@
 
 #include <blockManager/blockManager.h>
 #include <client/ClientForStaging.hpp>
+#include <insitu/InSituAnaCommon.hpp>
 #include <map>
 #include <thallium.hpp>
 #include <vector>
@@ -54,8 +55,6 @@ struct FunctionManagerRaw
   // TODO maybe try to use macro to register things here
   void testisoExec(std::string blockCompleteName, const std::vector<std::string>& parameters);
 
-  void dummyAna(int step, int dataID, int totalStep, std::string anatype);
-
   ~FunctionManagerRaw() { std::cout << "destroy FunctionManagerRaw\n"; };
 
   statefulConfig* m_statefulConfig = NULL;
@@ -68,6 +67,10 @@ struct FunctionManagerRaw
   BlockManager* m_blockManager = NULL;
 
   tl::engine* m_globalServerEnginePtr = nullptr;
+  
+  //the computation kernel that separate with the data blockmanager, the tightly coupled part may also use this kernel
+  //the functionManager is wrapper that connects the data block with the computation kernal
+  InSituAnaCommon m_insituana;
 };
 
 }

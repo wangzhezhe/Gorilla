@@ -155,6 +155,7 @@ void InSitu::stagePolyData(
   }
 }
 
+/* move to the gsinsituana class
 void InSitu::polyProcess(vtkSmartPointer<vtkPolyData> polyData, int step)
 {
   int numCells = polyData->GetNumberOfPolys();
@@ -184,6 +185,7 @@ void InSitu::polyProcess(vtkSmartPointer<vtkPolyData> polyData, int step)
     //          << std::endl;
   }
 }
+*/
 
 // maybe aggregate first then process
 // iso extraction check the polygonal number
@@ -699,6 +701,7 @@ void InSitu::decideTaskPlacement(int step, int rank, int totalprocs, double burd
   }
 }
 
+/* move to the gsinsituana class
 // stationalry high
 void shigh()
 {
@@ -949,6 +952,7 @@ void vinconsistency(int step, int dataID, int totalStep)
   }
 }
 
+
 void InSitu::dummyAna(int step, int dataID, int totalStep, std::string anatype)
 {
 
@@ -982,3 +986,4 @@ void InSitu::dummyAna(int step, int dataID, int totalStep, std::string anatype)
   }
   return;
 }
+*/

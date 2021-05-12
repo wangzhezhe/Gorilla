@@ -1,0 +1,37 @@
+
+maybe try to present it as a table
+tightly: gs, grid
+         func1, [...]
+         gs1, poly
+
+
+loosely: gs1, poly
+         func2, [...]
+
+tightly case:
+tightly: gs, grid
+         func1, [...]
+         gs1, poly
+         write
+
+loosely case:
+
+tightly gs, grid
+        transfer
+loosely gs, grid
+        func1 []
+        gs1, poly/or other customized data type
+        write, []
+
+
+another one (hybrid case)
+
+tightly: gs, grid
+         func1, [...]
+         gs1, poly
+         cond [func2[...], transfer]
+
+loosely: gs1, poly
+         func2, [...]
+         gs2, poly
+         func3/write, [...]

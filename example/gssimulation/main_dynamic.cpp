@@ -344,7 +344,7 @@ int main(int argc, char** argv)
         // double anaStep1 = tl::timer::wtime();
 
         // caculate the largest region size
-        gsinsitu.polyProcess(polydata, step);
+        gsinsitu.m_insituana.polyProcess(polydata);
         // double anaStep2 = tl::timer::wtime();
 
         // std::cout << "ana substep 1 " << anaStep1 - anaStep0 << " substep 2 " << anaStep2 -
@@ -353,7 +353,7 @@ int main(int argc, char** argv)
       }
       else
       {
-        gsinsitu.dummyAna(step, rank, settings.steps, anatype);
+        gsinsitu.m_insituana.dummyAna(step, rank, settings.steps, anatype);
       }
 
       // clock_gettime(CLOCK_REALTIME, &anaend1);

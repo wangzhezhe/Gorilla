@@ -50,7 +50,7 @@ target_link_libraries(gray-scott-hybrid ${DRC_LIBRARIES} MPI::MPI_C ${VTK_LIBRAR
 thallium gorilla_clientforsim metaclient metricmanager)
 
 target_link_libraries(gray-scott-dynamic ${DRC_LIBRARIES} MPI::MPI_C ${VTK_LIBRARIES}
-thallium gorilla_clientforsim metaclient metricmanager)
+thallium gorilla_clientforsim metaclient metricmanager gorilla_insitu_ana)
 
 target_link_libraries(isosurface ${DRC_LIBRARIES} MPI::MPI_C ${VTK_LIBRARIES}
 thallium gorilla_clientforsim metaclient metricmanager)
@@ -90,7 +90,8 @@ endif()
 
 # the mb simulation
 # TODO, extract the gssimualtion in cmake
+# this requires paraview
 # add_subdirectory(mbsimulation)
 
 # the amrex advection sim
-add_subdirectory(amrexadvecation)
+# add_subdirectory(amrexadvecation)

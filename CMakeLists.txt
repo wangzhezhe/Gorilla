@@ -1,5 +1,6 @@
 cmake_minimum_required (VERSION 3.14)
 project (gorilla C CXX)
+#project (gorilla C CXX CUDA)
 set (CMAKE_CXX_STANDARD 14)
 
 option(ENABLE_TESTING "Enable Testing" ON)
@@ -40,6 +41,7 @@ find_package (thallium REQUIRED)
 
 
 option(USE_GNI "use cray gni" OFF)
+option(USE_GPU "use gpu for vtkm" OFF)
 
 if(USE_GNI)
   add_definitions(-DUSE_GNI)
@@ -49,6 +51,12 @@ if(USE_GNI)
   message ("include drc" ${DRC_INCLUDE_DIRS})
   message ("link drc lib" ${DRC_LIBRARIES})
 endif()
+
+if(USE_GPU)
+add_definitions(-DUSE_GPU)
+message ("GPU and VTKm is used for insitu ana library")
+endif()
+
 
 
 # add uuid <there is problem to use this on suse>
@@ -71,6 +79,7 @@ ${gorilla_SOURCE_DIR}/server/MetadataManager/metadataManager.cpp)
 add_library(schedulemanager 
 ${gorilla_SOURCE_DIR}/server/ScheduleManager/scheduleManager.cpp)
 
+
 find_package(VTK COMPONENTS
     FiltersCore
     IOImage
@@ -79,7 +88,9 @@ find_package(VTK COMPONENTS
     CommonCore
     CommonDataModel
     FiltersSources
+    FiltersGeometry
     ParallelCore
+    ParallelMPI
 )
 
 add_library(blockManager 
@@ -121,19 +132,55 @@ ${gorilla_SOURCE_DIR}/server/TriggerManager/triggerManager.cpp
 )
 target_link_libraries(metatrigger metadatamanager gorilla_clientforstage)
 
+
+add_library (gorilla_insitu_transfer
+${gorilla_SOURCE_DIR}/insitu/InSituTransferCommon.cpp
+)
+target_link_libraries(gorilla_insitu_transfer gorilla_clientforsim)
+
+
+
+if(USE_GPU)
+# this is only for testing vtkm compiling
+find_package(VTKm REQUIRED QUIET)
+set_source_files_properties(${gorilla_SOURCE_DIR}/insitu/Clipping.cxx PROPERTIES LANGUAGE "CUDA")
+add_executable(Clipping ${gorilla_SOURCE_DIR}/insitu/Clipping.cxx)
+set_target_properties(Clipping PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+target_link_libraries(Clipping PRIVATE vtkm_filter vtkm_io)
+# build the vtkmadaptor
+set_source_files_properties(${gorilla_SOURCE_DIR}/insitu/vtkmadaptor.cxx PROPERTIES LANGUAGE "CUDA")
+add_library(vtkmadaptor ${gorilla_SOURCE_DIR}/insitu/vtkmadaptor.cxx)
+set_target_properties(vtkmadaptor PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+target_link_libraries(vtkmadaptor PRIVATE vtkm_filter vtkm_io)
+
+# integrate vtk things into the gorilla_insitu_ana
+# try to link the vtkm adaptor only when cpu is used
+add_library (gorilla_insitu_ana ${gorilla_SOURCE_DIR}/insitu/InSituAnaCommon.cpp)
+target_link_libraries(gorilla_insitu_ana ${VTK_LIBRARIES} vtkmadaptor)
+
+else()
+add_library (gorilla_insitu_ana ${gorilla_SOURCE_DIR}/insitu/InSituAnaCommon.cpp)
+target_link_libraries(gorilla_insitu_ana ${VTK_LIBRARIES})
+endif()
+
+
+
+
+# we will merge the rawexec,metricmanager and insitu lib step by step
 add_library(rawexec 
 ${gorilla_SOURCE_DIR}/server/FunctionManager/defaultFunctions/defaultfuncraw.cpp
 ${gorilla_SOURCE_DIR}/server/FunctionManager/functionManagerRaw.cpp
 )
-target_link_libraries(rawexec ${VTK_LIBRARIES} gorilla_clientforstage blockManager)
+target_link_libraries(rawexec ${VTK_LIBRARIES} gorilla_clientforstage blockManager gorilla_insitu_ana)
 
 add_library(metricmanager 
 ${gorilla_SOURCE_DIR}/metricManager/metricManager.cpp
 )
 
+
+
 # add enable_testing
 # test everything ok before integrating them into a server
-
 if (ENABLE_TESTING)
   add_subdirectory(test)
 endif()
@@ -174,13 +221,17 @@ else()
 )
 endif()
 
-
+get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+foreach(dir ${dirs})
+  message(STATUS "include dir='${dir}'")
+endforeach()
 
 # build the example
 # the grpc only works for one level cmake, not sure the reason
 
 if(ENABLE_EXAMPLE)
-  find_package (Python3)
-  find_package(ParaView 5.8 REQUIRED COMPONENTS Catalyst PythonCatalyst)
+  # not necessary for paraview here
+  #find_package (Python3)
+  #find_package(ParaView 5.8 REQUIRED COMPONENTS Catalyst PythonCatalyst)
   add_subdirectory(example)
 endif()
