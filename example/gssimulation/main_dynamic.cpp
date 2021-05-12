@@ -284,8 +284,23 @@ int main(int argc, char** argv)
     // on client get one and send to the sub comm
     // collect information from the staging service by calling getStageStatus
     // and put them into the current metric store
-    std::vector<double> stageStatus =
-      gsinsitu.m_uniclient->getStageStatus(gsinsitu.m_uniclient->m_associatedDataServer);
+    // TODO only the master of current sub comm call this (the number that call this equals with the
+    // number of staging service) then use the subcomm to broadcast things in subcomm group
+
+    std::vector<double> stageStatus(3, 0);
+    if (gsinsitu.m_uniclient->m_subRank == 0)
+    {
+      stageStatus =
+        gsinsitu.m_uniclient->getStageStatus(gsinsitu.m_uniclient->m_associatedDataServer);
+      // only the master call the stage server
+    }
+
+    MPI_Bcast(
+      stageStatus.data(), stageStatus.size(), MPI_DOUBLE, 0, gsinsitu.m_uniclient->m_subcomm);
+
+    //std::cout << "debug subcomm stage status global rank " << rank << " subrank "
+    //          << gsinsitu.m_uniclient->m_subRank << " values " << stageStatus[0] << ","
+    //          << stageStatus[1] << "," << stageStatus[2] << std::endl;
 
     // wait time (schedule time)
     std::string metricName = "W";

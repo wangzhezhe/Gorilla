@@ -1,5 +1,12 @@
 **TODO list**
 
+small things
+
+test the subcomm part in large scale when the cluster is ok to schedule tasks
+
+insitu part (no matter tightly coupled or loosely couped) should be in one .so file
+
+
 from the simple case to the complicated case
 
 level 1 (ok)
@@ -10,7 +17,7 @@ just put and get, and you may want it running for a long time, when the memory s
 
 how to put the disk into the management (when there is empty slot in the memory, put it into the memory otherwise, put it into disk)
 
-level 2
+level 2 (ok)
 
 object can be differnet format, the image data or other vtk data format, there needs a mapping from the physical bbx into the bbx of data presentation such as bbx of the matrix, bbx should be the double in this case
 (challenges, the size of the data might change, we can not make sure the space that need to be allocated for the previous way, high frequent space registration may bad for performance)

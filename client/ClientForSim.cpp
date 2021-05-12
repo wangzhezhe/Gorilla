@@ -52,9 +52,15 @@ std::string ClientForSim::getAssociatedServerAddr()
       std::to_string(this->m_totalServerNum));
   }
 
-  //TODO split the MPI comm according to the server id and choose the master one of the sub-comm
-  //tell this master addr to the server, only the master server ask the staging status
-  //then it propagate this info to the all subcomm group
+  // TODO split the MPI comm according to the server id and choose the master one of the sub-comm
+  // tell this master addr to the server, only the master server ask the staging status
+  // then it propagate this info to the all subcomm group
+  MPI_Comm_split(MPI_COMM_WORLD, serverId, this->m_rank, &(this->m_subcomm));
+  MPI_Comm_rank(this->m_subcomm, &(this->m_subRank));
+  MPI_Comm_size(this->m_subcomm, &(this->m_subSize));
+
+  //std::cout << "debug subcomm, gloabl rank " << this->m_rank << " subrank " << subRank
+  //          << " subsize " << subSize << " serverId " << serverId << std::endl;
 
   return this->m_serverIDToAddr[serverId];
 }

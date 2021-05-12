@@ -1469,7 +1469,7 @@ void getStageStatus(const tl::request& req)
     {
       stageStatus[1] = uniServer->m_metricManager->getLastNmetrics(anaKey, 1)[0];
     }
-    stageStatus[2] = (uniServer->m_metricManager->m_runningThreads)*1.0/32.0;
+    stageStatus[2] = 1.0*(uniServer->m_metricManager->m_runningThreads)/32.0;
   }
 
   req.respond(stageStatus);

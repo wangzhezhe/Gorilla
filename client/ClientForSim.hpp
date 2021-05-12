@@ -7,6 +7,7 @@
 
 #include "ClientRPCWrapper.hpp"
 #include <blockManager/blockManager.h>
+#include "mpi.h"
 
 #include <vtkCharArray.h>
 #include <vtkCommunicator.h>
@@ -83,6 +84,12 @@ public:
   int m_totalServerNum = 0;
   // from the id to server addr
   std::map<int, std::string> m_serverIDToAddr;
+
+  // the sub mpi communicator, the processes in this subcomm connect to the same staging service
+  MPI_Comm m_subcomm;
+  // the rank and size in the sub communicator
+  int m_subRank;
+  int m_subSize;
 
   std::string m_addrServer;
   // this might be different with the addr server
